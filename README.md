@@ -24,16 +24,8 @@ XSailboat 是一个全栈式的大数据平台，提供私有环境下的企业�
 - **SailReport**。报表工具，提供基于平台数据接口、可分享图表和 AI 辅助的报表模板制作和报表生成工具。
 
 平台的技术架构如下图所示：
-![XSailboat技架构](https://i-blog.csdnimg.cn/direct/1627b208ca244573b248edd5c2f3c306.png)
+![XSailboat技架构](https://cdn.nlark.com/yuque/0/2024/png/49025987/1729667376525-de42de32-8e3c-4348-989f-72f322606368.png?x-oss-process=image%2Fformat%2Cpng%2Fresize%2Cw_1500%2Climit_0)
 
 ## 开源计划
 
-我们将有计划分批开源我们的大数据平台。
-第一批开源的产品清单和计划时间：
-| 序号 | 模块 | 准备开源时间 | 计划开源时间 | 状态 |
-|----|----|----|----|:----:|
-| 1 | SailCrane | 2024 年 10 月 1 日| 2024 年 11 月 1 日|进行中|
-| 2 | SailAC | 2024 年 11 月 1 日 | 2025 年 2 月 1 日| - |
-| 3 | SailDoc | 2025 年 2 月 1 日 | 2025 年 4 月 1 日 | - |
-| 4 | SailGateway| 2025 年 4 月 1 日 | 2025 年 7 月 1 日 | - |
-| 5 | SailWorks | 2025 年 7 月 1 日| 2025 年 11 月 1 日| - |
+我们将有计划分批开源我们的大数据平台。如果想进一步了解我们的产品及开源计划，可以收藏关注我们的知识库[《XSailboat知识库》](https://www.yuque.com/okgogogooo/nkpqbh)
