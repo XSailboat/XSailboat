@@ -1,0 +1,41 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>内部服务器错误</title>
+<link th:href="@{/public/error/404.css}" rel="stylesheet" type="text/css">
+</head>
+<body>
+  <div class="content wscn-http404-container"  v-cloak>
+    <div class="wscn-http404" >
+      <div class="pic-404" style="display:flex;align-items: center;justify-content: center;">
+        <img class="pic-404__parent" th:src="@{/public/error/500.png}" alt="500" style="width:400px;height:400px;">
+      </div>
+      <div class="bullshit">
+        <div class="bullshit__oops">服务器内部错误!</div>
+        <div class="bullshit__info">访问地址：<span style="color:#20a0ff" >[[${url}]]</span></div>
+        <div class="bullshit__info"  id="error-desc">[[${msg}]]</div>
+        <div class="bullshit__headline">服务器异常...</div>
+        <a th:href="@{/}" class="bullshit__return-home">回到首页</a>
+      </div>
+    </div>
+  </div>
+ <script >
+ var exVueOpts = {
+		 data: {
+			 activeMenu: '2-3',
+			 stackVisible: false
+		 },
+		  computed: {
+		    curPath(){
+		    	return window.location.href;
+		    }
+		  },
+		  methods:{
+			  toggleStack(){
+				  this.stackVisible = !this.stackVisible;
+			  }
+		  }
+		};
+</script>
+</body>
+</html>

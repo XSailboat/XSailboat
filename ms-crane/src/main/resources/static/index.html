@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>大数据工厂引擎</title>
+    <link rel="stylesheet" href="./assets/style/element-ui.css" />
+    <style>
+      body {
+        font: 13px/1.5 Tahoma, Helvetica, Arial, '宋体', sans-serif;
+      }
+
+      .title {
+        font-size: 1.6em;
+        font-weight: bold;
+      }
+
+      .desc {
+        font-size: 1.2em;
+        font-family: Open Sans, sans-serif;
+        padding: 5px 0px 5px 0px;
+      }
+
+      .btn-line-pane {
+        border-bottom: 1px solid #ddddd8;
+      }
+
+      .first-level {
+        font-size: 1.3em;
+        margin-top: 6px;
+      }
+
+      .leaf-level {
+        font-family: PingFangSC-Regular, Verdana, Arial, 微软雅黑, 宋体;
+      }
+
+      li {
+        padding-bottom: 5px;
+        padding-bottom: 5px;
+      }
+
+      #app {
+        font-family: Arial, '宋体', sans-serif;
+      }
+
+      .menu-link {
+        display: inline-block;
+        width: 100%;
+        height: 100%;
+        text-decoration: none;
+        color: #000;
+      }
+
+      .menu-link,
+      a:visited {
+        color: #000;
+      }
+
+      .menu-link,
+      a:active {
+        color: #000;
+      }
+    </style>
+    <script src="./assets/3rds/vue.js"></script>
+    <script src="./assets/3rds/element-ui.js"></script>
+  </head>
+
+  <body>
+    <div class="btn-line-pane">
+      <div class="title" align="center">大数据工厂引擎</div>
+      <div class="desc">
+        &nbsp;&nbsp;&nbsp;&nbsp;管理维护生产环境的DAG模型；负责调度执行任务；提供任务任务实例查询;提供任务实例执行的控制、监测、日志获取接口
+      </div>
+    </div>
+    <div class="content-pane">
+      <ul>
+        <li class="first-level">
+          <a href="/swagger-ui/index.html" target="api_view">查看API</a>
+        </li>
+      </ul>
+    </div>
+
+    <div id="app"></div>
+    <script>
+      var app = new Vue({
+        el: '#app',
+        data() {
+          return {}
+        },
+        methods: {
+          handelSelect(key, keyPath) {
+            console.log(key)
+          }
+        }
+      })
+    </script>
+  </body>
+</html>

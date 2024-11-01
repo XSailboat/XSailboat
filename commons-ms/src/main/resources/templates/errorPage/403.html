@@ -1,0 +1,37 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>403</title>
+<link th:href="@{/public/error/404.css}" rel="stylesheet" type="text/css">
+</head>
+<body>
+  <div class="content wscn-http404-container" v-cloak>
+    <div class="wscn-http404" style="flex-direction: column-reverse;margin: auto;">
+      <div class="bullshit" style="text-align: center;">
+        <div class="bullshit__oops">权限不足!</div>
+        <div class="bullshit__info">你请求了一个无权访问的页面	
+          <span style="color:#20a0ff" >[[${url}]]</span>
+        </div>
+        <div class="bullshit__headline">[[${msg}]]</div>
+        <div class="bullshit__info">如有需要请联系系统管理员，或点击下面的按钮返回</div>
+        <a th:href="@{/}" class="bullshit__return-home" style="float:none;margin-left:auto;margin-right:auto;">回到首页</a>
+      </div>
+      <div class="pic-404" style="display:flex;align-items: center;">
+        <img class="pic-404__parent" th:src="@{/public/error/403.png}" alt="403">
+      </div>
+    </div>
+  </div>
+ <script >
+ var exVueOpts = {
+		 data: {
+			 activeMenu: '2-1'
+		 },
+		  computed: {
+		    curPath(){
+		    	return window.location.href;
+		    }
+		  }
+		};
+</script>
+</body>
+</html>

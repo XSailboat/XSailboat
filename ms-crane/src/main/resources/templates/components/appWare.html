@@ -1,0 +1,138 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<th:block th:fragment="appWare">
+    <template id="appWare">
+        <div class="right-pane" style="overflow: hidden;">
+            <div style="height: 100%; width: 100%; display: flex; flex-direction: column;">
+                <div class="app-repo">
+                    <span class="title">应用仓库</span>
+                    <span class="description">从本地选择要使用的安装包，上传至应用仓库，已上传的应用包，显示在应用列表里</span>
+
+                    <el-upload
+                            ref="upload"
+                            :on-change="selectSuccess"
+                            action="#"
+                            :auto-upload="false">
+                        <el-button type="primary" slot="trigger" size="small">上传应用包<i class="el-icon-upload el-icon--right"></i>
+                        </el-button>
+                    </el-upload>
+
+                </div>
+                <el-table :data="tableData" size="small" :height="400" v-loading="loading" border>
+                    <el-table-column type="index" label="#" align="center" width="50"></el-table-column>
+                    <el-table-column prop="name" label="文件名称" align="center">
+                        <template slot-scope="scope">
+                            <img style="width: 20px; height: 20px;" :src="getSvgPathBys(scope.row.name)"/>
+                            <span style="vertical-align: super;">&nbsp;{{ scope.row.name }}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="fileLen" label="大小" align="center">
+                        <template slot-scope="scope">
+                            <el-tooltip class="item" effect="dark" :content="scope.row.fileLen + ''"
+                                        placement="top">
+                                        <span>{{formatBytes(scope.row.fileLen)}}</span>
+                            </el-tooltip>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="updateTime" label="上传时间" align="center">
+                        <div slot-scope="scope" style="display: flex;">
+                            <span style="flex: 1">{{ lastDateStr(scope.row.updateTime)}}</span>
+                            <i class="el-icon-delete del-icon"
+                               style="color: #F56C6C; font-size: 16px; display: none; line-height:23px; width: 50px; text-align: center;"
+                               @click="delFile(scope.row.name)"
+                            ></i>
+                        </div>
+
+                    </el-table-column>
+                </el-table>
+            </div>
+        </div>
+    </template>
+
+    <components>
+    </components>
+
+    <script>
+        var AppWare = {
+            template: "#appWare",
+            data() {
+                return {
+                    tableData: [],
+                    loading: false
+                }
+            },
+
+            components: {},
+
+            props: {},
+            computed: {},
+            methods: {
+                delFile(name) {
+                    this.$confirm("确定要删除文件【" + name + "】？", '确认删除', {
+                        dangerouslyUseHTMLString: true,
+                        showClose: false,
+                        type: 'error',
+                        confirmButtonText: '删除',
+                        cancelButtonClass: 'concel-right',
+                        confirmButtonClass: 'el-button--danger'
+                    }).then(_ => {
+                        axios.delete('appstore/appPkg/one', {
+                            params: {
+                                name
+                            }
+                        }).then(res => {
+                            this.loadAppPkgAll();
+                        }).catch(error => {
+                            console.log(error);
+                            this.$message.error('删除文件过程中发生了异常！请联系管理员');
+                        });
+                    }).catch(_ => {
+                    });
+                },
+
+                loadAppPkgAll() {
+                    this.loading = true;
+                    axios.get('appstore/appPkg/all').then(res => {
+                        this.loading = false;
+                        this.tableData = res.data;
+                    }).catch(error => {
+                        this.loading = false;
+                        console.log(error);
+                        this.$message.error('取得应用仓库中的所有应用软件包发生了异常！请联系管理员');
+                    });
+                },
+
+                selectSuccess(file) {
+                    const {name, raw} = file;
+                    axios({
+                        method: 'post',
+                        headers: {
+                            'Content-Type': 'application/octet-stream'
+                        },
+                        url: 'appstore/appPkg/one',
+                        params: {
+                            name
+                        },
+                        data: raw
+                    }).then(res => {
+                        this.loadAppPkgAll();
+                    }).catch(error => {
+                        console.log(error);
+                        this.$message.error('上传程序包发生了异常！请联系管理员');
+                    });
+
+                }
+
+            },
+            watch: {},
+            mounted() {
+                this.loadAppPkgAll();
+            },
+            created() {
+            }
+        }
+    </script>
+</th:block>
+</html>
+

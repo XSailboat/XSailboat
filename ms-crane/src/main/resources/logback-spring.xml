@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+	
+	<conversionRule conversionWord="rowkey" converterClass="team.sailboat.commons.ms.log.RowKeyLogConfig"></conversionRule>
+	<conversionRule conversionWord="n1" converterClass="team.sailboat.commons.ms.log.MyLineSeparatorConverter"></conversionRule>
+
+    <appender name="std_out" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} L:%L -%msg%n
+            </pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator>
+       			<expression>return (level != DEBUG &amp;&amp; level !=INFO) || logger.indexOf('.') == -1 || logger.startsWith("team.sailboat.");</expression> 
+    		</evaluator>
+			<onMatch>ACCEPT</onMatch>  
+			<onMismatch>DENY</onMismatch>  
+        </filter>
+    </appender>
+    
+    <appender name="access_file" class="ch.qos.logback.core.FileAppender">
+		<file>${app.dir.log}/access.log</file>
+		<append>true</append>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50}  L:%L -%msg%n
+            </pattern>
+        </encoder>
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator>
+       			<expression>return logger.equals("AccessLog");</expression> 
+    		</evaluator>
+			<onMatch>ACCEPT</onMatch>  
+			<onMismatch>DENY</onMismatch>  
+        </filter>
+    </appender>
+    
+    <appender name="sys_file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${app.dir.log}/main.log</file>
+		<append>true</append>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50}  L:%L -%msg%n
+            </pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${app.dir.log}/%d{yyyy-MM-dd}_Main.log.zip</fileNamePattern>
+            <!-- 30 days -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator>
+       			<expression>return !(logger.equals("SearchLog") || logger.equals("AccessLog")) &amp;&amp; ((level != DEBUG &amp;&amp; level !=INFO) || logger.indexOf('.') == -1 || logger.startsWith("team.sailboat.")) ;</expression> 
+    		</evaluator>
+			<onMatch>ACCEPT</onMatch>  
+			<onMismatch>DENY</onMismatch>  
+        </filter>
+    </appender>
+    
+    <root level="${logLevel}">
+        <appender-ref ref="std_out" />
+        <appender-ref ref="sys_file" />
+        <appender-ref ref="access_file" />
+    </root>
+</configuration>

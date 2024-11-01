@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>数据工厂引擎 - 上传目录</title>
+    <script src="./assets/3rds/axios.min.js"></script>
+    <script src="./assets/3rds/qs.min.js"></script>
+    <script src="./assets/utils/request.js"></script>
+    <script src="./assets/3rds/es6-promise.auto.min.js"></script>
+    <script src="./assets/3rds/polyfill.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="./assets/style/reset.css" />
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="./assets/style/element-ui.css"
+    />
+    <style type="text/css">
+      body {
+        font: 13px/1.5 Tahoma, Helvetica, Arial, '宋体', sans-serif;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 36px;
+        line-height: 2em;
+        text-align: center;
+      }
+      .input-with-select .el-input-group__prepend {
+        background-color: #fff;
+      }
+      .navigatorBack {
+        position: absolute;
+        left: 10px;
+      }
+      .el-row {
+        margin: 16px 0;
+      }
+      .shadow {
+        box-shadow: 2px 2px 10px rgb(209, 205, 205);
+      }
+      .create-indicator-form .el-select {
+        width: 100%;
+      }
+      .input-new-tag {
+        width: 90px;
+        margin-left: 10px;
+        vertical-align: bottom;
+      }
+      .el-tag + .el-tag {
+        margin-left: 10px;
+      }
+      .el-tag {
+        margin-bottom: 10px;
+      }
+      .form-table .el-form-item {
+        margin-bottom: 0;
+      }
+      .form-table .el-table .cell {
+        overflow: visible;
+      }
+      a,
+      button{
+        font-size: 13px;
+        display: inline-block;
+        white-space: nowrap;
+        cursor: pointer;
+        background: #fff;
+        border: 1px solid #dcdfe6;
+        color: #606266;
+        -webkit-appearance: none;
+        text-align: center;
+        box-sizing: border-box;
+        outline: none;
+        transition: .1s;
+        font-weight: 500;
+        padding: 4px 15px;
+        margin-left: 4px;
+        padding: 0px 15px;
+        border-radius: 4px;
+        height: 34px;
+        line-height: 34px;
+      }
+      button.upload{
+        color: #fff;
+        background-color: #67c23a;
+        border-color: #67c23a;
+      }
+      .choose{
+        background: #3a8ee6;
+        border-color: #3a8ee6;
+        color: #fff;
+      }
+      .file{
+        height: 34px;
+        line-height: 34px;
+        -webkit-appearance: none;
+        background-color: #fff;
+        background-image: none;
+        border-radius: 0 4px 4px 0;
+        border: 1px solid #dcdfe6;
+        box-sizing: border-box;
+        color: #606266;
+        display: inline-block;
+        font-size: inherit;
+        outline: none;
+        padding: 0 15px;
+        transition: border-color .2s cubic-bezier(.645,.045,.355,1);
+        width: 100%;
+        margin-left: -1px;
+      }
+      .title{
+        width: 97px;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        padding: 0px 15px;
+        border-radius: 4px 0 0px 4px;
+        margin-left: 4px;
+        line-height: 32px;
+        background: #eee;
+        z-index: 1;
+      }
+    </style>
+    <script src="./assets/3rds/vue.js"></script>
+    <script src="./assets/3rds/element-ui.js"></script>
+  </head>
+  <body>
+    <form action="/diregetDi/_commitAndCompare" method="post" enctype="multipart/form-data" target="form" style="display: flex;width: 600px;flex-direction: column;">
+		<!-- html5支持选择文件夹上传 -->
+    <div>
+      <input id="file" type="file" name="aFolder" multiple webkitdirectory style="visibility: hidden;width: 40PX;" onchange="dirSelect()">
+      <a href="index.html" class="choose">返回首页</a>
+    </div>
+    <div style="display: flex;margin: 12px 0;padding-left: 40px;">
+      <button class="choose" type="button" onclick="chooseDir()" style="border-radius: 4px 0 0px 4px;">选择文件夹</button>
+      <input id="fileshow" type="text" class="file" readonly>
+    </div>
+    <div style="display: flex;padding-left: 40px;">
+      <label class="title">目标地址：</label>
+      <input id="target" type="text" name="targetDir" class="file">
+      <button type="submit" class="upload">上传</button>
+    </div>
+	</form>
+  <iframe name="form" id="form" style="display:none"></iframe>
+  <div id="msg" style="margin: 12px 24px;line-height: 24px;"></div>
+  <script>
+    function chooseDir(){
+      document.getElementById("file").click();
+    }
+    function dirSelect(){
+      let files = document.getElementById("file").files;
+      let values = '';
+				for(let i=0;i< files.length;i++){
+					let file = files[i];
+          values+= (files[i].name+',');
+				}
+				document.getElementById("fileshow").value = values;
+    }
+
+    $("#form").load(function(){
+        var text = $(this).contents().find("body").text(); 
+        var j = $.parseJSON(text);  
+        $("#msg").text(j);
+    })
+  </script>
+  </body>
+</html>

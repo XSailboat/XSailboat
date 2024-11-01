@@ -1,0 +1,28 @@
+{
+  "name": "resources",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "goScss": "grunt"
+  },
+  "author": "songyn",
+  "license": "ISC",
+  "dependencies": {
+    "element-ui": "^2.13.0",
+    "grunt": "^1.5.3",
+    "sass": "^1.56.1"
+  },
+  "devDependencies": {
+    "css-loader": "^3.4.2",
+    "grunt": "^1.1.0",
+    "grunt-contrib-cssmin": "^3.0.0",
+    "grunt-contrib-sass": "^1.0.0",
+    "grunt-contrib-watch": "^1.1.0",
+    "node-sass": "^4.13.1",
+    "sass": "^1.26.3",
+    "sass-loader": "^8.0.2",
+    "style-loader": "^1.1.3"
+  }
+}

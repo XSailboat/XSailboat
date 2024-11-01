@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>team.sailboat</groupId>
+		<artifactId>sailboat</artifactId>
+		<version>0.0.1-beta</version>
+	</parent>
+	<artifactId>sail-aviator</artifactId>
+	<description>Aviator表达式库</description>
+	
+	<dependencies>
+		<dependency>
+		    <groupId>com.googlecode.aviator</groupId>
+		    <artifactId>aviator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>team.sailboat</groupId>
+			<artifactId>commons-fan</artifactId>
+			<version>${sailboat.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<scope>provided</scope>	<!-- 指定为 provided 作用域，表示编译时可用，运行时不需要 -->  
+		</dependency>
+	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>${java.version}</release>
+				</configuration>
+				<version>${maven.plugin.compiler.version}</version>
+			</plugin>
+			<plugin>  
+	            <groupId>org.apache.maven.plugins</groupId>  
+	            <artifactId>maven-source-plugin</artifactId>  
+	            <version>${maven.plugin.source.version}</version>
+	            <executions>  
+	                <execution>  
+	                    <id>attach-sources</id>  
+	                    <goals>  
+	                        <goal>jar</goal>  
+	                    </goals>  
+	                </execution>  
+	            </executions>  
+	        </plugin>  
+		</plugins>
+	</build>
+</project>
