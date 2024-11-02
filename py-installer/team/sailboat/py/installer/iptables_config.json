@@ -1,0 +1,272 @@
+{
+  "hosts": {
+    "XCloud151": "10.152.47.65",
+    "XCloud152": "10.152.47.66",
+    "XCloud153": "10.152.47.68",
+    "XCloud154": "10.152.47.69",
+    "XCloud155": "10.152.47.70",
+    "XCloud156": "10.152.47.71",
+    "XCloud157": "10.152.47.72",
+    "XCloud158": "10.152.47.31",
+    "XCloud159": "10.152.47.81",
+    "XCloud158": "10.152.47.187"
+  },
+  "apps": {
+    "zookeeper": {
+      "hosts": [
+        "XCloud151",
+        "XCloud152",
+        "XCloud153",
+        "XCloud154",
+        "XCloud155",
+        "XCloud156"
+      ],
+      "ports": [
+        2181,
+        2888,
+        3888,
+        8080
+      ]
+    },
+    "journalnode": {
+      "hosts": [
+        "XCloud151",
+        "XCloud152",
+        "XCloud153"
+      ],
+      "ports": [
+        8485,
+        8480
+      ]
+    },
+    "namenode": {
+      "hosts": [
+        "XCloud151",
+        "XCloud152"
+      ],
+      "ports": [
+        9000,
+        50070
+      ]
+    },
+    "zkfc": {
+      "hosts": [
+        "XCloud151",
+        "XCloud152"
+      ],
+      "ports": [
+        8019
+      ]
+    },
+    "datanode": {
+      "hosts": [
+        "XCloud153",
+        "XCloud154",
+        "XCloud155",
+        "XCloud156"
+      ],
+      "ports": [
+        9864,
+        9867
+      ]
+    },
+    "datanode_out": {
+      "hosts": [
+        "XCloud153",
+        "XCloud154",
+        "XCloud155",
+        "XCloud156"
+      ],
+      "ports": [
+        9866
+      ]
+    },
+    "resourcemanager": {
+      "hosts": [
+        "XCloud151",
+        "XCloud152"
+      ],
+      "ports": [
+        8030,
+        8031,
+        8032,
+        8033,
+        8088
+      ]
+    },
+    "nodemanager": {
+      "hosts": [
+        "XCloud153",
+        "XCloud154",
+        "XCloud155",
+        "XCloud156"
+      ],
+      "ports": [
+        13562,
+        8040,
+        8042,
+        8048
+      ]
+    },
+    "historyserver": {
+      "hosts": [
+        "XCloud153"
+      ],
+      "ports": [
+        19888,
+        10020
+      ]
+    },
+    "timelineserver": {
+      "hosts": [
+        "XCloud154"
+      ],
+      "ports": [
+        8188,
+        10020
+      ]
+    },
+    "master": {
+      "hosts": [
+        "XCloud151",
+        "XCloud152"
+      ],
+      "ports": [
+        16000,
+        16010
+      ]
+    },
+    "regionserver": {
+      "hosts": [
+        "XCloud153",
+        "XCloud154",
+        "XCloud155",
+        "XCloud156"
+      ],
+      "ports": [
+        16020,
+        16030
+      ]
+    },
+    "kafka": {
+      "hosts": [
+        "XCloud153",
+        "XCloud154",
+        "XCloud155",
+        "XCloud156"
+      ],
+      "ports": [
+        9092
+      ]
+    },
+    "hive": {
+      "hosts": [
+        "XCloud151"
+      ],
+      "ports": [
+        9083
+      ]
+    },
+    "hiveserver2": {
+      "hosts": [
+        "XCloud151"
+      ],
+      "ports": [
+        9093,
+        10000,
+        10002
+      ]
+    },
+    "TDengine": {
+      "hosts": [
+        "XCloud151",
+        "XCloud152",
+        "XCloud153",
+        "XCloud154",
+        "XCloud155"
+      ],
+      "ports": [
+        6030,
+        6035,
+        6040,
+        6041
+      ]
+    },
+    "flume": {
+      "hosts": [
+        "XCloud152"
+      ],
+      "ports": [
+        5140,
+        5150
+      ]
+    },
+    "postgresql": {
+      "hosts": [
+        "XCloud155",
+        "XCloud158"
+      ],
+      "ports": [
+        5432
+      ]
+    },
+    "mysql": {
+      "hosts": [
+        "XCloud157",
+        "XCloud158"
+      ],
+      "ports": [
+        3306,
+        33060
+      ]
+    },
+    "XSailboat": {
+      "hosts": [
+        "XCloud157"
+      ],
+      "ports": [
+        12030,
+        12060,
+        12197,
+        12015,
+        12035,
+        12005,
+        12080,
+        12025,
+        12020,
+        12085
+      ]
+    },
+    "apigateway": {
+      "hosts": [
+        "XCloud157"
+      ],
+      "ports": [
+        12199,
+        12010,
+        12011
+      ]
+    },
+    "SailMsMag": {
+      "hosts": [
+        "XCloud159"
+      ],
+      "ports": [
+        12040
+      ]
+    }
+  },
+  "outer_clients": {
+    "生产指挥": {
+      "source_ips": [
+        "192.168.0.193-192.168.0.210","192.168.0.10"
+      ],
+      "issue_date": "2024-04-01",
+      "expired_date": "9999-01-01",
+      "open": [
+        "kafka","TDengine"
+      ],
+      "note": "test"
+    }
+  }
+}

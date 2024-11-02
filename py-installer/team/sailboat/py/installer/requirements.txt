@@ -1,0 +1,11 @@
+aiofiles==24.1.0
+colorlog==6.8.2
+fastapi==0.115.4
+loguru==0.7.2
+paramiko==3.4.1
+pydantic==2.9.2
+python_iptables==1.0.1
+PyYAML==6.0.2
+starlette==0.41.2
+uvicorn==0.32.0
+python-multipart==0.0.17

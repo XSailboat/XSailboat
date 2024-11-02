@@ -10,6 +10,27 @@
 	<artifactId>sailboat-ms-crane</artifactId>
 	<name>SailMSCrane</name>
 	<description>平台安装工具</description>
+	<url>https://github.com/XSailboat/XSailboat</url>
+
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>okgogogooo</name>
+			<email>okgogogooo@qq.com</email>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>https://github.com/XSailboat/XSailboat.git</connection>
+		<developerConnection>https://blog.csdn.net/OkGogooXSailboat?type=blog</developerConnection>
+		<url>https://github.com/XSailboat/XSailboat</url>
+	</scm>
 
 	<dependencies>
 		<dependency>
@@ -84,4 +105,80 @@
 	        </plugin>  
 		</plugins>
 	</build>
+	
+	<profiles>
+		<profile>
+			<id>to-publish</id>
+			<build>
+				<plugins>
+					<!--   javadoc插件 -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>${maven.plugin.javadoc.version}</version>
+						<configuration>
+							<failOnError>false</failOnError>
+						</configuration>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${maven.plugin.gpg.version}</version>
+						<configuration></configuration>
+						<executions>
+							<execution>
+								<id>sign-jar</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<!--   central发布插件    -->
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.6.0</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>ossrh</publishingServerId>
+							<tokenAuth>true</tokenAuth>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+			<distributionManagement>
+				<snapshotRepository>
+					<id>ossrh-s</id>
+					<url>${public.snapshot.url}</url>
+				</snapshotRepository>
+				<repository>
+					<id>ossrh</id>
+					<url>${public.release.url}</url>
+				</repository>
+			</distributionManagement>
+		</profile>
+		<profile>
+			<id>to-private</id>
+			<distributionManagement>
+				<snapshotRepository>
+					<id>private-snapshot-repo</id>
+					<url>${private.snapshot.url}</url>
+				</snapshotRepository>
+				<repository>
+					<id>private-release-repo</id>
+					<url>${private.release.url}</url>
+				</repository>
+			</distributionManagement>
+		</profile>
+	</profiles>
 </project>
