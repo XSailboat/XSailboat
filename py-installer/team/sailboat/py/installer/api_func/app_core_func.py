@@ -133,8 +133,3 @@ def restart_service_func(params=None):
         f"{script_path} {help_path} {pid} {app_storage['profile']['adminUser']} {app_storage['profile']['adminPswd']}")
     return {"code": True, "msg": ""}
 
-
-if __name__ == '__main__':
-    cp = CommandProcessor()
-    result = cp.parse_pipe("cd /xcloud/base_app/TDengine && ./install.sh && x_expect_err -w 5 -s \"Created symlink\"")
-    print(result)

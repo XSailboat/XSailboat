@@ -479,25 +479,6 @@ Vue.prototype.toUnit = function(val, unit) {
 	}
 	return val || 0;
 }
-/**
- * 将state由数字转换成对应的中文描述，如 1->动作 0->复归
- * pid 用于判断该测点是否为工况测点
- */
-Vue.prototype.stateOfEqualVal = function (state, pid, pids) {
-	let allowValues = pids[pid].allowValues.split(',')
-	let allowValuesMap = {}
-	for (let i = 0; i < allowValues.length; i++) {
-		allowValuesMap[allowValues[i]] = i
-	}
-
-	state = state + ''
-
-	if (allowValuesMap[state.trim()]) {
-		return allowValuesMap[state.trim()] + "(" + state + ")"
-	} else {
-		return  allowValues[state] ? state + "(" +  allowValues[state] + ")" : state;
-	}
-}
 
 /**
  * 随机字符串【0-9、a-z、A-Z】

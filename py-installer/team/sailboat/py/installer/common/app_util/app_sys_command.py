@@ -250,11 +250,3 @@ def update_envs():
 
     # 更新当前环境变量
     os.environ.update(new_env)
-
-
-if __name__ == '__main__':
-    # data = {
-    #     "ab3": "123 123 321"
-    # }
-    # AppSysCmd.update_conf("/test.conf", data)
-    pass

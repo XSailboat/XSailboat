@@ -1,24 +1,14 @@
-import getpass
-import json
 import os
-import signal
-import sys
-import time
 import traceback
-from typing import List
 
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File
 from loguru import logger
-from starlette.requests import Request
 from starlette.responses import JSONResponse, Response, StreamingResponse
 
 from aiofiles import open as aopen
 
-from team.sailboat.py.installer.api_func.app_core_func import auth_user, get_uvicorn_main_pid, split_commands, \
+from team.sailboat.py.installer.api_func.app_core_func import auth_user, split_commands, \
     storage_status_init, host_profile_func, create_user_func, modify_own_func, restart_service_func
-from team.sailboat.py.installer.common.app_util.app_path import AppPath
-from team.sailboat.py.installer.common.app_util.app_sys_command import AppSysCmd
-from team.sailboat.py.installer.common.app_util.app_sys_config import start_script, AppSysConfig
 from team.sailboat.py.installer.common.request_body import UserCredentials, HostProfile, Commands, CreateUserInfo, \
     PathList
 from team.sailboat.py.installer.common.app_storage import AppStorage

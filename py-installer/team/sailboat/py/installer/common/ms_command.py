@@ -639,32 +639,3 @@ def convert_str_new(data_str: str):
                 value = value.strip("'").strip('"')
             result[key] = value
     return result
-
-
-def convert_str_old(data_str: str):
-    # 使用正则表达式分割字符串，并去除多余的空格
-    # items = re.findall(r"(\w+)=(?:'([^']*)'|\"([^\"]*)\"|(\S+))", data_str)
-    items = re.findall(r"\s*([\w.]+)\s*=\s*(?:'([^']*)'|\"([^\"]*)\"|(\S+))\s*", data_str)
-    result = {}
-    for match in items:
-        key = match[0]
-        # 从匹配组中找到非空的值
-        value = next(filter(None, match[1:]), "")
-        # 如果是数组格式就eval转换为list
-        if value.startswith("[") and value.endswith("]"):
-            result[key] = eval(value)
-        else:
-            result[key] = value
-    return result
-
-
-if __name__ == '__main__':
-    # app_storage["profile"]["sysUser"] = "hadoop"
-    # app_storage["profile"]["sysPwsd"] = "123456"
-    # print(app_storage["profile"])
-    cp = CommandProcessor()
-    # cmd = 'x_set_iptables -h "xcloud100 =192.168.0.100 & xcloud101 = 192.168.0.101" -m \'{"zookeeper":{"hosts":["XCloud1","XCloud2"] , "ports":[12055]}}\' -o \'{"SailMSCrane":{"source_ip":["192.168.0.193-192.168.0.210","192.168.0.10"],"issue_date":"2024-04-01","expired_date":"9999-01-01","open":["SailPyInstaller"],"note":"test"}}\''
-    # cp.execute_command(cmd)
-    # cmd = "x_unzip -s /xcloud/pg_bigm-master.zip -t /xcloud/pg_bigm-master -e data,html"
-    # result = cp.execute_command(cmd)
-    # print(result)

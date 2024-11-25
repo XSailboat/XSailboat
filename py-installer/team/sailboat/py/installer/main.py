@@ -60,4 +60,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     app_storage["allowed_ips"] = [str(ip).strip() for ip in args.allowed.split(",")]
     uvicorn.run(app, host=args.host, port=args.port)
-    # nohup .venv/bin/uvicorn team.sailboat.py.installer.main:app --reload --host 0.0.0.0 --port 12205 &

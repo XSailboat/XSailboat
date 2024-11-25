@@ -81,7 +81,6 @@ public class ZKProxy implements IZKProxy
 	
 	void _connect() throws IOException, KeeperException, InterruptedException
 	{
-//		mZKQuorum = "192.168.0.69:2181/xz/prod" ;
 		mZK = new ZooKeeper(mZKQuorum , 2000 , (event)->{
 			if(event.getType() == EventType.None
 					&& event.getState() == KeeperState.Disconnected)
@@ -709,18 +708,6 @@ public class ZKProxy implements IZKProxy
 			brokersBld.append(confJo.optString("host") + ":" + confJo.optString("port"));
 		}
 		return brokersBld.toString();
-	}
-	
-	public static void main(String[] args) throws Exception
-	{
-//		String quorum = "XCloud150:2181,XCloud151:2181,XCloud152:2181,XCloud153:2181,XCloud154:2181" ;
-//		ZKProxy proxy = (ZKProxy) ZKProxy.get("XCloud150:2181,XCloud151:2181,XCloud152:2181,XCloud153:2181,XCloud154:2181") ;
-//		listChildren(proxy.mZK, "/hadoop-ha") ;
-//		Stat stat = new Stat();
-//		byte[] data = proxy.mZK.getData("/hadoop-ha/yc/ActiveStandbyElectorLock" , (e)->{}, stat) ;
-//		ZKSysProxy.setSysDefault(quorum) ;
-//		HttpClientProvider pvd = HttpClientProvider.ofSysDefaultHdfs() ;
-//		HttpClient client = pvd.get() ;
 	}
 	
 	static void listChildren(ZooKeeper aZK , String aPath) throws KeeperException, InterruptedException

@@ -154,7 +154,7 @@ public class StartBoot
 		
 		Class<?> clazz = classLoader.loadClass(launcherClassName) ;
 		Assert.notNull(clazz , "无法加载启动类：%s" , launcherClassName) ;
-		IMSLauncher launcher = (IMSLauncher) clazz.newInstance() ; 
+		IMSLauncher launcher = (IMSLauncher) clazz.getConstructor().newInstance() ; 
 		List<String> argList = XC.arrayList(args) ;
 		boolean changed = false ;
 		for(Entry<Object, Object> entry : propEx.entrySet())

@@ -476,7 +476,3 @@ def format_string_by_separator(input_str, separator, join, items_per_line):
 
     # 返回结果字符串，去掉最后一行的换行符
     return result.strip()
-
-
-if __name__ == '__main__':
-    start_script()

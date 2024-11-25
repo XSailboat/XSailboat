@@ -32,12 +32,12 @@ class AppStorage:
 
 app_storage = AppStorage()
 app_storage["profile"] = {
-    "ip": "192.168.64.100",
-    "name": "master",
-    "adminUser": "root",
-    "adminPswd": "123456",
-    "sysUser": "hadoop",
-    "sysPwsd": "123456"
+    "ip": "",
+    "name": "",
+    "adminUser": "",
+    "adminPswd": "",
+    "sysUser": "",
+    "sysPwsd": ""
 }
 app_storage["current_user"] = app_storage["profile"]["sysUser"]
 app_storage["sql"] = {"mode": False, "username": "", "password": "",
