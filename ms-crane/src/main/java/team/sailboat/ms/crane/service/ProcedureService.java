@@ -3,6 +3,7 @@ package team.sailboat.ms.crane.service;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +32,15 @@ import team.sailboat.commons.fan.exec.CommonExecutor;
 import team.sailboat.commons.fan.exec.RunStatus;
 import team.sailboat.commons.fan.file.FileExtNameFilter;
 import team.sailboat.commons.fan.file.FileUtils;
+import team.sailboat.commons.fan.gadget.RSAUtils;
+import team.sailboat.commons.fan.http.HttpClient;
+import team.sailboat.commons.fan.http.Request;
 import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.serial.StreamAssist;
+import team.sailboat.commons.fan.statestore.IRunData;
 import team.sailboat.commons.fan.struct.Tuples;
 import team.sailboat.commons.fan.struct.Tuples.T2;
 import team.sailboat.commons.fan.text.XString;
@@ -44,6 +49,7 @@ import team.sailboat.commons.ms.jackson.TLCustmFilter;
 import team.sailboat.commons.ms.log.LogMsg;
 import team.sailboat.commons.ms.log.LogPool;
 import team.sailboat.ms.crane.AppConsts;
+import team.sailboat.ms.crane.IApis_PyInstaller;
 import team.sailboat.ms.crane.bean.HostProfile;
 import team.sailboat.ms.crane.bean.Operation;
 import team.sailboat.ms.crane.bean.Procedure;
@@ -66,6 +72,9 @@ public class ProcedureService
 	
 	@Autowired
 	SysPlanService mSysPlanService ;
+	
+	@Autowired
+	IRunData mRunData ;
 	
 	final TreeMap<String , Procedure> mProcedureMap = XC.treeMap(String::compareTo) ;
 	File mProcedureDir ;
@@ -428,14 +437,35 @@ public class ProcedureService
 				{	
 					for(HostProfile host : mHosts)
 					{
+						if(!AppConsts.sHostProfile_SyncStatus_sync.equals(mRunData.get(host.getIp())))
+						{
+							HttpClient client = HttpClient.of(host.getIp() , host.getSailPyInstallerPort()) ;
+							// 取得一个动态公钥
+							JSONObject jo = client.askJo(Request.GET().path(IApis_PyInstaller.sGET_RSAPublicKey)) ;
+							PublicKey pk = RSAUtils.getPublicKey(jo.optString("publicKeyModulus"), jo.optString("publicKeyExponent")) ;
+							String encodedAdminPswd = RSAUtils.encrypt(RSAUtils.sAlgorithm_PKCS1
+									, pk
+									, host.getAdminPswd()) ;
+							String encodedSysPswd = RSAUtils.encrypt(RSAUtils.sAlgorithm_PKCS1
+									, pk
+									, host.getSysPswd()) ;
+							JSONObject hostJo = JacksonUtils.toJSONObject(host)
+									.put("adminPswd", encodedAdminPswd)
+									.put("sysPswd" , encodedSysPswd) ;
+							// 同步主机规划配置
+							client.ask(Request.POST()
+											.path(IApis_PyInstaller.sPOST_CreateOrUpdateHostProfile)
+											.queryParam("codeId" , jo.optString("codeId"))
+											.setJsonEntity(hostJo)) ;
+							mRunData.put(host.getIp() , AppConsts.sHostProfile_SyncStatus_sync) ;
+						}
+						
 						Map<String , Object> contextMap = XC.hashMap(mContextMap) ;
 						contextMap.put("host.seq" , host.getSeq()) ;
 						contextMap.put("host.name" , host.getName()) ;
 						contextMap.put("host.ip" , host.getIp()) ;
 						contextMap.put("host.sysUser" , host.getSysUser()) ;
-						contextMap.put("host.sysPswd" , host.getSysPswd()) ;
 						contextMap.put("host.adminUser" , host.getAdminUser()) ;
-						contextMap.put("host.adminPswd" , host.getAdminPswd()) ;
 						contextMap.put("all_ip_host" , all_ip_host) ;
 						contextMap.put("hosts" , allHosts) ;
 						
@@ -457,7 +487,6 @@ public class ProcedureService
 				catch(Exception e)
 				{
 					setFinished(true) ;
-					throw e ;
 				}
 			}
 			for(ExecTask task : taskList)

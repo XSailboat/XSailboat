@@ -1,5 +1,11 @@
 package team.sailboat.base;
 
+/**
+ * 集群模式
+ *  
+ * @author yyl
+ * @since 2024年12月6日
+ */
 public enum ClusterMode
 {
 	/**
@@ -19,6 +25,11 @@ public enum ClusterMode
 		mDisplayName = aDisplayName ;
 	}
 	
+	/**
+	 * 获取集群模式的显示名
+	 * 
+	 * @return	显示名
+	 */
 	public String getDisplayName()
 	{
 		return mDisplayName;

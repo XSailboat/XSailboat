@@ -1405,6 +1405,15 @@ public class JSONObject implements JSONString, JSONCloneable , Map<String, Objec
 		return null ;
 	}
 	
+	/**
+	 * 根据键和枚举类型从当前对象中获取对应的枚举值。
+	 * 
+	 * @param <T> 枚举类型，必须是枚举的子类。
+	 * @param aKey 要获取的键。
+	 * @param aEnumClass 枚举的Class对象。
+	 * @return 返回与键对应的枚举值。
+	 * @throws IllegalArgumentException 如果键不存在或对应的值不是指定的枚举类型。
+	 */
 	public <T extends Enum<T>> T getEnum(String aKey , Class<T> aEnumClass)
 	{
 		T v = optEnum(aKey, aEnumClass) ;
@@ -1412,75 +1421,84 @@ public class JSONObject implements JSONString, JSONCloneable , Map<String, Objec
 		return v ;
 	}
 	
-	public String optStringAndTrim(String key, String defaultValue)
+	/**
+	 * 根据键从当前对象中获取对应的字符串值，并去除字符串两端的空白字符。
+	 * 
+	 * @param aKey 要获取的键。
+	 * @param aDefaultValue 如果键不存在或对应的值为null，则返回此默认值。
+	 * @return 返回与键对应的字符串值（已去除两端空白字符），如果键不存在或对应的值为null，则返回默认值。
+	 */
+	public String optStringAndTrim(String aKey, String aDefaultValue)
 	{
-		Object obj = opt(key);
-		return obj == null ? defaultValue : XString.trim(obj.toString()) ;
+		Object obj = opt(aKey);
+		return obj == null ? aDefaultValue : XString.trim(obj.toString()) ;
 	}
 
 	/**
-	 * Put a key/boolean pair in the JSONObject.
-	 *
-	 * @param key   A key string.
-	 * @param value A boolean which is the value.
-	 * @return this.
-	 * @throws JSONException If the key is null.
+	 * 将指定的布尔值放入当前对象中，与指定的键关联。
+	 * 
+	 * @param aKey 要关联的键。
+	 * @param aValue 要放入的布尔值。
+	 * @return 返回当前对象，便于链式调用。
+	 * @throws JSONException 如果在放入值时发生JSON异常。
 	 */
-	public JSONObject put(String key, boolean value) throws JSONException
+	public JSONObject put(String aKey, boolean aValue) throws JSONException
 	{
-		put(key, value ? Boolean.TRUE : Boolean.FALSE);
+		put(aKey, aValue ? Boolean.TRUE : Boolean.FALSE);
 		return this;
 	}
 
 	/**
-	 * Put a key/double pair in the JSONObject.
-	 *
-	 * @param key   A key string.
-	 * @param value A double which is the value.
-	 * @return this.
-	 * @throws JSONException If the key is null or if the number is invalid.
+	 * 将指定的双精度浮点值放入当前对象中，与指定的键关联。
+	 * 
+	 * @param aKey 要关联的键。
+	 * @param aValue 要放入的双精度浮点值。
+	 * @return 返回当前对象，便于链式调用。
+	 * @throws JSONException 如果在放入值时发生JSON异常。
 	 */
-	public JSONObject put(String key, double value) throws JSONException
+	public JSONObject put(String aKey, double aValue) throws JSONException
 	{
-		put(key, Double.valueOf(value));
+		put(aKey, Double.valueOf(aValue));
 		return this;
 	}
 
 	/**
-	 * Put a key/int pair in the JSONObject.
-	 *
-	 * @param key   A key string.
-	 * @param value An int which is the value.
-	 * @return this.
-	 * @throws JSONException If the key is null.
+	 * 将指定的整数值放入当前对象中，与指定的键关联。
+	 * 
+	 * @param aKey 要关联的键。
+	 * @param aValue 要放入的整数值。
+	 * @return 返回当前对象，便于链式调用。
+	 * @throws JSONException 如果在放入值时发生JSON异常。
 	 */
-	public JSONObject put(String key, int value) throws JSONException
+	public JSONObject put(String aKey, int aValue) throws JSONException
 	{
-		put(key, Integer.valueOf(value));
+		put(aKey, Integer.valueOf(aValue));
 		return this;
 	}
 
 	/**
-	 * Put a key/long pair in the JSONObject.
-	 *
-	 * @param key   A key string.
-	 * @param value A long which is the value.
-	 * @return this.
-	 * @throws JSONException If the key is null.
+	 * 将指定的长整数值放入当前对象中，与指定的键关联。
+	 * 
+	 * @param aKey 要关联的键。
+	 * @param aValue 要放入的长整数值。
+	 * @return 返回当前对象，便于链式调用。
+	 * @throws JSONException 如果在放入值时发生JSON异常。
 	 */
-	public JSONObject put(String key, long value) throws JSONException
+	public JSONObject put(String aKey, long aValue) throws JSONException
 	{
-		put(key, Long.valueOf(value));
+		put(aKey, Long.valueOf(aValue));
 		return this;
 	}
 
 	/**
-	 * Put a key/value pair in the JSONObject, where the value will be a
-	 * JSONObject which is produced from a Map.
-	 * @param key   A key string.
-	 * @param value A Map value.
-	 * @return      this.
-	 * @throws JSONException
+	 * 将指定的键值对放入JSONObject中。
+	 * 
+	 * @param key   要放入的键，不能为null。
+	 * @param value 要放入的值，如果为null，则从JSONObject中移除该键；
+	 *              如果为JSONObject类型，则直接放入；
+	 *              否则，将Map转换为JSONObject后放入。
+	 * @return 返回当前JSONObject对象，便于链式调用。
+	 * @throws JSONException 如果在将Map转换为JSONObject时发生错误。
 	 */
 	public JSONObject put(String key, Map<String , Object> value) throws JSONException
 	{
@@ -1500,45 +1518,30 @@ public class JSONObject implements JSONString, JSONCloneable , Map<String, Objec
 	
 	/**
 	 * 
-	 * @param key
-	 * @param value
+	 * @param aKey
+	 * @param aValue
 	 * @param aStoreNullValue	指示是否存储null值。如果为true，则允许存储null值；
 	 * 					如果为false，则不存储null值，并尝试从JSONObject中移除该键（如果已存在）。
 	 * 
 	 * @return
 	 * @throws JSONException
 	 */
-	public JSONObject put(String key, Object value , boolean aStoreNullValue) throws JSONException
+	public JSONObject put(String aKey, Object aValue , boolean aStoreNullValue) throws JSONException
 	{
-		if (key == null)
-			throw new JSONException("Null key.");
+		if (aKey == null)
+			throw new JSONException("键为null！");
 		
-		if (value != null)
+		if (aValue != null)
 		{
-			testValidity(value , "健是{}" , key);
-			if(value.getClass().isEnum())
-				mMap.put(key, ((Enum<?>)value).name()) ;
-			else if (value instanceof ToJSONObject)
-				mMap.put(key, ((ToJSONObject) value).toJSONObject());
-			else if(value.getClass().isArray() || value instanceof Collection<?>)
-				mMap.put(key, new JSONArray(value));
-			else if(value instanceof Date)
-			{
-				mMap.put(key , XTime.format$yyyyMMddHHmmssSSS((Date)value)) ;
-			}
-			else if(value instanceof Map map)
-			{
-				mMap.put(key, of(map)) ;
-			}
-			else
-				mMap.put(key, value);
+			testValidity(aValue , "健是{}" , aKey);
+			mMap.put(aKey , toJSONElement(aValue)) ;
 		}
 		else if(aStoreNullValue)
-			mMap.put(key, null) ;
+			mMap.put(aKey, null) ;
 		
 		else
 		{
-			remove(key);
+			remove(aKey);
 		}
 		return this;
 	}
@@ -1725,14 +1728,41 @@ public class JSONObject implements JSONString, JSONCloneable , Map<String, Objec
 	}
 
 	/**
-	 * Get an enumeration of the keys of the JSONObject.
-	 * The keys will be sorted alphabetically.
-	 *
-	 * @return An iterator of the keys.
+	 * 
+	 * 返回此JSON对象的键按字母升序排列后的迭代器
+	 * 
+	 * @return
 	 */
 	public Iterator<String> sortedKeys()
 	{
-		return new TreeSet<>(this.mMap.keySet()).iterator();
+		return new TreeSet<>(mMap.keySet()).iterator();
+	}
+	
+	/**  
+     * 对此JSON对象的键按字幕升序进行重新排列，并返回当前JSON对象.  
+     *   
+     * <p>此方法首先创建一个新的LinkedHashMap来保持插入顺序，  
+     * 然后使用一个TreeSet对原始Map（mMap）的键进行排序。  
+     * 排序后的键会依次被放入新的LinkedHashMap中，  
+     * 并使用原始Map中的值进行填充。  
+     * 最后，将原始Map（mMap）更新为排序后的新Map，  
+     * 并返回当前对象（this），以便支持链式调用。</p>  
+     *   
+     * <p>注意：此方法改变了原始Map（mMap）的内容，  
+     * 使其键按照自然顺序（或键的compareTo方法定义的顺序）排序。</p>  
+     *   
+     * @return 返回当前对象（this），以便支持链式调用。  
+     *         返回的JSONObject对象内部Map的键已经排序。  
+     */  
+	public JSONObject sortedByKey()
+	{
+		Map<String , Object> newMap = new LinkedHashMap<>() ;
+		for(String key : new TreeSet<>(mMap.keySet()))
+		{
+			newMap.put(key, mMap.get(key)) ;
+		}
+		mMap = newMap ;
+		return this ;
 	}
 
 	/**
@@ -2574,6 +2604,31 @@ public class JSONObject implements JSONString, JSONCloneable , Map<String, Objec
 			return (JSONObject)aMap ;
 		else
 			return new JSONObject(aMap) ;
+	}
+	
+	/**
+	 * 根据提供的Iterable、键函数和值函数生成一个JSONObject。
+	 *
+	 * @param <T> Iterable中元素的类型。
+	 * @param aIt 要迭代的元素集合，不能为null（但集合内部可以为空）。
+	 * @param aKeyFunc 一个函数，接受Iterable中的元素作为输入，并返回该元素对应的键（String类型）。
+	 * @param aValFunc 一个函数，接受Iterable中的元素作为输入，并返回该元素对应的值（Object类型）。
+	 * @return 一个JSONObject，其键和值由aKeyFunc和aValFunc根据aIt中的元素生成。
+	 *         如果aIt为null，则返回一个空的JSONObject。
+	 *         注意：如果aKeyFunc对多个元素返回相同的键，则后面的值会覆盖前面的值。
+	 */
+	public static <T> JSONObject of(Iterable<T> aIt , Function<T, String> aKeyFunc
+			, Function<T , Object> aValFunc)
+	{
+		JSONObject jo = new JSONObject() ;
+		if(aIt != null)
+		{
+			for(T ele : aIt)
+			{
+				jo.put(aKeyFunc.apply(ele) , aValFunc.apply(ele)) ;
+			}
+		}
+		return jo ;
 	}
 	
 	/**

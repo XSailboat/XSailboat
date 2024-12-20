@@ -24,6 +24,13 @@ import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.serial.StreamAssist;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * 在Properties基础上的扩展，增强按类型获取能力
+ *
+ * @author yyl
+ * @since 2024年11月20日
+ */
 public class PropertiesEx extends Properties implements IStringSerializable
 {
 	/**
@@ -358,6 +365,14 @@ public class PropertiesEx extends Properties implements IStringSerializable
 		}
 	}
 	
+	/**
+	 * 从一个Reader对象中加载PropertiesEx对象，使用给定的默认Properties对象初始化。
+	 * 
+	 * @param aReader  要从中加载属性的Reader对象
+	 * @param aDefault 默认的Properties对象，用于初始化PropertiesEx对象
+	 * @return 加载后的PropertiesEx对象
+	 * @throws IOException 如果读取属性时发生IO错误
+	 */
 	public static PropertiesEx loadFromReader(Reader aReader , Properties aDefault) throws IOException
 	{
 		try
@@ -372,12 +387,44 @@ public class PropertiesEx extends Properties implements IStringSerializable
 		}
 	}
 	
+	/**
+	 * 从指定文件中加载PropertiesEx对象，使用指定的字符编码。
+	 * 这是一个重载方法，它使用字符串形式的编码。
+	 * 
+	 * @param aFile     要从中加载属性的文件
+	 * @param aEncoding 文件的字符编码
+	 * @return 加载后的PropertiesEx对象
+	 * @throws IOException 如果读取文件时发生IO错误
+	 */
 	public static PropertiesEx loadFromFile(File aFile , String aEncoding) throws IOException
+	{
+		return loadFromFile(aFile, Charset.forName(aEncoding), true) ;
+	}
+	
+	/**
+	 * 从指定文件中加载PropertiesEx对象，使用指定的字符集。
+	 * 这是一个重载方法，它使用Charset对象。
+	 * 
+	 * @param aFile     要从中加载属性的文件
+	 * @param aEncoding 文件的字符集
+	 * @return 加载后的PropertiesEx对象
+	 * @throws IOException 如果读取文件时发生IO错误
+	 */
+	public static PropertiesEx loadFromFile(File aFile , Charset aEncoding) throws IOException
 	{
 		return loadFromFile(aFile, aEncoding, true) ;
 	}
-
-	public static PropertiesEx loadFromFile(File aFile , String aEncoding , boolean aTrim) throws IOException
+	
+	/**
+	 * 从指定文件中加载PropertiesEx对象，使用指定的字符集和是否修剪字符串值。
+	 * 
+	 * @param aFile     要从中加载属性的文件
+	 * @param aEncoding 文件的字符集
+	 * @param aTrim     是否修剪字符串值（去除前后空格）
+	 * @return 加载后的PropertiesEx对象
+	 * @throws IOException 如果读取文件时发生IO错误
+	 */
+	public static PropertiesEx loadFromFile(File aFile , Charset aEncoding , boolean aTrim) throws IOException
 	{
 		PropertiesEx propEx = new PropertiesEx() ;
 		propEx.mTrim = aTrim ;
@@ -390,6 +437,21 @@ public class PropertiesEx extends Properties implements IStringSerializable
 			propEx.stringPropertyNames() ;
 		}
 		return propEx ;
+	}
+
+	/**
+	 * 从指定文件中加载PropertiesEx对象，使用指定的字符编码和是否修剪字符串值。
+	 * 这是一个重载方法，它使用字符串形式的编码。
+	 * 
+	 * @param aFile     要从中加载属性的文件
+	 * @param aEncoding 文件的字符编码
+	 * @param aTrim     是否修剪字符串值（去除前后空格）
+	 * @return 加载后的PropertiesEx对象
+	 * @throws IOException 如果读取文件时发生IO错误
+	 */
+	public static PropertiesEx loadFromFile(File aFile , String aEncoding , boolean aTrim) throws IOException
+	{
+		return loadFromFile(aFile , Charset.forName(aEncoding) , aTrim) ;
 	}
 	
 	@Override

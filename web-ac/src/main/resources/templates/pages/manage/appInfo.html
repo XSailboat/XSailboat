@@ -1,0 +1,298 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="appInfo">
+	<template id="appInfo">
+		<div style="display:flex; flex-direction: column;flex: 1;height: 0;">
+			<div class="container-title">
+				<span class="container-text">应用管理 <el-icon color="#fff"><arrow-right-bold /></el-icon> 应用基本信息</span>
+			</div>
+			<div class="el-card is-never-shadow" style="padding: 20px;display: flex;align-items: center; border-bottom: none;">
+				<span>选择应用：</span>
+				<el-select v-model="activedApp" placeholder="请选择" @change="loadAppInfo" style="width: 220px;">
+					<el-option v-for="app in apps" :key="app.id" :label="app.name" :value="app.id"></el-option>
+				</el-select>
+				<div style="display: inline-flex;flex: 1;justify-content: flex-end;">
+					<i class="icon icon-yingyong" style="font-size: 2.2em;color: #409EFF;"></i>
+					<span style="font-size: 1.8em;margin: 0 8px;">{{baseInfo.name}}</span>
+				</div>
+			</div>
+			<div class="el-card is-never-shadow" style="flex: 1;height: 0;padding: 20px 40px;display: flex;flex-direction: column;">
+				<div v-show="!edit" style="display: flex;align-items: center;margin: 10px 0 28px 20px;max-width: 1100px;">
+					<i class="icon icon-yingyong" style="font-size: 2.2em;color: #409EFF;"></i>
+					<span style="font-size: 1.8em;margin: 0 20px 0 8px;">{{baseInfo.name}}</span>
+					<el-button sec:authorize="hasAnyAuthority('CDU_ClientAppData', 'Update_Special_ClientAppData:' + #resId)" type="primary" icon="Edit" @click="editInfo('edit')">编辑</el-button>
+				</div>
+				<el-scrollbar style="width: 100%;height: 0;flex:1;overflow-x:hidden;">
+					<div style="display: flex;">
+						<el-form ref="form" :model="baseInfo" label-width="140px" style="width: 540px;">
+							<el-form-item v-if="edit" label="应用名称" style="margin-top: 30px;">
+								<el-input v-model="baseInfo.name"></el-input>
+							</el-form-item>
+							<el-form-item label="应用简称">
+								<el-input v-if="edit" v-model="baseInfo.simpleName"></el-input>
+								<span v-else>{{baseInfo.simpleName}}</span>
+							</el-form-item>
+							<el-form-item label="AppKey">
+								<span>{{baseInfo.appKey || '--'}}</span>
+								<template v-if="baseInfo.appKey">
+									<el-divider direction="vertical"></el-divider>
+									<el-tooltip effect="light" content="复制" placement="top">
+										<i v-show="baseInfo.appKey" class="icon icon-fuzhi icon-btn" @click="copyVal(baseInfo.appKey)"></i>
+									</el-tooltip>
+								</template>
+							</el-form-item>
+							<el-form-item v-if="baseInfo.appKey" sec:authorize="hasAnyAuthority('View_AllClientAppSecret', 'Reset_AllClientAppSecret', 'Reset_Special_ClientAppSecret:' + #resId, 'View_Special_ClientAppSecret:' + #resId)" label="AppSecret">
+								<span>{{baseInfo.appSecret || '******'}}</span> 
+								<template v-if="baseInfo.appSecret && baseInfo.appSecret != '******'">
+									<el-divider direction="vertical"></el-divider>
+									<el-tooltip effect="light" content="复制" placement="top">
+										<i class="icon icon-fuzhi icon-btn" style="font-weight: normal;" @click.stop="copyVal(baseInfo.appSecret)"></i>
+									</el-tooltip>
+									<el-divider direction="vertical"></el-divider>
+									<el-tooltip effect="light" content="复制Properties秘文" placement="top">
+										<i class="icon icon-miyue icon-btn" style="font-weight: normal;font-size: 14px;" @click.stop="secretProperty(activedApp.appSecret)"></i>
+									</el-tooltip>
+									<el-divider direction="vertical"></el-divider>
+								</template>
+								<el-tooltip :content="baseInfo.viewSecret ? '隐藏秘钥' : '查看秘钥'" placement="top" effect="light">
+									<el-link @click="secretKey" :underline="false" style="margin-left: 8px;">
+										<span v-if="baseInfo.viewSecret" class="icon icon-yincang"></span>
+										<span v-else class="icon icon-xianshi"></span>
+									</el-link>
+								</el-tooltip>
+							</el-form-item>
+							<el-form-item label="厂家">
+								<el-input v-if="edit" v-model="baseInfo.company"></el-input>
+								<span v-else>{{baseInfo.company}}</span>
+							</el-form-item>
+							<el-form-item label="描述">
+								<el-input v-model="baseInfo.description" type="textarea" :rows="3" :readonly="!edit"></el-input>
+							</el-form-item>
+							<el-form-item label="主页地址">
+								<el-input v-model="baseInfo.homePageUrl" placeholder="未配置" :readonly="!edit"></el-input>
+							</el-form-item>
+							<el-form-item label="重定向URL列表">
+								<el-input v-if="!baseInfo.codeCallbackUrls || baseInfo.codeCallbackUrls.length == 0" v-model="newCodeCallbackUrl" placeholder="未配置" @blur="addCodeCallbackUrl" :readonly="!edit"></el-input>
+								<template v-else>
+									<template v-for="(item, index) in baseInfo.codeCallbackUrls" :key="index">
+										<el-input class="back-url-input" v-model="baseInfo.codeCallbackUrls[index]" placeholder="未配置" :readonly="!edit">
+											<template #suffix>
+												<el-icon v-if="edit" class="icon-btn---delete" @click="deleteCodeCallbackUrl(item)">
+													<Delete />
+												</el-icon>
+											</template>
+										</el-input>
+									</template>
+								</template>
+								<el-button v-if="edit" icon="Plus" plain @click="addCodeCallbackUrl('promt')" style="padding: 9px;position: absolute; top: 1px; right: -40px;"></el-button>
+							</el-form-item>
+							<el-form-item label="权限刷新通知地址">
+								<el-input v-model="baseInfo.refreshUserAuthsNotifierUrl" placeholder="未配置" :readonly="!edit" />
+							</el-form-item>
+							<el-form-item v-if="baseInfo.subspaceTypes && baseInfo.subspaceTypes.length > 0" label="子空间类型">
+								<template v-for="(item, index) in baseInfo.subspaceTypes" :key="index">
+									<el-input class="back-url-input" v-model="baseInfo.subspaceTypes[index]" readonly></el-input>
+								</template>
+							</el-form-item>
+						</el-form>
+						<div style="border-left: 1px solid #dcdfe6;margin: 10px 20px 10px 80px;"></div>
+						<el-form ref="form" :model="baseInfo" label-width="120px" style="width: 500px;">
+							<el-form-item label="应用状态" :style="{'margin-top':(edit ? '30px' : '0')}">
+								<el-switch v-if="edit" v-model="baseInfo.enabled" active-color="#13ce66" inactive-color="#ff4949" active-text="启用" inactive-text="禁用"></el-switch>
+								<span v-else-if="baseInfo.enabled" style="color: #67C23A;">启用</span>
+								<span v-else style="color: #F56C6C;">禁用</span>
+							</el-form-item>
+							<el-form-item label="创建人">
+								<span>{{baseInfo.userName || '--'}}</span>
+							</el-form-item>
+							<el-form-item label="创建时间">
+								<span>{{baseInfo.createTime ? baseInfo.createTime.replace('T', ' ').substring(0, 19) : '--'}}</span>
+							</el-form-item>
+							<el-form-item label="可访问">
+								<el-checkbox-group v-model="baseInfo.scopes">
+									<el-checkbox v-for="scope in scopes" :key="scope.code" :label="scope.code" :disabled="!edit">{{scope.description}}</el-checkbox>
+								</el-checkbox-group>
+							</el-form-item>
+							<el-form-item label="授权模式">
+								<el-checkbox-group v-model="baseInfo.grantTypes" @change="grantTypeChange" style="display: flex; flex-direction: column;">
+									<el-checkbox label="authorization_code" :disabled="!edit || diabledGrantType">授权码模式</el-checkbox>
+									<el-checkbox label="refresh_token" :disabled="!edit || diabledGrantType">刷新令牌模式</el-checkbox>
+									<el-checkbox label="app_only" :disabled="!edit">应用模式</el-checkbox>
+								</el-checkbox-group>
+							</el-form-item>
+							<el-form-item v-if="edit">
+								<div style="width: 100%;text-align: right;">
+									<el-button type="primary" @click="editInfo('submit')">提 交</el-button>
+									<el-button @click="editInfo('cancel')">取 消</el-button>
+								</div>
+							</el-form-item>
+						</el-form>
+					</div>
+				</el-scrollbar>
+			</div>
+		</div>
+	</template>
+	<script type="text/javascript" th:src="@{/public/js/jsencrypt.min.js}"></script>
+	<script>
+		const AppInfo = {
+			template: "#appInfo",
+			props: {
+				apps: {
+					type: Array,
+					default: () => []
+				}
+			},
+			setup() {
+				const data = reactive({
+					privateKey: '',
+					activedApp: '',
+					tempInfo: {},
+					baseInfo: {},
+					edit: false,
+					newCodeCallbackUrl: '',
+					scopes: [],
+					diabledGrantType: false,
+				});
+
+				const {proxy} = getCurrentInstance();
+
+				const loadAppInfo = () => {
+					axios.get('clientApp/one', {
+						params: {
+							clientAppId: data.activedApp
+						}
+					}).then(res => {
+						if (res.data.scopes == null)
+							res.data.scopes = [];
+						if (res.data.grantTypes == null) {
+							res.data.grantTypes = [];
+						}
+						if (res.data.codeCallbackUrls == null) {
+							res.data.codeCallbackUrls = [];
+						}
+						data.baseInfo = res.data;
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+					SailTool.urlPush('appId', encodeURIComponent(data.activedApp));
+				};
+				const loadAppScopes = () => {
+					axios.get('public/scope/all').then(res => {
+						data.scopes = res.data;
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				const editInfo = (type) => {
+					if (type == 'edit') {
+						data.tempInfo = SailTool.clone(data.baseInfo);
+						data.edit = true
+					} else if (type == 'cancel') {
+						data.baseInfo = SailTool.clone(data.tempInfo);
+						data.tempInfo = {};
+						data.edit = false;
+					} else {
+						axios.put('clientApp/one', data.baseInfo).then(res => {
+							ElMessage.$success('更新成功');
+							data.edit = false;
+						}).catch(error => {
+							SailTool.exception(error);
+						})
+					}
+				}
+				const addCodeCallbackUrl = type => {
+					if (type == 'promt') {
+						ElMessageBox.prompt('请输入', '', {
+							icon: 'edit-pen',
+							inputValue: '',
+							inputPattern: /\S/,
+							inputErrorMessage: '不能为空',
+							closeOnClickModal: false,
+							draggable: true,
+							cancelButtonClass: 'concel-right is-plain',
+						}).then(({value}) => {
+							data.baseInfo.codeCallbackUrls.push(value);
+						}).catch(() => { });
+					} else if (data.newCodeCallbackUrl) {
+						data.baseInfo.codeCallbackUrls.push(data.newCodeCallbackUrl);
+						data.newCodeCallbackUrl = '';
+					}
+				};
+				const deleteCodeCallbackUrl = url => {
+					let urls = data.baseInfo.codeCallbackUrls.filter(item => {
+						return item != url;
+					});
+					data.baseInfo.codeCallbackUrls = urls;
+				};
+				const grantTypeChange = val => {
+					if (val.includes('app_only')) {
+						data.baseInfo.grantTypes = ['app_only'];
+						data.diabledGrantType = true;
+					} else {
+						data.diabledGrantType = false;
+					}
+				};
+				const secretKey = id => {
+					if (data.baseInfo.viewSecret) {
+						data.baseInfo.viewSecret = false;
+						data.baseInfo.appSecret = '******';
+					} else {
+						var encrypt = new JSEncrypt();
+						data.privateKey = encrypt.getPrivateKeyB64();
+						const form = new FormData();
+						form.append('clientAppId', data.activedApp);
+						form.append('publicKey', encodeURIComponent(encrypt.getPublicKeyB64()));
+						axios.post('clientApp/one/appSecret', form).then(res => {
+							encrypt.setPrivateKey(data.privateKey);
+							data.baseInfo.appSecret = encrypt.decrypt(res.data)
+							data.baseInfo.viewSecret = true;
+						}).catch(error => {
+							SailTool.exception(error);
+						})
+					}
+				};
+				const secretProperty = id => {
+					var encrypt = new JSEncrypt();
+					data.privateKey = encrypt.getPrivateKeyB64();
+					const form = new FormData();
+					form.append('clientAppId', data.activedApp);
+					form.append('publicKey', encodeURIComponent(encrypt.getPublicKeyB64()));
+					axios.post('clientApp/one/appSecret/_asPropertySecret', form).then(res => {
+						encrypt.setPrivateKey(data.privateKey);
+						SailTool.copyToClipboard(encrypt.decrypt(res.data))
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				
+				const copyVal = val => {
+					SailTool.copyToClipboard(val)
+				}
+
+				loadAppScopes();
+				proxy.$parent.loadApps(false, apps => {
+					if (proxy.$parent.activeAppId) {
+						data.activedApp = proxy.$parent.activeAppId;
+					} else if (apps.length > 0) {
+						data.activedApp = apps[0]['id'];
+					}
+					loadAppInfo();
+				});
+
+				return {
+					...toRefs(data),
+					loadAppInfo,
+					addCodeCallbackUrl,
+					deleteCodeCallbackUrl,
+					grantTypeChange,
+					secretKey,
+					secretProperty,
+					editInfo,
+					copyVal
+				}
+			}
+		}
+	</script>
+</th:block>
+
+</html>

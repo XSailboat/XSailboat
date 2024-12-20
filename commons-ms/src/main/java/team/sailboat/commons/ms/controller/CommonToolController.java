@@ -56,7 +56,7 @@ public class CommonToolController implements ITokenGenerator
 	@GetMapping(value="/tool/common/jfilter/sql" , produces = MediaType.TEXT_PLAIN_VALUE)
 	public String convertJFilterToSql(@RequestParam("jfilter") String aJFilter)
 	{
-		return mJFilterParser.parseFilter(new JSONObject(aJFilter)).getSql() ;
+		return mJFilterParser.parseFilter(JSONObject.of(aJFilter)).getSql() ;
 	}
 	
 	@Operation(description = "取得加密后的Properties文件的取值")
@@ -108,7 +108,7 @@ public class CommonToolController implements ITokenGenerator
 		long lastTime = mDecryptLastTime.get() ;	
 		if(XTime.pass(lastTime, 1000) && mDecryptLastTime.compareAndSet(lastTime, System.currentTimeMillis()))
 		{
-			Assert.equals(aPasswd , "cims#0XZ", "SecretKey不正确!") ;
+			Assert.equals(aPasswd , "whosyourdady", "SecretKey不正确!") ;
 			if(XString.isEmpty(aText))
 				return aText ;
 			final int len = aText.length() ;

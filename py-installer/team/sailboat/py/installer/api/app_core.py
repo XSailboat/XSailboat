@@ -1,16 +1,12 @@
-import os
 import traceback
 
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, Query
 from loguru import logger
-from starlette.responses import JSONResponse, Response, StreamingResponse
+from starlette.responses import Response, StreamingResponse
 
-from aiofiles import open as aopen
-
-from team.sailboat.py.installer.api_func.app_core_func import auth_user, split_commands, \
-    storage_status_init, host_profile_func, create_user_func, modify_own_func, restart_service_func
-from team.sailboat.py.installer.common.request_body import UserCredentials, HostProfile, Commands, CreateUserInfo, \
-    PathList
+from team.sailboat.py.installer.api_func.app_core_func import split_commands, \
+    storage_status_init, host_profile_func, restart_service_func
+from team.sailboat.py.installer.common.request_body import HostProfile, Commands
 from team.sailboat.py.installer.common.app_storage import AppStorage
 from team.sailboat.py.installer.common.ms_command import CommandProcessor
 
@@ -21,18 +17,18 @@ app_storage = AppStorage()
 
 
 # 存储主机配置信息
-@app_core.post("/hostProfile", name="上传或更新配置信息")
-async def host_profile(profile: HostProfile):
+@app_core.post("/hostProfile/one/_createOrUpdate", name="上传或更新主机配置信息")
+async def host_profile(profile: HostProfile, codeId: str = Query("", description="加密ID")):
     """储配置信息,如IP、主机名称、管理员用户名/密码、系统用户名/密码...
     """
-    result = host_profile_func(profile.dict())
+    result = host_profile_func(profile.dict(), codeId)
     if result["code"]:
         return Response(content="", media_type="text/plain", headers={"Content-Length": "0"})
     else:
         return Response(content=result["msg"], media_type="text/plain")
 
 
-@app_core.get("/getHostProfile", name="获取当前存储的系统配置")
+@app_core.get("/hostProfile/one", name="获取当前存储的主机系统配置")
 async def get_host_profile():
     """
     获取当前存储的系统配置
@@ -40,39 +36,7 @@ async def get_host_profile():
     return app_storage["profile"]
 
 
-@app_core.post("/validation/user", name="验证用户名和密码是否正确")
-async def validation(credentials: UserCredentials):
-    """
-    验证用户名和密码
-    """
-    if auth_user(credentials.username, credentials.password):
-        return Response(content="", media_type="text/plain", headers={"Content-Length": "0"})
-    else:
-        return Response(content="验证失败!", media_type="text/plain")
-
-
-@app_core.post("/createUser", name="创建Linux用户")
-async def create_user(info: CreateUserInfo):
-    """创建用户,成功返回None,失败则返回失败信息"""
-
-    result = create_user_func(info.dict())
-    if result["code"]:
-        return Response(content="", media_type="text/plain", headers={"Content-Length": "0"})
-    else:
-        return Response(content=result["msg"], media_type="text/plain")
-
-
-@app_core.post("/modifyOwn", name="修改指定文件或目录的所有者为平台用户")
-async def modify_own(paths: PathList):
-    """修改指定路径的所有者为平台用户"""
-    result = modify_own_func(" ".join(paths.paths))
-    if result["code"]:
-        return Response(content="", media_type="text/plain", headers={"Content-Length": "0"})
-    else:
-        return Response(content=result["msg"], media_type="text/plain")
-
-
-@app_core.post("/restart", name="重启服务")
+@app_core.post("/self/_restart", name="重启SailPyInstaller服务")
 async def restart_service():
     """
     通过 API 调用重启服务
@@ -83,11 +47,12 @@ async def restart_service():
     else:
         return Response(content=result["msg"], media_type="text/plain")
 
+
 cp = CommandProcessor()
 
 
 # 执行多个命令
-@app_core.post("/exec/commands/stream", name="执行命令")
+@app_core.post("/command/many/stream/_exec", name="执行命令,流式返回")
 async def exec_commands_stream(commands: Commands):
     """
     执行多个命令期间出现执行失败则直接返回结果列表
@@ -129,7 +94,7 @@ async def exec_commands_stream(commands: Commands):
 
 
 # 执行多个命令
-@app_core.post("/exec/commands", name="执行命令")
+@app_core.post("/command/many/_exec", name="执行命令")
 async def exec_commands(commands: Commands):
     """
     执行多个命令期间出现执行失败则直接返回结果列表
@@ -164,32 +129,3 @@ async def exec_commands(commands: Commands):
     finally:
         storage_status_init()
     return result
-
-
-@app_core.post("/upload", name="上传应用软件包")
-async def upload_file(path: str, file: UploadFile = File(...)):
-    """
-    上传压缩包或文件到指定目录，multipart方式上传
-    """
-    try:
-        # 获取文件名
-        filename = file.filename
-
-        # 指定保存路径
-        save_path = f"{path}/{filename}"
-
-        # 创建目录（如果不存在）
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-        # 异步写入文件
-        async with aopen(save_path, mode='wb') as out_file:
-            while True:
-                chunk = await file.read(1024 * 1024)  # 读取1MB的数据
-                if not chunk:
-                    break
-                await out_file.write(chunk)
-
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"code": 500, "msg": str(e)})
-
-    return JSONResponse(status_code=200, content={"code": 200, "msg": "success"})

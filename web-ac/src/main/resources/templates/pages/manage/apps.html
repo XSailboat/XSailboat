@@ -1,0 +1,181 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  >
+<th:block th:fragment="apps">
+	<template id="apps">
+		<div style="display:flex; flex-direction: column;flex: 1;height: 0;">
+			<div class="container-title">
+				<span class="container-text">应用管理</span>
+			</div>
+			<el-row style="flex: 1;height: 0;padding: 20px;">
+				<div v-if="apps.length == 0" class="no-apps">
+					<i class="icon-color icon-color-zanwushuju" style="font-size: 7em;"></i>
+					<span style="margin: 12px 0;font-size: 14px;">暂无注册应用</span>
+					<el-button sec:authorize="hasAuthority('CDU_ClientAppData')" type="primary" icon="plus" @click="appCreate('oper')">创建新应用</el-button>
+				</div>
+				<el-scrollbar v-else style="width: 100%;height: 100%;overflow-x:hidden;">
+					<div class="apps">
+						<div v-for="app in apps" class="app" @click="appInfo(app.id)">
+							<div class="item">
+								<span class="logo" :class="{webApp: app.webApp}">{{app.simpleName}}</span>
+								<span style="font-size: 1.8em;">{{app.name}}</span>
+							</div>
+							<div class="item" style="margin: 20px 0 10px 0;">
+								<i class="icon icon-gongsi"></i>
+								<span>{{app.company}}</span>
+							</div>
+							<div class="item">
+								<i class="icon icon-miaoshu"></i>
+								<span>{{app.description}}</span>
+							</div>
+							<div sec:authorize="hasAuthority('CDU_ClientAppData')" class="app-btns">
+								<div class="app-btn app-del" title="删除应用" @click.stop="appDelete(app)">
+									<i class="icon icon-shanchu"></i>
+								</div>
+							</div>
+							
+							<el-tooltip :content="app.enabled ? '已启用' : '未启用'" :show-after="500" placement="right">
+								<div :class="'app-enable app-enable-' + app.enabled"></div>
+							</el-tooltip>
+						</div>
+						<div sec:authorize="hasAuthority('CDU_ClientAppData')" class="app" style="justify-content: center;align-items: center;" @click="appCreate('oper')">
+							<div></div>
+							<div style="margin-bottom: 12px;"><i style="font-size: 3em;" class="icon icon-tianjiayingyong"></i></div>
+							<div style="font-size: 16px;">创建新应用</div>
+						</div>
+					</div>
+				</el-scrollbar>
+			</el-row>
+			
+			<el-dialog title="创建新应用" v-model="createVisible" width="460px" destroy-on-close :close-on-press-escape="false" :close-on-click-modal="false" :show-close="false" @close="resetForm">
+				<template #header>
+					<div style="font-size: 18px;">
+						<i class="icon icon-tianjiayingyong" style="font-size: inherit;"></i>
+						<span style="margin-left: 4px;">创建新应用</span>
+					</div>
+				</template>
+				<el-form ref="appFormRef" status-icon :model="appFormData" :rules="rules" size="large" label-width="60px" style="margin: 20px;">
+		 			<el-form-item label="名称" prop="name">
+				    		<el-input ref="appNameRef" v-model="appFormData.name" autofocus clearable></el-input>
+				  	</el-form-item>
+				  	<el-form-item label="简称" prop="simpleName">
+				    		<el-input ref="simpleName" v-model="appFormData.simpleName" clearable></el-input>
+				  	</el-form-item>
+				  	<el-form-item label="厂家" prop="company">
+				    	<el-input v-model="appFormData.company" clearable></el-input>
+				  	</el-form-item>
+				  	<el-form-item label="描述" prop="description">
+				    	<el-input v-model="appFormData.description" type="textarea" :rows="3"></el-input>
+				  	</el-form-item>
+				</el-form>
+				<template #footer>
+				  	<span class="dialog-footer">
+					    <el-button type="primary" @click="appCreate('submit')">确 定</el-button>
+					    <el-button @click="createVisible = false">取 消</el-button>
+			  		</span>
+		  		</template>
+			</el-dialog>
+		</div>
+	</template>
+<script>
+	const App = {
+		template: "#apps",
+		props: {
+			apps: {
+				type: Array,
+				default: () => []
+			}
+		},
+		emits: ['appView'],
+		setup(props, context) {
+			const data = reactive({
+				createVisible: false,
+				appFormData: {},
+				rules: {
+					name: [{required: true, message: '请输入名称', trigger: 'change'}],
+					simpleName: [{required: true, message: '请输入简称', trigger: 'change'}],
+					company: [{required: true, message: '请输入厂家', trigger: 'change'}],
+				},
+				
+				appFormRef: null,
+				appNameRef: null
+			})
+			
+			const {proxy} = getCurrentInstance();
+			
+			const loadApps = () =>{
+				proxy.$parent.loadApps(true);
+			};
+
+			const appCreate = type => {
+				if (type == 'submit') {
+					data.appFormRef.validate((valid) => {
+						if (valid) {
+							axios.post('clientApp/one', data.appFormData).then(res => {
+								data.createVisible = false;
+								loadApps(true);
+							}).catch(error => {
+								SailTool.exception(error);
+							})
+						} else {
+							return false;
+						}
+					});
+				} else {
+					data.createVisible = true;
+					setTimeout(() => {
+						data.appNameRef.focus();
+					})
+				}
+			};
+			
+			const appDelete = app =>{
+				ElMessageBox.confirm(`确定要删除应用${app.name}？`, '确认删除', {
+					dangerouslyUseHTMLString: true,
+					showClose: false,
+					type: 'error',
+					confirmButtonText: '删除',
+					cancelButtonClass: 'concel-right',
+					confirmButtonClass: 'el-button--danger'
+				}).then(_ => {
+					axios.delete('clientApp/one', {
+						params: {
+							clientAppId: app.id
+						}
+					}).then(res => {
+						if (res.status == '200') {
+							loadApps();
+							ElMessage.$success('删除成功！');
+						} else {
+							ElMessage.$error('删除失败！');
+						}
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				}).catch(_ => { });
+			};
+			
+			const appInfo = id => {
+				context.emit('appView', id);
+			}
+			
+			const resetForm = () => {
+				data.appFormData.model = {};
+			};
+			
+			
+			onMounted(() => {
+				loadApps();
+			});
+			
+			return {
+                ...toRefs(data),
+                appCreate,
+				appDelete,
+				appInfo,
+				resetForm
+            }
+		}
+	}
+</script>
+</th:block>
+</html>

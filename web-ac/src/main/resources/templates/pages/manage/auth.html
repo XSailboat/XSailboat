@@ -1,0 +1,109 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  >
+<th:block th:fragment="auth">
+	<template id="auth">
+		<div style="display:flex; flex-direction: column;flex: 1;">
+			<div class="container-title">
+				<span class="container-text">应用管理 <el-icon color="#fff"><arrow-right-bold/></el-icon> 权限查看</span>
+			</div>
+			<div class="el-card is-never-shadow" style="padding: 20px;display: flex;align-items: center;">
+		      	<span>选择应用：</span>
+		      	<el-select v-model="activedApp" placeholder="请选择" @change="loadAuthes" style="width: 220px;">
+				    <el-option v-for="app in apps" :key="app.id" :label="app.name" :value="app.id"></el-option>
+				</el-select>
+				<el-button type="primary" icon="Search" style="margin-left: 8px;" @click="loadAuthes">查询</el-button>
+				<div style="display: inline-flex;flex: 1;justify-content: flex-end;">
+	    			<i class="icon icon-yingyong" style="font-size: 2.2em;color: #409EFF;"></i>							
+					<span style="font-size: 1.8em;margin: 0 8px;">{{appName}}</span>
+	    		</div>
+		    </div>
+			<div class="el-card is-never-shadow" style="flex: 1;height: 0;display: flex;flex-direction:column; border-top: none;">
+				<el-table ref="auth_table" v-loading="loading" :data="authes" height="100%" trip border current-row-key="id" :span-method="arraySpanMethod" style="width: 100%">
+	    				<el-table-column type="index" label="#" width="50" align="center"> </el-table-column>
+	    				<el-table-column prop="group" label="分组" width="150" align="center" sortable> </el-table-column>
+					<el-table-column prop="name" label="权限" min-width="140" sortable> </el-table-column>
+					<el-table-column prop="description" label="描述" min-width="200" sortable> </el-table-column>
+					<el-table-column prop="subspaceType" label="子空间类型" min-width="100" sortable> </el-table-column>
+					<el-table-column prop="createTime" label="创建时间" min-width="160" sortable> </el-table-column>
+ 				</el-table>
+			</div>
+		</div>
+	</template>
+<script>
+	var Auth = {
+		template: "#auth",
+		data() {
+			return {
+				init: true,
+				loading: true,
+				apps: [],
+				appName: '',
+				activedApp: '',
+				authes: [],
+				mergeIndex: [],
+				mergeSize: [],
+			}
+		},
+		methods: {
+			loadAuthes(val){
+				this.loading = true;
+				axios.get('api/app/authes/grouped', {
+					params: {
+						id: this.activedApp
+					}
+				}).then(res=>{
+					this.mergeSize = res.data.mergeSize;
+					this.mergeIndex = res.data.mergeIndex;
+					this.authes = res.data.authes;
+				}).catch(error=>{
+					this.message('error',error);
+				})
+				this.apps.forEach( app => {
+					if(app.id == this.activedApp){
+						this.appName = app.name
+					}
+				});
+				this.$parent.activeAppId = val || this.activedApp; 
+				this.$nextTick(() => {
+					this.loading = false;
+				})
+			},
+			arraySpanMethod({ row, column, rowIndex, columnIndex }){
+				if (columnIndex === 1) {
+					let mergeIndex = this.mergeIndex.indexOf(rowIndex);
+			     	if (mergeIndex != -1) {
+			    		return {
+			              	rowspan: this.mergeSize[mergeIndex],
+			              	colspan: 1
+			            };
+			     	} else {
+			            return {
+			              	rowspan: 0,
+			              	colspan: 0
+			            };
+					}
+				}
+			}
+		},
+		mounted(){
+		},
+		created(){
+			this.$parent.loadApps(false, apps=>{
+				this.apps = apps
+				if(this.$parent.activeAppId){
+					this.activedApp = this.$parent.activeAppId;
+				}else if(apps.length > 0){
+					this.activedApp = apps[0]['id'];
+				}
+				this.apps.forEach( app => {
+					if(app.id == this.activedApp){
+						this.appName = app.name
+					}
+				})
+				this.loadAuthes();
+			});
+		}
+	}
+</script>
+</th:block>
+</html>

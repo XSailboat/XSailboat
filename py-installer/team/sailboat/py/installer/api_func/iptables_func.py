@@ -1,8 +1,10 @@
 import ipaddress
 import json
+import os
 import platform
 import sys
 from datetime import datetime
+from json import JSONDecodeError
 
 import iptc
 
@@ -164,8 +166,13 @@ def load_iptables(config_path):
     config = {}
     # 加载配置文件
     with open(config_path, 'r', encoding='utf-8') as file:
-        # 使用 json.load() 方法将 JSON 文件内容加载到一个字典中
-        config = json.load(file)
+        try:
+            # 使用 json.load() 方法将 JSON 文件内容加载到一个字典中
+            config = json.load(file)
+        except JSONDecodeError as e:
+            raise "配置文件解析失败，文件内容为空!"
+
+
 
     apps = config["apps"]
     hosts = config["hosts"]

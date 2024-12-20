@@ -2,7 +2,6 @@ package team.sailboat.base ;
 
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -13,7 +12,6 @@ import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.event.IXListener;
 import team.sailboat.commons.fan.event.XEvent;
 import team.sailboat.commons.fan.event.XListenerAssist;
-import team.sailboat.commons.fan.excep.WrapException;
 import team.sailboat.commons.fan.http.HttpClient;
 import team.sailboat.commons.fan.http.ISigner;
 import team.sailboat.commons.fan.http.xca.XAppSigner;
@@ -21,6 +19,13 @@ import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * HttpClient提供器（抽象基类）
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public abstract class HttpClientProvider implements Supplier<HttpClient>
 {
 	static final Logger sLogger = LoggerFactory.getLogger(HttpClientProvider.class) ;
@@ -29,7 +34,7 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 	String mName ;
 	
 	private HttpClient mHttpClient ;
-	private URL[] mServiceAddrs ;
+	private URI[] mServiceAddrs ;
 	
 	String mAppKey ;
 	String mAppSecret ;
@@ -52,11 +57,22 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 		mName = aName ;
 	}
 	
-	public URL[] getServiceAddrs()
+	/**
+	 * 取得服务地址
+	 * 
+	 * @return
+	 */
+	public URI[] getServiceAddrs()
 	{
 		return mServiceAddrs ;
 	}
-	protected void setServiceAddrs(URL[] aServiceAddrs)
+	
+	/**
+	 * 设置服务地址
+	 * 
+	 * @param aServiceAddrs
+	 */
+	protected void setServiceAddrs(URI[] aServiceAddrs)
 	{
 		if(!JCommon.equals(mServiceAddrs, aServiceAddrs))
 		{
@@ -125,29 +141,23 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 		}
 	}
 	
+	
 	@Override
 	public HttpClient get()
 	{
 		if(mHttpClient == null && XC.isNotEmpty(mServiceAddrs))
 		{
-			try
-			{
-				mHttpClient = createHttpClient(mServiceAddrs) ;
-			}
-			catch (MalformedURLException e)
-			{
-				WrapException.wrapThrow(e) ;
-			}
+			mHttpClient = createHttpClient(mServiceAddrs) ;
 		}
 		return mHttpClient ;
 	}
 	
-	protected HttpClient createHttpClient(URL[] aServiceAddrs) throws MalformedURLException
+	protected HttpClient createHttpClient(URI[] aServiceAddrs)
 	{
 		return createHttpClient(aServiceAddrs, mAppKey, mAppSecret) ;
 	}
 	
-	protected HttpClient createHttpClient(URL[] aServiceAddrs , String aAppKey , String aAppSecret) throws MalformedURLException
+	protected HttpClient createHttpClient(URI[] aServiceAddrs , String aAppKey , String aAppSecret)
 	{
 		Assert.notEmpty(aServiceAddrs , "未指定服务地址URL！") ;
 		if(XString.isEmpty(mAppKey))
@@ -157,7 +167,7 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 		else
 		{
 			Assert.isTrue(aServiceAddrs.length == 1 , "需要签名认证的服务暂不支持多服务地址！");
-			return HttpClient.ofUrl(aServiceAddrs[0] , aAppKey, aAppSecret , mSigner , true) ;
+			return HttpClient.ofURI(aServiceAddrs[0] , aAppKey, aAppSecret , mSigner , true) ;
 		}
 	}
 	
@@ -172,14 +182,7 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 			HttpClient client = mCachedClientMap.get(aAppKey) ;
 			if(client == null)
 			{
-				try
-				{
-					client = createHttpClient(mServiceAddrs, aAppKey, aAppSecret) ;
-				}
-				catch (MalformedURLException e)
-				{
-					WrapException.wrapThrow(e) ;
-				}
+				client = createHttpClient(mServiceAddrs, aAppKey, aAppSecret) ;
 				mCachedClientMap.put(key , client) ;
 			}
 			return client ;
@@ -209,9 +212,16 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 //		
 //	}
 	
-	public static HttpClientProvider ofApp(String aUrl)
+	/**
+	 * 
+	 * 构造指定uri的HttpClient提供器
+	 * 
+	 * @param aUri
+	 * @return
+	 */
+	public static HttpClientProvider ofApp(String aUri)
 	{
-		return ofApp(aUrl, null, null) ;
+		return ofApp(aUri , null, null) ;
 	}
 	
 	public static HttpClientProvider ofService(String aName , Supplier<String> aServiceAddrSupplier) throws MalformedURLException
@@ -221,22 +231,14 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 	
 	/**
 	 * 
-	 * @param aUrl
+	 * @param aUri
 	 * @param aAppKey				
 	 * @param aAppSecret
 	 * @return
 	 */
-	public static HttpClientProvider ofApp(String aUrl , String aAppKey , String aAppSecret)
+	public static HttpClientProvider ofApp(String aUri , String aAppKey , String aAppSecret)
 	{
-		try
-		{
-			return new SimpleHttpClientProvider(URI.create(aUrl).toURL() , aAppKey, aAppSecret) ;
-		}
-		catch (MalformedURLException e)
-		{
-			WrapException.wrapThrow(e) ;
-			return null ;				// dead code
-		}
+		return new SimpleHttpClientProvider(URI.create(aUri) , aAppKey, aAppSecret) ;
 	}
 	
 	/**
@@ -250,16 +252,38 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 		return ZKHttpClientProvider.ofSysApp_0(aAppDirName , null) ;
 	}
 	
+	/**
+	 * 
+	 * 平台应用的HttpClient提供器
+	 * 
+	 * @param aAppDirName
+	 * @param aContextPath
+	 * @return
+	 * @throws Exception
+	 */
 	public static HttpClientProvider ofSysApp(String aAppDirName , String aContextPath) throws Exception
 	{
 		return ZKHttpClientProvider.ofSysApp_0(aAppDirName , aContextPath) ;
 	}
 	
+	/**
+	 * 平台缺省hdfs的HttpClient的提供器
+	 * @return
+	 * @throws Exception
+	 */
 	public static HttpClientProvider ofSysDefaultHdfs() throws Exception
 	{
 		return ZKHttpClientProvider.ofSysDefaultHdfs_0() ;
 	}
 	
+	/**
+	 * 平台API网关客户端HttpClient提供器,Https协议的
+	 * 
+	 * @param aAppKey
+	 * @param aAppSecret
+	 * @return
+	 * @throws Exception
+	 */
 	public static HttpClientProvider ofGatewaySSL(String aAppKey , String aAppSecret) throws Exception
 	{
 		HttpClientProvider pvd = ZKHttpClientProvider.ofSysApp_SSL(SysConst.sAppName_SailMSGateway , null) ;
@@ -271,11 +295,28 @@ public abstract class HttpClientProvider implements Supplier<HttpClient>
 		return pvd ;
 	}
 	
+	/**
+	 * 平台API网关客户端HttpClient提供器
+	 * 
+	 * @param aAppKey
+	 * @param aAppSecret
+	 * @return
+	 * @throws Exception
+	 */
 	public static HttpClientProvider ofGateway(String aAppKey , String aAppSecret) throws Exception
 	{
 		return ofGateway(aAppKey, aAppSecret, null) ;
 	}
 	
+	/**
+	 * 平台API网关客户端HttpClient提供器
+	 * 
+	 * @param aAppKey
+	 * @param aAppSecret
+	 * @param aContextPath
+	 * @return
+	 * @throws Exception
+	 */
 	public static HttpClientProvider ofGateway(String aAppKey , String aAppSecret , String aContextPath) throws Exception
 	{
 		HttpClientProvider pvd = ofSysApp(SysConst.sAppName_SailMSGateway , aContextPath) ;

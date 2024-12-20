@@ -33,6 +33,13 @@ import team.sailboat.commons.fan.serial.StreamAssist;
 import team.sailboat.commons.fan.struct.Tuples;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * Http(s)客户端
+ *
+ * @author yyl
+ * @since 2024年11月27日
+ */
 public abstract class HttpClient implements IRestClient
 {
 	
@@ -266,7 +273,7 @@ public abstract class HttpClient implements IRestClient
 			if(content.startsWith("["))
 				return new JSONArray(content) ;
 			else if(content.startsWith("{"))
-				return new JSONObject(content) ;
+				return JSONObject.of(content) ;
 			else if(XString.isEmpty(content))
 				return null ;
 		}
@@ -415,13 +422,13 @@ public abstract class HttpClient implements IRestClient
 			strBld.append(mCoder.splitEncodePath(path)) ;
 		}
 		//参数
-		Collection<String> keys = aRequest.getUrlParamKeys() ;
+		Collection<String> keys = aRequest.getQueryParamKeys() ;
 		if(XC.isNotEmpty(keys))
 		{
 			boolean first = true ;
 			for(String key : keys)
 			{
-				SizeIter<String> sit = aRequest.getUrlParamValues(key) ;
+				SizeIter<String> sit = aRequest.getQueryParamValues(key) ;
 				if(sit == null || sit.isEmpty())
 					sit = new ArrayIterator<String>(new String[] {null}) ;
 				for(String val : sit)
@@ -445,10 +452,25 @@ public abstract class HttpClient implements IRestClient
 		return strBld.toString() ;
 	}
 	
+	/**
+	 * 
+	 * HttpClient所连接的服务的uri
+	 * 
+	 * @return
+	 */
+	public String getUri()
+	{
+		return URLBuilder.create().protocol(getProtocol())
+				.host(getHost())
+				.port(getPort())
+				.path(getContextPath())
+				.toString() 	;
+	}
+	
 	@Override
 	public String toString()
 	{
-		return getProtocol() + "://"+getHost()+":"+getPort() + JCommon.defaultIfEmpty(getContextPath() , "") ;
+		return getUri() ;
 	}
 	
 	/**
@@ -456,63 +478,58 @@ public abstract class HttpClient implements IRestClient
 	 * @param aUrl
 	 * @return
 	 */
-	public static HttpClient ofUrl(URL aUrl)
+	public static HttpClient ofURI(URI aUri)
 	{
-		return ofUrl(aUrl, false) ;
+		return ofURI(aUri, false) ;
 	}
 	
-	public static HttpClient ofUrl(URL aUrl , boolean aPathAsContextPath)
+	public static HttpClient ofURI(URI aUri , String aAppKey , String aAppSecret , ISigner aSigner)
 	{
-		HttpClient client = null ;
-		if("http".equals(aUrl.getProtocol()))
-		{
-			client = HttpClient.of(aUrl.getHost() , aUrl.getPort()) ;
-		}
-		else if("https".equals(aUrl.getProtocol()))
-			client = HttpClient.ofSSL(aUrl.getHost() , aUrl.getPort()) ;
-		else
-			throw new IllegalArgumentException("不支持的协议："+aUrl.getProtocol()) ;
-		if(aPathAsContextPath && XString.isNotEmpty(aUrl.getPath()))
-			client.setContextPath(aUrl.getPath()) ;
-		return client ;
+		return ofURI(aUri, aAppKey, aAppSecret, aSigner, false) ;
 	}
 	
-	public static HttpClient ofUrl(URL aUrl , String aAppKey , String aAppSecret , ISigner aSigner)
-	{
-		return ofUrl(aUrl, aAppKey, aAppSecret, aSigner, false) ;
-	}
-	
-	public static HttpClient ofUrl(String aUrl , String aAppKey , String aAppSecret , ISigner aSigner
+	public static HttpClient ofURI(String aUri , String aAppKey , String aAppSecret , ISigner aSigner
 			, boolean aPathAsContextPath) throws MalformedURLException
 	{
-		return ofUrl(new URL(aUrl) , aAppKey, aAppSecret, aSigner, aPathAsContextPath) ;
+		return ofURI(URI.create(aUri) , aAppKey, aAppSecret, aSigner, aPathAsContextPath) ;
 	}
 	
-	public static HttpClient ofUrl(URL aUrl , String aAppKey , String aAppSecret , ISigner aSigner
-			, boolean aPathAsContextPath)
+	public static HttpClient ofURI(URI aUri , boolean aPathAsContextPath)
 	{
-		HttpClient client = null ;
-		if("http".equals(aUrl.getProtocol()))
+		HttpClient client = switch(aUri.getScheme())
 		{
-			client = HttpClient.of(aUrl.getHost() , aUrl.getPort() , aAppKey , aAppSecret , aSigner) ;
-		}
-		else if("https".equals(aUrl.getProtocol()))
-			client = HttpClient.ofSSL(aUrl.getHost() , aUrl.getPort() , aAppKey , aAppSecret , aSigner) ;
-		else
-			throw new IllegalArgumentException("不支持的协议："+aUrl.getProtocol()) ;
-		if(aPathAsContextPath)
-			client.setContextPath(aUrl.getPath()) ;
+			case "http" -> HttpClient.of(aUri.getHost() , aUri.getPort()) ;
+			case "https" -> HttpClient.ofSSL(aUri.getHost() , aUri.getPort()) ;
+			default -> throw new IllegalArgumentException("不支持的协议："+aUri.getScheme()) ;
+		} ;
+		if(aPathAsContextPath && XString.isNotEmpty(aUri.getPath()))
+			client.setContextPath(aUri.getPath()) ;
 		return client ;
 	}
 	
-	public static HttpClient ofUrl(String aUrl) throws MalformedURLException
+	public static HttpClient ofURI(URI aUri , String aAppKey , String aAppSecret , ISigner aSigner
+			, boolean aPathAsContextPath)
 	{
-		return ofUrl(new URL(aUrl)) ;
+		HttpClient client = switch(aUri.getScheme())
+		{
+			case "http" -> HttpClient.of(aUri.getHost() , aUri.getPort() , aAppKey , aAppSecret , aSigner) ;
+			case "https" -> HttpClient.of(aUri.getHost() , aUri.getPort() , aAppKey , aAppSecret , aSigner) ;
+			default -> throw new IllegalArgumentException("不支持的协议："+aUri.getScheme()) ;
+		} ;
+			
+		if(aPathAsContextPath)
+			client.setContextPath(aUri.getPath()) ;
+		return client ;
 	}
 	
-	public static HttpClient ofUrl(String aUrl , boolean aPathAsContextPath) throws MalformedURLException
+	public static HttpClient ofURI(String aUri)
 	{
-		return ofUrl(new URL(aUrl) , aPathAsContextPath) ;
+		return ofURI(URI.create(aUri)) ;
+	}
+	
+	public static HttpClient ofURI(String aUri , boolean aPathAsContextPath)
+	{
+		return ofURI(URI.create(aUri) , aPathAsContextPath) ;
 	}
 	
 	public static HttpClient of(String aHost)
@@ -577,14 +594,14 @@ public abstract class HttpClient implements IRestClient
 	 * @param aPathAsContextPath			URL中的路径作为ContextPath使用
 	 * @return		Http或Https客户端
 	 */
-	public static HttpClient ofMulti(URL[] aUrls , boolean aPathAsContextPath)
+	public static HttpClient ofMulti(URI[] aUris , boolean aPathAsContextPath)
 	{
-		Assert.notEmpty(aUrls , "没有指定所需连接的URL！") ;
-		if(aUrls.length == 1)
-			return ofUrl(aUrls[0], aPathAsContextPath) ;
+		Assert.notEmpty(aUris , "没有指定所需连接的URI！") ;
+		if(aUris.length == 1)
+			return ofURI(aUris[0], aPathAsContextPath) ;
 		else
 		{
-			return new MultiUrlHttpClient(aUrls, aPathAsContextPath) ;
+			return new MultiUrlHttpClient(aUris, aPathAsContextPath) ;
 		}
 	}
 	

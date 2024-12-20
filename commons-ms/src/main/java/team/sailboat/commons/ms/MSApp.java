@@ -2,6 +2,7 @@ package team.sailboat.commons.ms;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.SocketException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import team.sailboat.commons.fan.app.AppContext;
 import team.sailboat.commons.fan.collection.PropertiesEx;
 import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.excep.WrapException;
+import team.sailboat.commons.fan.http.URLBuilder;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.log.Debug;
@@ -18,6 +20,13 @@ import team.sailboat.commons.fan.log.Log;
 import team.sailboat.commons.fan.sys.XNet;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * 微服务App
+ *
+ * @author yyl
+ * @since 2024年12月7日
+ */
 public class MSApp extends App
 {
 	
@@ -27,6 +36,22 @@ public class MSApp extends App
 	String mHttpsPort ;
 	
 	String mContextPath ;
+	
+	/**
+	 * 服务地址ip
+	 */
+	String mServiceIp ;
+	
+	/**
+	 * 微服务的服务地址			<br />
+	 * 如果启用了https，那么它就是https服务地址，如果没有启用https，那么它就是http服务端口
+	 */
+	String mServiceUri ;
+	
+	/**
+	 * http服务地址
+	 */
+	String mHttpServiceUri ;
 	
 	public static MSApp instance()
 	{
@@ -110,6 +135,42 @@ public class MSApp extends App
 			System.setProperty("logLevel", "INFO") ;
 		if(System.getProperty("logLevel.stdout") == null)
 			System.setProperty("logLevel.stdout" , System.getProperty("logLevel")) ;
+		
+		i = XC.indexOf(mAppArgs, "-service_ip") ;
+		if(i != -1 && i+1<mAppArgs.length)
+			mServiceIp = JCommon.defaultIfEmpty(mAppArgs[i+1] , null) ;
+		if(XString.isEmpty(mServiceIp))
+		{
+			try
+			{
+				mServiceIp = XNet.getPreferedIpv4() ;
+			}
+			catch (SocketException e)
+			{
+				WrapException.wrapThrow(e) ;
+			}
+		}
+		_rebuildServiceUri() ;
+	}
+	
+	void _rebuildServiceUri()
+	{
+		mServiceUri = URLBuilder.create().protocol(isSecure()?"https":"http")
+				.host(mServiceIp)
+				.port(Integer.parseInt(getServerPort()))
+				.path(mContextPath)
+				.toString() ;
+		if(isSecure())
+		{
+			if(mHttpPort != null)
+				mHttpServiceUri = URLBuilder.create().protocol("http")
+						.host(mServiceIp)
+						.port(Integer.parseInt(mHttpPort))
+						.path(mContextPath)
+						.toString() ;
+		}
+		else
+			mHttpServiceUri = mServiceUri ;
 	}
 	
 	@Override
@@ -126,6 +187,7 @@ public class MSApp extends App
 	public void setContextPath(String aContextPath)
 	{
 		mContextPath = aContextPath ;
+		_rebuildServiceUri();
 	}
 	
 	public String getContextPath()
@@ -142,6 +204,13 @@ public class MSApp extends App
 					.toString() ;
 	}
 	
+	/**
+	 * 
+	 * 排除了contextPath之后的本地API的path部分
+	 * 
+	 * @param aPath
+	 * @return
+	 */
 	public String toCodePath(String aPath)
 	{
 		if(XString.isEmpty(mContextPath) || !aPath.startsWith(mContextPath))
@@ -158,11 +227,76 @@ public class MSApp extends App
 		return this ;
 	}
 	
+	/**
+	 * 取得服务地址
+	 * @return
+	 */
+	public String getServiceUri()
+	{
+		return mServiceUri ;
+	}
+	
+	/**
+	 * 
+	 * 取得https服务地址<br />
+	 * 如果没有启用https，返回null
+	 * 
+	 * @return
+	 */
+	public String getHttpsServiceUri()
+	{
+		return isSecure()?mServiceUri:null ;
+	}
+	
+	/**
+	 * http服务地址。		<br />
+	 * 如果没有启用http服务，那么返回null
+	 * @return
+	 */
+	public String getHttpServiceUri()
+	{
+		return mHttpServiceUri ;
+	}
+	
+	/**
+	 * 
+	 * 是否启用了https			<br />
+	 * 如果https服务端口不为null，就认为启用了https
+	 * 
+	 * @return
+	 */
+	public boolean isSecure()
+	{
+		return mHttpsPort != null ;
+	}
+	
+	/**
+	 * 取得服务端口			<br />
+	 * 如果启用了https，将返回https服务端口，如果没有启用https，将返回http服务端口
+	 * 
+	 * @return
+	 */
+	public String getServerPort()
+	{
+		return System.getProperty("server-port") ;
+	}
+	
+	/**
+	 * 取得http服务端口。		
+	 * 
+	 * @return		如果没有启用Http服务，将返回null
+	 */
 	public String getHttpPort()
 	{
 		return mHttpPort ;
 	}
 	
+	/**
+	 * 
+	 * 取得https服务端口。
+	 * 
+	 * @return		如果没有启用Http服务，将返回null
+	 */
 	public String getHttpsPort()
 	{
 		return mHttpsPort;
@@ -173,6 +307,13 @@ public class MSApp extends App
 		return instance().toRealPath(aPath) ;
 	}
 	
+	/**
+	 * 
+	 * 排除了contextPath之后的本地API的path部分
+	 * 
+	 * @param aPath
+	 * @return
+	 */
 	public static String codePath(String aPath)
 	{
 		return instance().toCodePath(aPath) ;

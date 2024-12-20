@@ -3,7 +3,6 @@ import shutil
 import sys
 import tarfile
 import zipfile
-from pathlib import Path
 
 from loguru import logger
 
@@ -34,14 +33,14 @@ class AppPath():
         return AppPath.find_directory_by_name("data")
 
     @staticmethod
+    def get_data_file():
+        """"获取config目录所在的相对路径"""
+        return AppPath.find_directory_by_name("config")
+
+    @staticmethod
     def find_directory_by_name(directory_name):
         """在项目中查找指定文件名对于main的相对路径"""
-
-        start_dir = os.path.dirname(AppPath.find_project_root())
-        for root, dirs, files in os.walk(start_dir):
-            if directory_name in dirs:
-                return os.path.relpath(os.path.join(root, directory_name), start=AppPath.find_project_root())
-        return None
+        return os.path.relpath(AppPath.find_file_top_down(AppPath.find_project_root(), directory_name), os.getcwd())
 
     @staticmethod
     def get_directory_size(directory):
@@ -230,6 +229,7 @@ class AppPath():
         else:
             dir_names = [dir.strip() for dir in str(expect).split(",")]
             path = AppPath.find_path_with_files(dest_directory, dir_names)
+            logger.info(f"包含期望文件的父路径位:{path}")
             # 移动
             if path is not None:
                 AppSysCmd.cmd_run_root(f"mv {path}/* {dest_directory}")
@@ -239,4 +239,3 @@ class AppPath():
                 AppSysCmd.cmd_run_root(f"rm -rf {dest_directory}")
                 return False
         return True
-

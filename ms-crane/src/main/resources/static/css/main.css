@@ -83,11 +83,11 @@ body, html, #app {
 .app-wrapper .main-container .content .menu-pane .el-menu {
   background: #000 !important;
 }
-.app-wrapper .main-container .content .menu-pane .el-menu .el-submenu__title {
+.app-wrapper .main-container .content .menu-pane .el-menu .el-sub-menu__title {
   padding-left: 10px !important;
   padding-right: 10px !important;
 }
-.app-wrapper .main-container .content .menu-pane .el-menu .el-submenu__title .el-submenu__icon-arrow {
+.app-wrapper .main-container .content .menu-pane .el-menu .el-sub-menu__title .el-sub-menu__icon-arrow {
   right: 10px;
 }
 .app-wrapper .main-container .content .menu-pane .el-menu .el-menu-item {
@@ -100,7 +100,7 @@ body, html, #app {
 .app-wrapper .main-container .content .menu-pane .el-menu--collapse .el-menu-item > div {
   padding: 0 10px !important;
 }
-.app-wrapper .main-container .content .menu-pane .el-menu--collapse .el-submenu__title {
+.app-wrapper .main-container .content .menu-pane .el-menu--collapse .el-sub-menu__title {
   padding-left: 10px !important;
 }
 .app-wrapper .main-container .content .menu-pane .menu-collapse {
@@ -137,7 +137,7 @@ body, html, #app {
   background: #303134;
   border-left: none;
 }
-.app-wrapper .main-container .content .menu-pane .el-submenu__title {
+.app-wrapper .main-container .content .menu-pane .el-sub-menu__title {
   height: 40px !important;
   line-height: 40px;
   font-weight: normal;
@@ -145,7 +145,7 @@ body, html, #app {
   font-weight: normal;
   border: none;
 }
-.app-wrapper .main-container .content .menu-pane .el-submenu__title:hover {
+.app-wrapper .main-container .content .menu-pane .el-sub-menu__title:hover {
   background: #303134 !important;
   border-left: none;
 }
@@ -344,7 +344,7 @@ body, html, #app {
 }
 .card .dev-application .el-tag .el-tag__close {
   vertical-align: super;
-  transform: translateY(2px);
+  transform: translateY(-1px);
 }
 .card .el-dropdown {
   position: static;
@@ -360,10 +360,10 @@ body, html, #app {
 }
 
 .host-info-popover {
-  padding: 0px;
+  padding: 0px !important;
 }
-.host-info-popover .popper__arrow::after {
-  border-bottom-color: #ecf5ff !important;
+.host-info-popover .el-popper__arrow::before {
+  background-color: #f3f9ff !important;
 }
 
 .dropdown-btn {
@@ -399,6 +399,9 @@ body, html, #app {
   transform: rotate(180deg);
 }
 
+.el-dialog {
+  padding: 0px;
+}
 .el-dialog .el-dialog__header {
   padding: 14px 16px 12px;
   font-size: 16px;
@@ -418,12 +421,15 @@ body, html, #app {
 }
 
 .el-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   border: 1px solid #D1D1D1;
 }
 .el-table .el-table__header-wrapper tr th {
   background: #F0F0F0 !important;
 }
-.el-table .el-table__header-wrapper tr th:nth-last-child(2) {
+.el-table .el-table__header-wrapper tr th:nth-last-child(1) {
   border-right: none !important;
 }
 .el-table .el-table__body-wrapper .el-table__row td:last-child {
@@ -433,12 +439,19 @@ body, html, #app {
   text-align: justify;
 }
 .el-table .el-table__cell {
+  height: 38px;
   border-color: #D1D1D1 !important;
 }
 .el-table::before {
   display: none !important;
 }
 .el-table::after {
+  display: none !important;
+}
+.el-table .el-table__border-left-patch {
+  display: none;
+}
+.el-table .el-table__inner-wrapper::before {
   display: none !important;
 }
 

@@ -24,6 +24,7 @@ import javax.sql.PooledConnection;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import team.sailboat.commons.fan.collection.XC;
+import team.sailboat.commons.fan.dtool.dm.DMTool;
 import team.sailboat.commons.fan.dtool.h2.H2Tool;
 import team.sailboat.commons.fan.dtool.hive.HiveTool;
 import team.sailboat.commons.fan.dtool.mysql.MySQLTool;
@@ -46,6 +47,13 @@ import team.sailboat.commons.fan.lang.YClassLoader;
 import team.sailboat.commons.fan.struct.Wrapper;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * 数据库相关的工具集
+ *
+ * @author yyl
+ * @since 2024年12月11日
+ */
 public class DBHelper
 {
 	public static final String sDriverName_TDengine = "com.taosdata.jdbc.rs.RestfulDriver" ;
@@ -456,6 +464,7 @@ public class DBHelper
 		case PostgreSQL -> new PgTool() ;
 		case H2 -> new H2Tool() ;
 		case TDengine -> new TDengineTool() ;
+		case DM -> new DMTool() ;
 		default -> null ;
 		} ;
 	}

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:jsr107='http://www.ehcache.org/v3/jsr107' xmlns='http://www.ehcache.org/v3'
+    xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.1.xsd
+        http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.1.xsd">
+	
+    <!-- <persistence directory="${app.dir.data}" />   -->
+   <!-- <persistence directory="C:\cimstech_workspace\XIM3\StatisticsPublish\test" /> -->
+	    <!-- 可以把多个缓存配置相同的部分抽象出来形成cache-template模板 -->
+    <cache-template name="myDefaults">
+        <key-type>java.lang.Long</key-type>
+        <value-type>java.lang.String</value-type>
+        <heap unit="entries">200</heap> 
+        
+    </cache-template>
+    
+    <!-- 距离加入缓存开始超过1秒，就从缓存中清楚 -->
+    <cache alias="instantCache">
+		<key-type>java.lang.String</key-type>
+		<value-type>java.lang.Object</value-type>
+		<expiry>
+			<ttl unit="seconds">1</ttl>
+		</expiry>
+		<heap unit="entries">2000</heap>
+	</cache>
+
+	<!-- 距上次取用超过10秒，将从缓存中清除 -->
+	<cache alias="shortCache">
+		<key-type>java.lang.String</key-type>
+		<value-type>java.lang.Object</value-type>
+		<expiry>
+			<tti unit="seconds">10</tti>
+		</expiry>
+		<heap unit="entries">1000</heap>
+	</cache>
+	
+	<!-- 距上次取用超过2分钟，将从缓存中清除 -->
+	<cache alias="moderateCache">
+		<key-type>java.lang.String</key-type>
+		<value-type>java.lang.Object</value-type>
+		<expiry>
+			<tti unit="minutes">2</tti>
+		</expiry>
+		<heap unit="entries">2000</heap>
+	</cache>
+    
+    <!-- 距对象加入缓存开始超过10分钟，将从缓存中清除 -->
+	<cache alias="longCache">
+		<key-type>java.lang.String</key-type>
+		<value-type>java.lang.Object</value-type>
+		<expiry>
+			<ttl unit="minutes">10</ttl>
+		</expiry>
+		<heap unit="entries">2000</heap>
+	</cache>
+    
+
+   
+    <!-- 继承cache-template模板 -->
+    <cache alias="bar" uses-template="myDefaults">
+        <key-type>java.lang.Number</key-type>
+        <resources>
+        	<offheap unit="MB">20</offheap>
+        	<disk persistent="true" unit="MB" >30</disk>
+        </resources>
+
+    </cache>
+	
+	
+    <cache alias="simpleCache" uses-template="myDefaults" />
+    
+    
+</config>

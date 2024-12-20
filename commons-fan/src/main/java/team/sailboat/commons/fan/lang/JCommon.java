@@ -81,39 +81,112 @@ public class JCommon
 		return sYClassLoaderSupplier;
 	}
 
+	/**
+	 * 如果给定的测试值aTestVal为null，则返回默认值aDefaultVal，否则返回aTestVal。
+	 * 这是一个泛型方法，适用于任何类型的T。
+	 *
+	 * @param <T> 泛型类型
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultVal 默认值
+	 * @return aTestVal为null时返回aDefaultVal，否则返回aTestVal
+	 */
 	public static <T> T defaultIfNull(T aTestVal, T aDefaultVal)
 	{
 		return aTestVal == null ? aDefaultVal : aTestVal;
 	}
 	
+	/**
+	 * 如果给定的测试值aTestVal为null，则通过默认值供应商aDefaultValSupplier获取默认值，否则返回aTestVal。
+	 * 这是一个泛型方法，适用于任何类型的T。
+	 *
+	 * @param <T> 泛型类型
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultValSupplier 默认值供应商
+	 * @return aTestVal为null时返回通过aDefaultValSupplier获取的默认值，否则返回aTestVal
+	 */
 	public static <T> T defaultIfNull(T aTestVal, Supplier<T> aDefaultValSupplier)
 	{
 		return aTestVal == null ? aDefaultValSupplier.get(): aTestVal;
 	}
 
+	/**
+	 * 如果给定的测试值aTestVal为null，则返回默认值aDefaultVal，否则返回aTestVal。
+	 * 专门用于Integer类型。
+	 *
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultVal 默认值
+	 * @return aTestVal为null时返回aDefaultVal，否则返回aTestVal
+	 */
 	public static int defaultIfNull(Integer aTestVal, int aDefaultVal)
 	{
 		return aTestVal == null ? aDefaultVal : aTestVal;
 	}
 	
+	/**
+	 * 如果给定的测试值aTestVal为null，则返回默认值aDefaultVal，否则返回aTestVal.get()。
+	 * 专门用于自定义的XInt类型，假设XInt是一个包含get()方法的包装类型。
+	 *
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultVal 默认值
+	 * @return aTestVal为null时返回aDefaultVal，否则返回aTestVal.get()
+	 */
 	public static int defaultIfNull(XInt aTestVal , int aDefaultVal)
 	{
 		return aTestVal == null?aDefaultVal:aTestVal.get() ;
 	}
 	
+	/**
+	 * 如果给定的测试值aTestVal为null，则返回默认值aDefaultVal，否则返回aTestVal。
+	 * 专门用于Long类型。
+	 *
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultVal 默认值
+	 * @return aTestVal为null时返回aDefaultVal，否则返回aTestVal
+	 */
 	public static long defaultIfNull(Long aTestVal, long aDefaultVal)
 	{
 		return aTestVal == null ? aDefaultVal : aTestVal;
 	}
 	
+	/**
+	 * 如果给定的测试值aTestVal为null，则返回默认值aDefaultVal，否则返回aTestVal。
+	 * 专门用于Boolean类型。
+	 *
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultVal 默认值
+	 * @return aTestVal为null时返回aDefaultVal，否则返回aTestVal
+	 */
 	public static boolean defaultIfNull(Boolean aTestVal, boolean aDefaultVal)
 	{
 		return aTestVal == null ? aDefaultVal : aTestVal;
 	}
 	
+	/**
+	 * 如果给定的测试值aTestVal为null或为空字符串（长度为0），则返回默认值aDefaultVal，否则返回aTestVal。
+	 * 这是一个泛型方法，适用于任何实现了CharSequence接口的类型T。
+	 *
+	 * @param <T> 泛型类型，必须是CharSequence的子类型
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultVal 默认值
+	 * @return aTestVal为null或为空字符串时返回aDefaultVal，否则返回aTestVal
+	 */
 	public static <T extends CharSequence> T defaultIfEmpty(T aTestVal , T aDefaultVal)
 	{
 		return aTestVal == null || aTestVal.length() == 0?aDefaultVal:aTestVal ;
+	}
+	
+	/**
+	 * 如果给定的测试值aTestVal为null或为空字符串（长度为0），则通过默认值供应商aDefaultVal获取默认值，否则返回aTestVal。
+	 * 这是一个泛型方法，适用于任何实现了CharSequence接口的类型T。
+	 *
+	 * @param <T> 泛型类型，必须是CharSequence的子类型
+	 * @param aTestVal 需要检查的测试值
+	 * @param aDefaultVal 默认值供应商
+	 * @return aTestVal为null或为空字符串时返回通过aDefaultVal获取的默认值，否则返回aTestVal
+	 */
+	public static <T extends CharSequence> T defaultIfEmpty_0(T aTestVal , Supplier<T> aDefaultVal)
+	{
+		return aTestVal == null || aTestVal.length() == 0?aDefaultVal.get():aTestVal ;
 	}
 
 	/**
@@ -544,5 +617,79 @@ public class JCommon
 	public static <T extends Comparable<T>> int compare(T aVal0 , T aVal1)
 	{
 		return aVal0==null?(aVal1==null?0:1):(aVal1==null?-1:aVal0.compareTo(aVal1)) ;
+	}
+	
+	/**
+	 * 比较两个泛型数组指定范围内的元素是否相等。
+	 *
+	 * @param aArray_1 第一个数组
+	 * @param aFrom_1 第一个数组开始比较的起始索引
+	 * @param aArray_2 第二个数组
+	 * @param aFrom_2 第二个数组开始比较的起始索引
+	 * @param aLen 要比较的元素个数
+	 * @return 如果两个数组在指定范围内的元素都相等，则返回true；否则返回false
+	 * 注意：此方法依赖于一个未显示的equals方法来判断元素是否相等，可能是一个工具方法或Java自带的Object.equals。
+	 */
+	public static <T> boolean equalsOfRange(T[] aArray_1 , int aFrom_1 , T[] aArray_2 , int aFrom_2 , int aLen)
+	{
+		if(aFrom_1+aLen<=aArray_1.length && aFrom_2+aLen<=aArray_2.length)
+		{
+			for(int i=0 ; i<aLen ; i++)
+			{
+				if(!equals(aArray_1[aFrom_1+i] , aArray_2[aFrom_2+i]))
+					return false ;
+			}
+			return true ;
+		}
+		return false ;
+	}
+	
+	/**
+	 * 比较两个字符数组指定范围内的元素是否相等。
+	 *
+	 * @param aArray_1 第一个字符数组
+	 * @param aFrom_1 第一个字符数组开始比较的起始索引
+	 * @param aArray_2 第二个字符数组
+	 * @param aFrom_2 第二个字符数组开始比较的起始索引
+	 * @param aLen 要比较的元素个数
+	 * @return 如果两个字符数组在指定范围内的元素都相等，则返回true；否则返回false
+	 */
+	public static boolean equalsOfRange(char[] aArray_1 , int aFrom_1 , char[] aArray_2 , int aFrom_2 , int aLen)
+	{
+		if(aFrom_1+aLen<=aArray_1.length && aFrom_2+aLen<=aArray_2.length)
+		{
+			for(int i=0 ; i<aLen ; i++)
+			{
+				if(aArray_1[aFrom_1+i] != aArray_2[aFrom_2+i])
+					return false ;
+			}
+			return true ;
+		}
+		return false ;
+	}
+	
+	/**
+	 * 比较两个字节数组指定范围内的元素是否相等。
+	 *
+	 * @param aArray_1 第一个字节数组
+	 * @param aFrom_1 第一个字节数组开始比较的起始索引
+	 * @param aArray_2 第二个字节数组
+	 * @param aFrom_2 第二个字节数组开始比较的起始索引
+	 * @param aLen 要比较的元素个数
+	 * @return 如果两个字节数组在指定范围内的元素都相等，则返回true；否则返回false
+	 * 注意：此方法直接使用 '!=' 来比较字节值。
+	 */
+	public static boolean equalsOfRange(byte[] aArray_1 , int aFrom_1 , byte[] aArray_2 , int aFrom_2 , int aLen)
+	{
+		if(aFrom_1+aLen<=aArray_1.length && aFrom_2+aLen<=aArray_2.length)
+		{
+			for(int i=0 ; i<aLen ; i++)
+			{
+				if(!equals(aArray_1[aFrom_1+i] , aArray_2[aFrom_2+i]))
+					return false ;
+			}
+			return true ;
+		}
+		return false ;
 	}
 }

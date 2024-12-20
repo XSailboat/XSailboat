@@ -171,6 +171,7 @@ public class DBRecordWriter implements ICommitKit
 		mLsnAssist.addListener(aLsn) ;
 	}
 	
+	@Override
 	public void prepare(Connection aConn) throws SQLException
 	{
 		mConn = aConn ;

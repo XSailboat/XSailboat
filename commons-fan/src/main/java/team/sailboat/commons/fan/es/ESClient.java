@@ -38,7 +38,7 @@ public class ESClient
 	
 	public ESClient(String aUrl) throws MalformedURLException
 	{
-		this(HttpClient.ofUrl(aUrl)) ;
+		this(HttpClient.ofURI(aUrl)) ;
 	}
 	
 	public ESClient(HttpClient aClient)

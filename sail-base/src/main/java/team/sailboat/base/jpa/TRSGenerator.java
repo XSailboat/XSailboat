@@ -15,7 +15,7 @@ import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.text.IDGen;
 
 /**
- * 
+ * JPA的id生成器
  *
  * @author yyl
  * @since 2024年9月30日

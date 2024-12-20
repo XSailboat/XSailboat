@@ -8,7 +8,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -622,10 +624,12 @@ public class DRepository implements Closeable
 				do
 				{
 					tblClass = (Class<? extends DBean>) tblClass.getSuperclass() ;
+					if(tblClass.equals(DBean.class))
+						break ;
 					key = getKey(tblClass) ;
 					map = mTableMap.get(key) ;
 				}
-				while(map == null && tblClass != null  && !tblClass.equals(DBean.class)) ;
+				while(map == null && tblClass != null) ;
 			}
 			Assert.notNull(map, "%s对应的表未load，不能创建bean", aBeanClass.getName()) ;
 			bean = createBean(aBeanClass, aPKs) ;
@@ -763,6 +767,52 @@ public class DRepository implements Closeable
 			throw new IllegalArgumentException(String.format("类%s对应的表未装载到此贮存器中" , aClass.getName())) ;
 	}
 	
+	/**
+	 * 
+	 * 根据一组bid获取对应的DBean对象列表
+	 * 
+	 * @param <T>		DBean的子类类型，即要返回的对象类型  
+	 * @param aClass	
+	 * @param aBids
+	 * @return
+	 */
+	public <T extends DBean> List<T> getByBids(Class<T> aClass , String... aBids)
+	{
+		return getByBids(aClass, Arrays.asList(aBids)) ;
+	}
+	
+	/**
+	 * 
+	 * 根据一组bid获取对应的DBean对象列表
+	 * 
+	 * @param <T>		DBean的子类类型，即要返回的对象类型  
+	 * @param aClass	
+	 * @param aBids
+	 * @return
+	 */
+	public <T extends DBean> List<T> getByBids(Class<T> aClass , Collection<String> aBids)
+	{
+		String key = getKey(aClass) ;
+		CLinkedHashMap<String , DBean> map =  mTableMap.get(key) ;
+		if(map != null)
+			return XC.extractAsArrayList(aBids , bid->(T)map.get(bid))  ;
+		else if(mProxyClasses.contains(aClass))
+		{
+			IDRWProxy proxy = getRWProxy() ;
+			try
+			{
+				return XC.extractAsArrayList(aBids, bid->proxy.getByPrimaryKeys(aClass , bid)) ;
+			}
+			catch (SQLException e)
+			{
+				WrapException.wrapThrow(e) ;
+				return null ;			// dead code
+			}
+		}
+		else
+			throw new IllegalArgumentException(String.format("类%s对应的表未装载到此贮存器中" , aClass.getName())) ;
+	}
+	
 	public <T extends DBean> T getOrCreateByBid(Class<T> aClass , String aBid)
 	{
 		T bean = getByBid(aClass, aBid) ;
@@ -794,6 +844,10 @@ public class DRepository implements Closeable
 		CLinkedHashMap<String , T> map =  (CLinkedHashMap<String, T>) mTableMap.get(key) ;
 		if(map != null)
 			map.forEachValues(aPred) ;
+		else
+		{
+			throw new IllegalStateException("%s对应的表未load，不能forEach遍历！".formatted(aClass.getName())) ;
+		}
 	}
 	
 	/**
@@ -1110,6 +1164,8 @@ public class DRepository implements Closeable
 						for(Object obj : asArray(value))
 							mMapIndex.add(obj, (T)aEvent.source) ;
 					}
+					else		// 支持null键
+						mMapIndex.add(null , (T)aEvent.source) ;
 				}
 				else if(aEvent.type == DEventType.BEAN_DELETE)
 				{
@@ -1121,6 +1177,8 @@ public class DRepository implements Closeable
 						for(Object obj : asArray(value))
 							mMapIndex.remove(obj , (T)aEvent.source) ;
 					}
+					else	// 支持null键
+						mMapIndex.remove(null , (T)aEvent.source) ;
 				}
 				else if(aEvent.type == DEventType.PROPERTY_CHANGE)
 				{
@@ -1140,8 +1198,8 @@ public class DRepository implements Closeable
 							return ;
 					}
 					
-					Set<Object> removeSet = XC.hashSet(asArray(params_2)) ;
-					Set<Object> addSet = XC.hashSet(asArray(params_1)) ;
+					Set<Object> removeSet = params_2==null?Collections.singleton(null):XC.hashSet(asArray(params_2)) ;
+					Set<Object> addSet =  params_1==null?Collections.singleton(null):XC.hashSet(asArray(params_1)) ;
 					removeSet.removeAll(addSet) ;		//此时removeSet和addSet已经没有交集
 //					addSet.removeAll(removeSet) ;
 //					mMapIndex.remove(params_2, (T)aEvent.source) ;

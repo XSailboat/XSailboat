@@ -92,9 +92,7 @@ public class App
 	{
 		try
 		{
-			Class<?> clazz = getClass().getClassLoader().loadClass("com.cimstech.xfront.common.Slf4jLogAdapter") ;
-//			Class<?> clazz = JCommon.getYClassLoader().loadClass("com.cimstech.xfront.common.Slf4jLogAdapter") ;
-//			Class<?> clazz = Class.forName("com.cimstech.xfront.common.Slf4jLogAdapter") ;
+			Class<?> clazz = getClass().getClassLoader().loadClass("team.sailboat.commons.fan.log.Slf4jLogAdapter") ;
 			try
 			{
 				Log.addListener((ILogListener)clazz.getConstructor().newInstance());
@@ -180,6 +178,10 @@ public class App
 		return this ;
 	}
 	
+	/**
+	 * 取得程序运行的系统环境			<br>
+	 * @return	dev（开发环境）、test(测试环境)、prod（生产环境）
+	 */
 	public String getSysEnv()
 	{
 		return mSysEnv;

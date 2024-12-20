@@ -95,11 +95,11 @@ body, html, #app {
                 .el-menu {
                     background: #000 !important;
                     
-                    .el-submenu__title {
+                    .el-sub-menu__title {
 							padding-left: 10px !important;
 							padding-right: 10px !important;
 							
-							.el-submenu__icon-arrow {
+							.el-sub-menu__icon-arrow {
 								right: 10px;	
 							}
 					}
@@ -117,7 +117,7 @@ body, html, #app {
                         padding: 0 10px !important;
                     }
 
-                    .el-submenu__title {
+                    .el-sub-menu__title {
                         padding-left: 10px !important;
                     }
                 }
@@ -164,7 +164,7 @@ body, html, #app {
                     }
                 }
 
-                .el-submenu__title {
+                .el-sub-menu__title {
                     height: 40px !important;
                     line-height: 40px;
                     font-weight: normal;
@@ -435,7 +435,7 @@ body, html, #app {
 
         .el-tag__close {
             vertical-align: super;
-            transform: translateY(2px);
+            transform: translateY(-1px);
         }
 
     }
@@ -456,11 +456,11 @@ body, html, #app {
 }
 
 .host-info-popover {
-    padding: 0px;
+    padding: 0px !important;
 
-    .popper__arrow {
-        &::after {
-            border-bottom-color: #ecf5ff !important;
+    .el-popper__arrow {
+        &::before {
+			background-color: #f3f9ff !important;;
         }
     }
 }
@@ -509,6 +509,7 @@ body, html, #app {
 
 
 .el-dialog {
+	padding: 0px;
     .el-dialog__header {
         padding: 14px 16px 12px;
         font-size: 16px;
@@ -534,7 +535,11 @@ body, html, #app {
 }
 
 .el-table {
-
+	
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	
     border: 1px solid #D1D1D1;
 
     .el-table__header-wrapper {
@@ -543,7 +548,7 @@ body, html, #app {
             th {
                 background: #F0F0F0 !important;
 
-                &:nth-last-child(2) {
+                &:nth-last-child(1) {
                     border-right: none !important;
                 }
             }
@@ -566,6 +571,7 @@ body, html, #app {
 
     // 设置单元格样式
     .el-table__cell {
+		height: 38px;
         border-color: #D1D1D1 !important;
     }
 
@@ -576,9 +582,20 @@ body, html, #app {
     &::after {
         display: none !important;
     }
+	
+	.el-table__border-left-patch {
+		display: none;
+	}
+	
+	.el-table__inner-wrapper {
+		&::before {
+		    display: none !important;
+		}
+	}
 }
 
 .add-host-dialog {
+	
 	.el-select {
 		.el-tag--info {
 			background-color: #D9ECFF !important;

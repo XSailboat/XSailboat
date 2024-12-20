@@ -1,0 +1,234 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="home">
+	<template id="home">
+		<el-row class="home" type="flex" style="flex-direction: column;flex: 1;height: 0;padding: 30px;">
+			<div style="display: flex;flex-direction: column; width: 100%;">
+				<el-row type="flex" style="height: 240px;">
+					<div class="el-card card-left" style="width: 280px;">
+						<div class="title">注册应用</div>
+						<i class="icon icon-yingyong" style="color: #409eff1a;"></i>
+						<span class="amount">{{app.totalAmount}}</span>
+						<div class="foot">
+							<span style="color: #00bb00;">
+								<i class="fa fa-check-circle"></i>
+								启用：{{app.enabledAmount}}
+							</span>
+							<span style="color: #ed930d;">
+								<i class="fa fa-times-circle "></i>
+								未启用：{{app.unenabledAmount}}
+							</span>
+						</div>
+					</div>
+					<div class="el-card  card-right" style="width: 280px;margin-right: 40px;">
+						<div class="title">注册用户</div>
+						<i class="icon icon-yonghu" style="color: #49b9041a;"></i>
+						<span class="amount">{{user.totalAmount}}</span>
+						<div class="foot">
+							<span style="color: #00bb00;">
+								<i class="fa fa-check"></i>
+								正常：{{user.unlockedAmount}}
+							</span>
+							<span style="color: #ed930d;">
+								<i class="fa fa-lock"></i>
+								锁定：{{user.lockedAmount}}
+							</span>
+						</div>
+					</div>
+
+					<div class="el-card box-card" style="flex: 1;width: 0;align-items: flex-start;overflow: visible;">
+						<div class="title" style="display: flex;align-items: center;">
+							<span style="flex: 1;">登录次数Top10</span>
+							<el-tooltip content="明细" placement="top">
+								<el-link type="primary" :underline="false" @click="dialogVisible=true">
+									<el-icon><Tickets /></el-icon>
+								</el-link>
+							</el-tooltip>
+							
+						</div>
+						<div id="chart_top" style="flex: 1;height: 0;width: 100%;"></div>
+					</div>
+				</el-row>
+			</div>
+
+			<div style="flex: 1;height: 0;margin-top: 40px;display: flex;">
+				<div class="el-card box-card" style="align-items: flex-start;flex: 1;width: 0;">
+					<div class="title">
+						<span>最近30天各个应用和总体的访问次数</span>
+					</div>
+					<div id="chart" style="flex: 1;height: 0;width: 100%;padding-right: 20px;"></div>
+				</div>
+			</div>
+
+			<el-dialog v-model="dialogVisible" title="用户登陆次数统计" class="no-padding" width="560">
+				<template #header>
+					<div style="display: flex;align-items: center;">
+						<el-icon><Tickets /></el-icon>
+						<span>用户登陆次数统计</span>
+					</div>
+				</template>
+				<el-table :data="tops" style="width: 100%;max-height: 600px;">
+					<el-table-column type="index" width="50" align="center"></el-table-column>
+					<el-table-column prop="displayName" label="姓名" min-width="180" ></el-table-column>
+					<el-table-column prop="times" label="登录次数" ></el-table-column>
+				</el-table>
+				<template #footer>
+					<div class="dialog-footer">
+						<span>加载前</span>
+						<el-input v-model="topN"  style="width: 70px;margin: 0 8px;"></el-input>
+						<el-button type="primary" @click="loadUsersLoginTop10">确 定</el-button>
+						<el-button @click="dialogVisible=false">关闭</el-button>
+					</div>
+				</template>
+			</el-dialog>
+		</el-row>
+	</template>
+	<script type="text/javascript" th:src="@{/public/3rds/echart/echarts.min.js}"></script>
+	<script>
+		var Home = {
+			template: "#home",
+			setup(props, context) {
+				const data = reactive({
+					app: {},
+					user: {},
+					topN: 10,
+					tops: [],
+					dialogVisible: false,
+				})
+
+				const loadAppSts = () => {
+					axios.get('sts/clientApp/amount').then(res => {
+						data.app = res.data;
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				const loadUserSts = () => {
+					axios.get('user/amount').then(res => {
+						data.user = res.data;
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				const loadUsersLoginTop10 = () => {
+					axios.get('sts/visitTimes/user/30d/topN?topN=' +  data.topN).then(res => {
+						data.tops = res.data;
+						if(data.topN != 10){
+							return;
+						}
+						var aChart = echarts.init(document.getElementById('chart_top'));
+						var dims = res.data.map(item => item.displayName);
+						var rows = res.data.map(item => item.times);
+						var option = {
+							color: ['#058DC7'],
+							tooltip: {
+								backgroundColor: "#ffffffe8",
+								borderWidth: 2,
+								borderColor: "#95b8e7e8",
+								textStyle: {color: "#000", fontSize: 13},
+								formatter: '{b}：{c}次'
+							},
+							grid: {
+								left: 10,
+								right: 0,
+								bottom: 10,
+								top: 20,
+								containLabel: true
+							},
+							legend: {
+								bottom: 0,
+								right: 10,
+								itemWidth: 14,
+								itemHeight: 10,
+								padding: [5, 5, 5, 120],
+								type: 'scroll'
+							},
+							xAxis: {type: 'category', splitLine: {show: false}, data: dims},
+							yAxis: {type: 'value', boundaryGap: [0, '100%'], splitLine: {lineStyle: {type: 'dashed', color: '#d0d4df'}}},
+							series: [{type: 'bar', barWidth: 30, data: rows}]
+						}
+						aChart.setOption(option);
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				const loadLineChart = () => {
+					axios.get('sts/visitTimes/clientApp/30d').then(res => {
+						if (res.data.length == 0) {
+							return;
+						}
+						var aChart = echarts.init(document.getElementById('chart'));
+						var seriesItem = {type: 'line', connectNulls: true, showSymbol: false}, series = [];
+						for (var i = 0; i < res.data[0].length - 1; i++) {
+							series.push(seriesItem);
+						}
+
+						var option = {
+							color: ['#058DC7', '#FF9655', '#24CBE5', '#64E572', '#6AF9C4', '#ED561B', '#50B432', '#6e7074'],
+							tooltip: {
+								trigger: 'axis',
+								backgroundColor: "#ffffffe8",
+								borderWidth: 2,
+								borderColor: "#95b8e7e8",
+								textStyle: {color: "#000", fontSize: 13},
+								formatter: function (params) {
+									var arr = params.map(p => {
+										return {
+											date: p.name,
+											name: p.seriesName,
+											color: p.color,
+											value: p.value[p.seriesIndex + 1]
+										}
+									}).sort((a, b) => {
+										return b.value - a.value
+									});
+									var htmls = [arr[0].date];
+									arr.forEach(item => {
+										htmls.push('<i class="fa fa-circle" style="color: ' + item.color + '"></i> ' + (item.name == 'total' ? '总计' : item.name) + '：' + item.value);
+									})
+									return htmls.join('<br>');
+								}
+							},
+							grid: {
+								left: 10,
+								right: 0,
+								bottom: 40,
+								top: 40,
+								containLabel: true
+							},
+							legend: {
+								bottom: 0,
+								right: 10,
+								itemWidth: 14,
+								itemHeight: 10,
+								padding: [5, 5, 5, 120],
+								type: 'scroll'
+							},
+							dataset: {
+								source: res.data
+							},
+							xAxis: {type: 'category', splitLine: {show: false}},
+							yAxis: {type: 'value', boundaryGap: [0, '100%'], splitLine: {lineStyle: {type: 'dashed', color: '#d0d4df'}}},
+							series: series
+						}
+						aChart.setOption(option);
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+
+				loadAppSts();
+				loadUserSts();
+				loadUsersLoginTop10();
+				loadLineChart();
+
+				return {
+					...toRefs(data),
+					loadUsersLoginTop10
+				}
+			}
+		}
+	</script>
+</th:block>
+
+</html>

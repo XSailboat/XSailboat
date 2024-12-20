@@ -14,21 +14,21 @@
                             :on-change="selectSuccess"
                             action="#"
                             :auto-upload="false">
-                        <el-button type="primary" slot="trigger" size="small">上传应用包<i class="el-icon-upload el-icon--right"></i>
+                        <el-button type="primary" slot="trigger">上传应用包 <el-icon><upload-filled/></el-icon>
                         </el-button>
                     </el-upload>
 
                 </div>
-                <el-table :data="tableData" size="small" :height="400" v-loading="loading" border>
+                <el-table :data="tableData" size="small" v-loading="loading" border>
                     <el-table-column type="index" label="#" align="center" width="50"></el-table-column>
                     <el-table-column prop="name" label="文件名称" align="center">
-                        <template slot-scope="scope">
+                        <template #default="scope">
                             <img style="width: 20px; height: 20px;" :src="getSvgPathBys(scope.row.name)"/>
                             <span style="vertical-align: super;">&nbsp;{{ scope.row.name }}</span>
                         </template>
                     </el-table-column>
                     <el-table-column prop="fileLen" label="大小" align="center">
-                        <template slot-scope="scope">
+                        <template #default="scope">
                             <el-tooltip class="item" effect="dark" :content="scope.row.fileLen + ''"
                                         placement="top">
                                         <span>{{formatBytes(scope.row.fileLen)}}</span>
@@ -36,39 +36,35 @@
                         </template>
                     </el-table-column>
                     <el-table-column prop="updateTime" label="上传时间" align="center">
-                        <div slot-scope="scope" style="display: flex;">
-                            <span style="flex: 1">{{ lastDateStr(scope.row.updateTime)}}</span>
-                            <i class="el-icon-delete del-icon"
-                               style="color: #F56C6C; font-size: 16px; display: none; line-height:23px; width: 50px; text-align: center;"
-                               @click="delFile(scope.row.name)"
-                            ></i>
-                        </div>
-
+                    	<template #default="scope">
+	                    	<div style="display: flex;">
+	                            <span style="flex: 1">{{ lastDateStr(scope.row.updateTime)}}</span>
+	                            <i class="el-icon-delete del-icon"
+	                               style="color: #F56C6C; font-size: 16px; display: none; line-height:23px; width: 50px; text-align: center;"
+	                               @click="delFile(scope.row.name)"
+	                            ></i>
+	                        </div>
+                    	</template>
                     </el-table-column>
                 </el-table>
             </div>
         </div>
     </template>
 
-    <components>
-    </components>
-
     <script>
-        var AppWare = {
+        const AppWare = {
             template: "#appWare",
-            data() {
-                return {
-                    tableData: [],
-                    loading: false
-                }
-            },
-
-            components: {},
-
-            props: {},
-            computed: {},
-            methods: {
-                delFile(name) {
+            
+            setup() {
+            	
+            	const { proxy } = getCurrentInstance();
+            	            	
+            	const data = reactive({
+            		tableData: [],
+            		loading: false
+            	});
+            	            	
+            	const delFile = name => {
                     this.$confirm("确定要删除文件【" + name + "】？", '确认删除', {
                         dangerouslyUseHTMLString: true,
                         showClose: false,
@@ -82,28 +78,16 @@
                                 name
                             }
                         }).then(res => {
-                            this.loadAppPkgAll();
+                        	loadAppPkgAll();
                         }).catch(error => {
-                            console.log(error);
-                            this.$message.error('删除文件过程中发生了异常！请联系管理员');
+                            console.error(error);
+                            proxy.error('删除文件过程中发生了异常！请联系管理员');
                         });
                     }).catch(_ => {
                     });
-                },
-
-                loadAppPkgAll() {
-                    this.loading = true;
-                    axios.get('appstore/appPkg/all').then(res => {
-                        this.loading = false;
-                        this.tableData = res.data;
-                    }).catch(error => {
-                        this.loading = false;
-                        console.log(error);
-                        this.$message.error('取得应用仓库中的所有应用软件包发生了异常！请联系管理员');
-                    });
-                },
-
-                selectSuccess(file) {
+                };
+                
+                const selectSuccess = file => {
                     const {name, raw} = file;
                     axios({
                         method: 'post',
@@ -116,21 +100,34 @@
                         },
                         data: raw
                     }).then(res => {
-                        this.loadAppPkgAll();
+                    	loadAppPkgAll();
                     }).catch(error => {
-                        console.log(error);
-                        this.$message.error('上传程序包发生了异常！请联系管理员');
+                        console.error(error);
+                        proxy.error('上传程序包发生了异常！请联系管理员');
                     });
+                };
+                
+                const loadAppPkgAll = () => {
+                    data.loading = true;
+                    axios.get('appstore/appPkg/all').then(res => {
+                        data.loading = false;
+                        data.tableData = res.data;
+                    }).catch(error => {
+                        data.loading = false;
+                        console.error(error);
+                        proxy.error('取得应用仓库中的所有应用软件包发生了异常！请联系管理员');
+                    });
+                };
+                
+                loadAppPkgAll();
 
-                }
-
-            },
-            watch: {},
-            mounted() {
-                this.loadAppPkgAll();
-            },
-            created() {
+            	return {
+            		...toRefs(data),
+            		delFile,
+            		selectSuccess
+            	}
             }
+           
         }
     </script>
 </th:block>

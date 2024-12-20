@@ -30,15 +30,22 @@ public interface AppConsts
 	
 	public static final String sAccessLogName = "AccessLog" ;
 	
-	/**
-	 * 代理安装程序上的接口。执行命令
-	 */
-	public static final String sApi_ExecCommands_POST = "/core/exec/commands" ;
-	
-	/**
-	 * 上传文件到SailPyInstaller
-	 */
-	public static final String sApi_UploadFile_POST = "/core/upload" ;
-	
 	public static final String sDefaultProcedureCatalog = "未分类" ;
+	
+	/**
+	 * 程序运行状态数据存储文件
+	 */
+	public static final String sFN_RunData = "runData.rcd" ;
+	
+	/**
+	 * 特定主机的规划信息同步状态。		<br />
+	 * 已经改变了，没有同步到相应主机
+	 */
+	public static final String sHostProfile_SyncStatus_changed = "changed" ;
+	
+	/**
+	 * 特定主机的规划信息同步状态。		<br />
+	 * 已同步
+	 */
+	public static final String sHostProfile_SyncStatus_sync = "sync" ;
 }

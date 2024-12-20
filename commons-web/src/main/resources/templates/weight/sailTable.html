@@ -1,0 +1,208 @@
+<!--
+ 支持分页查询，表格行单选
+ @author 冬季里歌唱的鱼
+ @since 2024-12-02
+-->
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org"
+>
+<th:block th:fragment="sailTable">
+    <template id="sailTable">
+        <div class="sail-table">
+            <el-table ref="elTable"
+                      :data="data"
+                      :class="multipleSelect ? '' : 'hidden-header-checkbox'"
+                      :border="border"
+                      :height="height"
+                      style="flex: 1"
+                      :current-row-key="currentRowKey"
+                      @row-click="rowClick"
+                      @select-all="selectAll"
+                      @select="checkboxSelect">
+                <slot></slot>
+            </el-table>
+            <el-pagination
+                    v-if="supportPagination"
+                    background
+                    class="mypage"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                    :current-page="page"
+                    :page-sizes="[10, 20, 50, 100]"
+                    :page-size="pageSize"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="total"
+            ></el-pagination>
+        </div>
+
+
+    </template>
+    <script>
+        var SailTable = {
+            template: "#sailTable",
+
+            props: {
+
+                data: {
+                    type: Array,
+                    default: () => []
+                },
+
+                border: {
+                    type: Boolean,
+                    default: false
+                },
+
+                height: {
+                    type: String,
+                    default: '100%'
+                },
+
+                currentRowKey: {
+                    type: String
+                },
+
+                supportPagination: {
+                    type: Boolean,
+                    default: false
+                },
+
+                total: {
+                    type: Number,
+                    default: 0
+                },
+
+                // 支持复选框多选
+                multipleSelect: {
+                    type: Boolean,
+                    default: true
+                },
+
+                // 点击行，复选框被勾选
+                clickRowSelect: {
+                    type: Boolean,
+                    default: false
+                },
+
+                modelValue: {
+                    type: Array,
+                    required: false
+                }
+            },
+
+            emits: ['handleSizeChange', 'handleCurrentChange', 'select', 'rowClick', 'selectAll', 'update:modelValue'],
+
+            setup(props, context) {
+
+                const rdata = reactive({
+                    pageSize: 10,
+                    page: 1,
+                    elTable: null
+                });
+
+
+                const handleSizeChange = val => {
+                    rdata.pageSize = val;
+                    context.emit('handleSizeChange', val);
+                }
+
+                const handleCurrentChange = val => {
+                    rdata.page = val;
+                    context.emit('handleCurrentChange', val);
+                }
+
+                let multipleSelection = props.modelValue ? props.modelValue : [];
+
+
+                /**
+                 * 当用户手动勾选数据行的 Checkbox 时触发的事件
+                 */
+                const checkboxSelect = (selection, row) => {
+                    rowSelect(row, 'checkboxClick', selections => {
+                        context.emit('select', selections, row);
+                        context.emit('update:modelValue', selections);
+                    });
+                }
+
+                /**
+                 *    当某一行被点击时会触发该事件
+                 */
+                const rowClick = (row, column, event) => {
+                    rowSelect(row, 'rowClick', selections => {
+                        context.emit('rowClick', row, column, event, selections);
+                        context.emit('update:modelValue', selections);
+                    });
+                }
+
+                const rowSelect = (row, type, selectedCallback) => {
+                    if (!props.multipleSelect) { // 不支持多选
+                        if (props.clickRowSelect || type === 'checkboxClick') {
+                            // 选已选中数据中判断当前点击的是否被选中
+                            if (multipleSelection[0] === row) { // 选中的是已有的 取消选中
+                                multipleSelection = [];
+                                rdata.elTable.clearSelection();
+                            } else {
+                                multipleSelection = [row];
+                                rdata.elTable.clearSelection();
+                                rdata.elTable.toggleRowSelection(row, true);
+                            }
+                        }
+                    } else {
+
+                        if (type === 'rowClick' && !props.clickRowSelect) {
+                            return;
+                        }
+
+                        let index = multipleSelection.findIndex(item => item === row);
+                        rdata.elTable.toggleRowSelection(row, index === -1);
+                        if (index === -1) {
+                            multipleSelection.push(row);
+                        } else {
+                            multipleSelection.splice(index, 1);
+                        }
+                    }
+                    // 勾选情况的回调
+                    selectedCallback(multipleSelection);
+                }
+
+                const selectAll = selections => {
+                    context.emit('selectAll', selections);
+                }
+
+                const selectDefaultCheckbox = () => {
+                    multipleSelection.forEach(selectRow => {
+                        nextTick(() => {
+                            rdata.elTable.toggleRowSelection(selectRow, true);
+                        });
+
+                    });
+                }
+
+                watch(() => props.data, newVals => {
+                    // 不保留勾选的状态
+                    multipleSelection = props.modelValue ? props.modelValue : [];
+                    selectDefaultCheckbox();
+                });
+
+
+                onMounted(() => {
+                    selectDefaultCheckbox()
+                });
+
+
+
+                return {
+                    ...toRefs(rdata),
+                    handleSizeChange,
+                    handleCurrentChange,
+                    checkboxSelect,
+                    rowClick,
+                    selectAll
+                }
+            }
+        }
+    </script>
+</th:block>
+</html>

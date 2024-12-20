@@ -19,7 +19,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.text.DecimalFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,6 +46,7 @@ import team.sailboat.commons.fan.collection.PropertiesEx;
 import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.excep.WrapException;
 import team.sailboat.commons.fan.file.FileUtils;
+import team.sailboat.commons.fan.infc.EFunction;
 import team.sailboat.commons.fan.json.JSONArray;
 import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.json.JSONString;
@@ -56,6 +56,13 @@ import team.sailboat.commons.fan.struct.Bits;
 import team.sailboat.commons.fan.text.XString;
 import team.sailboat.commons.fan.time.XTime;
 
+/**
+ * 
+ * Java Class类型相关的操作接口
+ *
+ * @author yyl
+ * @since 2024年11月22日
+ */
 public class XClassUtil
 {
 	static final DecimalFormat sDFmt = new DecimalFormat(",#.#");
@@ -111,6 +118,11 @@ public class XClassUtil
 	private static final Map<String , Class<?>> sCSNMap = new HashMap<>() ;
 	static Map<Class<?> , ITypeAdapter<?>> sTypeAdapters = new HashMap<>() ;
 	static final Map<String, String> sClassCSNMap = XC.hashMap() ;
+	
+	/**
+	 * 键是类，值是将字符串转成指定类型的方法
+	 */
+	static final Map<Class<?> , EFunction<String, Object , Exception>> sStrCvtToFuncs = XC.hashMap() ;
 	static
 	{
 		sCSNMap.put(sCSN_String, String.class) ;
@@ -143,6 +155,25 @@ public class XClassUtil
 		sTypeAdapters.put(String.class , new TA_String()) ;
 		sTypeAdapters.put(String[].class , new TA_Strings()) ;
 		sTypeAdapters.put(byte[].class, new TA_Bytes()) ;
+		
+		sStrCvtToFuncs.put(String.class , str->str) ;
+		sStrCvtToFuncs.put(Integer.class , Integer::valueOf) ;
+		sStrCvtToFuncs.put(Integer.TYPE , Integer::valueOf) ;
+		sStrCvtToFuncs.put(Boolean.class , Boolean::valueOf) ;
+		sStrCvtToFuncs.put(Boolean.TYPE , Boolean::valueOf) ;
+		sStrCvtToFuncs.put(Character.class , str->str.charAt(0)) ;
+		sStrCvtToFuncs.put(Character.TYPE , str->str.charAt(0)) ;
+		sStrCvtToFuncs.put(Byte.class , Byte::valueOf) ;
+		sStrCvtToFuncs.put(Byte.TYPE , Byte::valueOf) ;
+		sStrCvtToFuncs.put(Short.class , Short::valueOf) ;
+		sStrCvtToFuncs.put(Short.TYPE , Short::valueOf) ;
+		sStrCvtToFuncs.put(Long.class , Long::valueOf) ;
+		sStrCvtToFuncs.put(Long.TYPE , Long::valueOf) ;
+		sStrCvtToFuncs.put(Float.class , Float::valueOf) ;
+		sStrCvtToFuncs.put(Float.TYPE , Float::valueOf) ;
+		sStrCvtToFuncs.put(Double.class , Double::valueOf) ;
+		sStrCvtToFuncs.put(Double.TYPE , Double::valueOf) ;
+		sStrCvtToFuncs.put(Date.class , XTime::adaptiveParse) ;
 	}
 
 	static Class<?>[] sBasicJavaDataType = {Integer.class , Boolean.class , Character.class
@@ -153,6 +184,17 @@ public class XClassUtil
 			, sCSN_Integer , sCSN_Long) ;
 	
 	
+	/**
+	 * 将给定的方法名或变量名转换为常见的字段名格式
+	 * @param aName 输入的方法名或变量名
+	 * @return 转换后的字段名
+	 * 
+	 * 转换规则：
+	 * 1. 如果名称长度大于1，以"m"开头且第二个字符为大写，则将第二个字符转为小写并返回。
+	 * 2. 如果名称长度大于3，以"get"或"set"开头且第四个字符为大写，则将第四个字符转为小写并返回。
+	 * 3. 如果名称长度大于2，以"is"开头且第三个字符为大写，则将第三个字符转为小写并返回。
+	 * 4. 如果不满足上述条件，则直接返回原名称。
+	 */
 	public static String toCommonFieldName(String aName)
 	{
 		if(aName.length()>1 && aName.startsWith("m") && Character.isUpperCase(aName.charAt(1)))
@@ -165,7 +207,12 @@ public class XClassUtil
 			return aName ;
 	}
 	
-	
+	/**
+	 * 检查给定的类是否有对应的基本公共类型（CSN），如果不存在则抛出异常
+	 * @param aClazz 要检查的类
+	 * @return 该类的基本公共类型字符串
+	 * @throws IllegalArgumentException 如果aClazz为null，或者该类没有对应的基本公共类型
+	 */
 	public static String checkCSN(Class<?> aClazz)
 	{
 		Assert.notNull(aClazz) ;
@@ -174,11 +221,28 @@ public class XClassUtil
 		return csn ;
 	}
 	
+	/**
+	 * 获取给定类的基本公共类型（CSN），如果不存在则返回null
+	 * @param aClazz 要查询的类
+	 * @return 该类的基本公共类型字符串，如果不存在则返回null
+	 */
 	public static String getCSN(Class<?> aClazz)
 	{
 		return aClazz != null?sClassCSNMap.get(aClazz.getName()):null ;
 	}
 	
+	/**
+	 * 根据前缀和名称生成方法名
+	 * @param aPreffix 方法前缀，如"get"、"set"
+	 * @param aName 原始名称
+	 * @return 生成的方法名
+	 * 
+	 * 生成规则：
+	 * 1. 如果名称长度大于1，以"m"开头且第二个字符为大写，则直接添加前缀并返回。
+	 * 2. 如果名称长度大于2，以"is"开头且第三个字符为大写，且前缀为"set"，则将"is"替换为"set"并返回；否则直接返回原名称。
+	 * 3. 如果名称长度大于3，以前缀开头且第四个字符为大写，则直接返回原名称。
+	 * 4. 其他情况，将名称的首字母转为大写，并添加前缀后返回。
+	 */
 	public static String getMethodName(String aPreffix , String aName)
 	{
 		if(aName.length()>1 && aName.startsWith("m") && Character.isUpperCase(aName.charAt(1)))
@@ -201,6 +265,13 @@ public class XClassUtil
 		}
 	}
 	
+	/**
+	 * 尝试获取给定类中指定名称和参数类型的方法，如果不存在则返回null
+	 * @param aClass 要查询的类
+	 * @param aName 方法名称
+	 * @param aParameterTypes 方法参数类型
+	 * @return 找到的方法对象，如果不存在则返回null
+	 */
 	public static Method getMethod0(Class<?> aClass , String aName, Class<?>... aParameterTypes)
 	{
 		try
@@ -214,12 +285,16 @@ public class XClassUtil
 	}
 	
 	/**
-	 * 在指定类中查找指定名称的，并且与指定的参数类型兼容的方法
-	 * @param aClass
-	 * @param aName
-	 * @param aParameterTypes
-	 * @return
-	 * @throws NoSuchMethodException
+	 * 
+	 * 在指定类中查找指定名称的，并且与指定的参数类型兼容的方法	<br />
+	 * 尝试获取给定类中指定名称和参数类型的方法。如果找不到完全匹配的方法，会尝试进行参数类型的宽松匹配，
+	 * 并在当前类及其父类中递归查找。
+	 *
+	 * @param aClass 要查询的类
+	 * @param aName 方法名称
+	 * @param aParameterTypes 方法参数类型
+	 * @return 找到的方法对象
+	 * @throws NoSuchMethodException 如果找不到指定的方法
 	 */
 	public static Method getMethod(Class<?> aClass , String aName, Class<?>... aParameterTypes) throws NoSuchMethodException
 	{
@@ -271,6 +346,14 @@ public class XClassUtil
 		}
 	}
 	
+	/**
+	 * 根据给定的类和对应的构造参数创建该类的一个新实例。
+	 *
+	 * @param aClass 要实例化的类
+	 * @param aArgs 构造函数的参数
+	 * @return 新创建的实例对象
+	 * @throws Exception 如果实例化过程中发生异常
+	 */
 	public static Object newInstance(Class<?> aClass , Object...aArgs) throws Exception
 	{
 		if(aArgs == null || aArgs.length == 0)
@@ -307,11 +390,24 @@ public class XClassUtil
 		}
 	}
 	
+	/**
+	 * 判断给定的方法是否为一个setter方法（即以"set"开头的方法）。
+	 *
+	 * @param aMethod 要判断的方法
+	 * @return 如果该方法为setter方法，则返回true；否则返回false
+	 */
 	public static boolean isSetterMethod(Method aMethod)
 	{
 		return aMethod.getName().startsWith("set") ;
 	}
 	
+	/**
+	 * 根据给定的getter或is方法，获取对应的setter方法。
+	 *
+	 * @param aMethod 给定的getter或is方法
+	 * @return 对应的setter方法
+	 * @throws Exception 如果找不到对应的setter方法或发生其他异常
+	 */
 	public static Method getSetterMethod(Method aMethod) throws Exception
 	{
 		if(isSetterMethod(aMethod)) return aMethod ;
@@ -322,16 +418,36 @@ public class XClassUtil
 		}
 	}
 	
+	/**
+	 * 根据给定的字段名生成对应的getter方法名。
+	 *
+	 * @param aName 字段名
+	 * @return 生成的getter方法名
+	 */
 	public static String getGetterMethodName(String aName)
 	{
 		return getMethodName("get", aName) ;
 	}
 	
+	/**
+	 * 根据给定的字段名生成对应的setter方法名。
+	 *
+	 * @param aName 字段名
+	 * @return 生成的setter方法名
+	 */
 	public static String getSetterMethodName(String aName)
 	{
 		return getMethodName("set", aName) ;
 	}
 	
+	/**
+	 * 通过反射调用对象的setter方法，为指定字段设置值。
+	 *
+	 * @param aObj 要操作的对象
+	 * @param aName 字段名
+	 * @param aVals 要设置的值（可变参数，支持多个值的情况，但通常只设置一个值）
+	 * @throws Exception 如果调用过程中发生异常
+	 */
 	public static void setValue(Object aObj , String aName , Object...aVals) throws Exception
 	{
 		Class<?>[] classes = null ;
@@ -361,12 +477,29 @@ public class XClassUtil
 		method.invoke(aObj, aVals) ;
 	}
 	
+	/**
+	 * 调用对象的getter方法，并返回其值。
+	 * 
+	 * @param aObj 要调用getter方法的对象
+	 * @param aName 属性名称，用于构造getter方法名（例如，属性名为"name"，则getter方法名为"getName"）
+	 * @return getter方法的返回值
+	 * @throws Exception 如果方法调用过程中发生异常
+	 */
 	public static Object invokeGetterMethod(Object aObj , String aName) throws Exception
 	{
 		Method method = aObj.getClass().getMethod(getGetterMethodName(aName)) ;
 		return method.invoke(aObj) ;
 	}
 	
+	/**
+	 * 调用对象的指定方法，并返回其值。该方法可以是无参的，也可以是有参的。
+	 * 
+	 * @param aSource 要调用方法的对象
+	 * @param aMethod 方法名称
+	 * @param aArgs 方法参数（可变参数）
+	 * @return 方法的返回值
+	 * @throws NoSuchMethodException 如果找不到指定的方法，或者方法是静态的但尝试以非静态方式调用
+	 */
 	public static Object invokeMethod(Object aSource , String aMethod , Object...aArgs) throws NoSuchMethodException
 	{
 		Class<?> clazz = aSource.getClass() ;
@@ -407,6 +540,15 @@ public class XClassUtil
 		}
 	}
 	
+	/**
+	 * 调用指定类的静态方法，并返回其值。该方法可以是无参的，也可以是有参的。
+	 * 
+	 * @param aClass 要调用方法的类
+	 * @param aMethod 方法名称
+	 * @param aArgs 方法参数（可变参数）
+	 * @return 方法的返回值
+	 * @throws NoSuchMethodException 如果找不到指定的方法，或者方法不是静态的但尝试以静态方式调用
+	 */
 	public static Object invokeStaticMethod(Class<?> aClass , String aMethod , Object...aArgs) throws NoSuchMethodException
 	{
 		if(XC.isEmpty(aArgs))
@@ -446,12 +588,28 @@ public class XClassUtil
 		}
 	}
 
+	/**
+	 * 调用对象的is方法（通常用于布尔类型的属性），并返回其值。
+	 * 
+	 * @param aObj 要调用is方法的对象
+	 * @param aName 属性名称，用于构造is方法名（例如，属性名为"active"，则is方法名为"isActive"）
+	 * @return is方法的返回值
+	 * @throws Exception 如果方法调用过程中发生异常
+	 */
 	public static Object invokeIsMethod(Object aObj , String aName) throws Exception
 	{
 		Method method = aObj.getClass().getMethod(getMethodName("is", aName)) ;
 		return method.invoke(aObj) ;
 	}
 	
+	/**
+	 * 根据getter方法获取对应的setter方法。
+	 * 
+	 * @param aClass 包含getter方法的类
+	 * @param aGetter getter方法
+	 * @param aPTypes setter方法的参数类型（可变参数）
+	 * @return 对应的setter方法，如果不存在则返回null
+	 */
 	public static Method getSetterByGetter(Class<?> aClass , Method aGetter , Class<?>...aPTypes)
 	{
 		try
@@ -492,55 +650,18 @@ public class XClassUtil
 		return false ;
 	}
 	
-	public static Object valueOf(Class<?> aClass , String aValue) throws Exception
+	public static Object convertToJavaBasicType(Class<?> aClass , String aValue) throws Exception
 	{
-		return valueOf(aClass, aValue, null) ;
+		return convertToJavaBasicType(aClass, aValue, null) ;
 	}
 	
-	public static Object valueOf(Class<?> aClass , String aValue
+	public static Object convertToJavaBasicType(Class<?> aClass , String aValue
 			, ClassLoader aClassLoader) throws Exception
 	{
-		if(String.class.equals(aClass))
-		{
-			return aValue ;
-		}
-		else if(Integer.class.equals(aClass) || Integer.TYPE.equals(aClass))
-		{
-			return Integer.valueOf(aValue) ;
-		}
-		else if(Boolean.class.equals(aClass) || Boolean.TYPE.equals(aClass))
-		{
-			return Boolean.valueOf(aValue) ;
-		}
-		else if(Character.class.equals(aClass) || Character.TYPE.equals(aClass))
-		{
-			return aValue.charAt(0) ;
-		}
-		else if(Byte.class.equals(aClass) || Byte.TYPE.equals(aClass))
-		{
-			return Byte.valueOf(aValue) ;
-		}
-		else if(Short.class.equals(aClass) || Short.TYPE.equals(aClass))
-		{
-			return Short.valueOf(aValue) ;
-		}
-		else if(Long.class.equals(aClass) || Long.TYPE.equals(aClass))
-		{
-			return Long.valueOf(aValue) ;
-		}
-		else if(Float.class.equals(aClass) || Long.TYPE.equals(aClass))
-		{
-			return Float.valueOf(aValue) ;
-		}
-		else if(Double.class.equals(aClass) || Double.TYPE.equals(aClass))
-		{
-			return Double.valueOf(aValue) ;
-		}
-		else if(Date.class.equals(aClass))
-		{
-			return new SimpleDateFormat().parseObject(aValue) ;
-		}
-		else if(Class.class.isAssignableFrom(aClass))
+		EFunction<String , Object, Exception> func = sStrCvtToFuncs.get(aClass) ;
+		if(func != null)
+			return func.apply(aValue) ;
+		else  if(Class.class.isAssignableFrom(aClass))
 		{
 			String classname = aValue.replace("class", "").trim() ;
 			if(aClassLoader == null)
@@ -550,135 +671,17 @@ public class XClassUtil
 		return null ;
 	}
 	
+	public static Object assertJavaBasicType(Class<?> aTargetType , String aValue) throws Exception
+	{
+		Object result = convertToJavaBasicType(aTargetType, aValue) ;
+		if(result == null)
+			throw new UnsupportedOperationException("不支持将String转化成 "+aTargetType.getName()+" 类型") ;
+		return result ;
+	}
+	
 	public static <T> T convert(Object aValue , Function<Object , T> aFunc)
 	{
 		return aFunc.apply(aValue) ;
-	}
-	
-	public static Object convert(String[] values, Class<?> clazz)
-	{
-        Class<?> type = clazz.getComponentType();
-        if (type == String.class)
-            return values ;
-
-        final int len = values.length;
-        if (type == Integer.TYPE)
-        {
-            int array[] = new int[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toInteger(values[i], 0) ;
-            return array;
-        }
-        else if (type == Boolean.TYPE)
-        {
-            boolean array[] = new boolean[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toBoolean(values[i], false) ;
-            return (array);
-        }
-        else if (type == Long.TYPE)
-        {
-            long array[] = new long[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toLong(values[i], 0) ;
-            return array ;
-        }
-        else if (type == Double.TYPE)
-        {
-            double array[] = new double[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toDouble(values[i], 0) ;
-            return array ;
-        }
-        else if (type == Byte.TYPE) {
-            byte array[] = new byte[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toByte(values[i], (byte)0) ;
-            return (array);
-        } else if (type == Float.TYPE) {
-            float array[] = new float[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toFloat(values[i], 0) ;
-            return (array);
-        } else if (type == Short.TYPE) {
-            short array[] = new short[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toShort(values[i], (short)0) ;
-            return (array);
-        } else if (type == Integer.class) {
-            Integer array[] = new Integer[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toInteger(values[i]);
-            return (array);
-        } else if (type == Boolean.class) {
-            Boolean array[] = new Boolean[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toBoolean(values[i]);
-            return (array);
-        } else if (type == Long.class) {
-            Long array[] = new Long[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toLong(values[i]);
-            return (array);
-        } else if (type == Double.class) {
-            Double array[] = new Double[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toDouble(values[i]);
-            return (array);
-        }
-        else if (type == Byte.class) {
-            Byte array[] = new Byte[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toByte(values[i]);
-            return (array);
-        } else if (type == Float.class) {
-            Float array[] = new Float[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toFloat(values[i]) ;
-            return (array);
-        } else if (type == Short.class) {
-            Short array[] = new Short[len];
-            for (int i = 0; i < len; i++)
-                array[i] = toShort(values[i]) ;
-            return (array);
-        }
-        else if(type == Character.TYPE)
-        {
-        	char[] array = new char[len] ;
-        	for(int i=0 ; i<len ; i++)
-        		array[i] = XString.isEmpty(values[i])?(char)0:values[i].charAt(0) ;
-        	return array ;
-        }
-        else if(type == Character.class)
-        {
-        	Character[] array = new Character[len] ;
-        	for(int i=0 ; i<len ; i++)
-        		array[i] = XString.isEmpty(values[i])?null:values[i].charAt(0) ;
-        	return array ;
-        }
-        else
-            throw new IllegalArgumentException(String.format("不支持将String[]转成%s类型" , clazz.getName())) ;
-
-    }
-	
-	public static Object convertToJavaBasicType(Class<?> aTargetType , String aValue) throws Exception
-	{
-		if(aTargetType == Integer.TYPE || aTargetType == Integer.class)
-			return Integer.parseInt(aValue) ;
-		else if(aTargetType == String.class)
-			return aValue ;
-		else if(aTargetType == Double.TYPE || aTargetType == Double.class)
-			return Double.parseDouble(aValue) ;
-		else if(aTargetType == Boolean.TYPE || aTargetType == Boolean.class)
-			return Boolean.parseBoolean(aValue) ;
-		else if(aTargetType == Long.TYPE || aTargetType == Long.class)
-			return Long.parseLong(aValue) ;
-		else if(aTargetType == Float.TYPE || aTargetType == Float.class)
-			return Float.parseFloat(aValue) ;
-		else if(aTargetType == Date.class)
-			return XTime.parse$yyyyMMddHHmmss(aValue) ;
-		else
-			throw new UnsupportedOperationException("不支持将String转化成 "+aTargetType.getName()+" 类型") ;
 	}
 	
 	public static Object[] toJavaBasicArray(Class<?> aClass , Object aValue)
@@ -1104,6 +1107,24 @@ public class XClassUtil
 		}
 
 		return returnClassList;
+	}
+	
+	/**
+	 * 获取指定类中具有指定注解的所有方法。
+	 *
+	 * @param aAnnoClass 指定要查找的注解类型，必须是Annotation的子类。
+	 * @param aClass      要查找方法的类。
+	 * @return 返回一个包含所有具有指定注解的方法的List集合。
+	 *         如果该类中没有方法具有指定的注解，则返回一个空列表。
+	 *         注意：返回的列表是ArrayList类型，但方法签名中使用了List接口，
+	 *         以提供更大的灵活性。
+	 */
+	public static List<Method> getMethodsByAnnotation(Class<? extends Annotation> aAnnoClass , Class<?> aClass)
+	{
+		return XC.extractAsArrayList(aClass.getDeclaredMethods()
+				, method->method.isAnnotationPresent(aAnnoClass)
+				, method->method
+				, true) ;
 	}
 	
 	public static List<Class<?>> getAllSubClass(Class<?> c , String aPackageName 

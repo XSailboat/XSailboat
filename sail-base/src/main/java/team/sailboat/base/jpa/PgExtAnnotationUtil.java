@@ -20,6 +20,12 @@ import team.sailboat.commons.fan.dtool.pg.Pg_TextSearch;
 import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * PostgreSQL数据库的扩展注解工具
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public class PgExtAnnotationUtil
 {
 	static final Logger sLogger = LoggerFactory.getLogger(PgExtAnnotationUtil.class) ;

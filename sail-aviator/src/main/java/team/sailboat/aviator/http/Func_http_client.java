@@ -14,6 +14,12 @@ import team.sailboat.commons.fan.http.xca.AliyunAcsSigner;
 import team.sailboat.commons.fan.http.xca.XAppSigner;
 import team.sailboat.commons.fan.lang.XClassUtil;
 
+/**
+ * 
+ *
+ * @author yyl
+ * @since 2024年12月6日
+ */
 public class Func_http_client extends AbstractFunction
 {
 
@@ -22,14 +28,7 @@ public class Func_http_client extends AbstractFunction
 	@Override
 	public AviatorObject call(Map<String, Object> aEnv, AviatorObject aUrl)
 	{
-		try
-		{
-			return AviatorRuntimeJavaType.valueOf(HttpClient.ofUrl(XClassUtil.toString(aUrl.getValue(aEnv)))) ;
-		}
-		catch (MalformedURLException e)
-		{
-			throw new IllegalArgumentException(e) ;
-		}
+		return AviatorRuntimeJavaType.valueOf(HttpClient.ofURI(XClassUtil.toString(aUrl.getValue(aEnv)))) ;
 	}
 	
 	@Override
@@ -62,7 +61,7 @@ public class Func_http_client extends AbstractFunction
 			}
 			else
 				throw new IllegalArgumentException("无效的signerType："+signerType) ;
-			return AviatorRuntimeJavaType.valueOf(HttpClient.ofUrl(XClassUtil.toString(aUrl.getValue(aEnv))
+			return AviatorRuntimeJavaType.valueOf(HttpClient.ofURI(XClassUtil.toString(aUrl.getValue(aEnv))
 					, XClassUtil.toString(aAppKey.getValue(aEnv))
 					, XClassUtil.toString(aAppSecret.getValue(aEnv))
 					, signer

@@ -1,5 +1,6 @@
 package team.sailboat.aviator.http;
 
+import java.util.Collection;
 import java.util.Map;
 
 import com.googlecode.aviator.runtime.function.AbstractFunction;
@@ -10,6 +11,8 @@ import com.googlecode.aviator.runtime.type.AviatorRuntimeJavaType;
 import team.sailboat.commons.fan.excep.WrapException;
 import team.sailboat.commons.fan.http.IRestClient;
 import team.sailboat.commons.fan.http.Request;
+import team.sailboat.commons.fan.json.JSONArray;
+import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.XClassUtil;
 
@@ -101,7 +104,13 @@ public class Func_http extends AbstractFunction
 			switch(bodyType)
 			{
 			case "json":
-				req.setJsonEntity(XClassUtil.toString(aBody.getValue(aEnv))) ;
+				Object val = aBody.getValue(aEnv) ;
+				if(val instanceof Map)
+					req.setJsonEntity(JSONObject.of((Map)val)) ;
+				else if(val instanceof Collection)
+					req.setJsonEntity(JSONArray.of((Collection)val)) ;
+				else
+					req.setJsonEntity((String)val) ;
 				break ;
 			case "text":
 				req.setTextEntity(XClassUtil.toString(aBody.getValue(aEnv))) ;

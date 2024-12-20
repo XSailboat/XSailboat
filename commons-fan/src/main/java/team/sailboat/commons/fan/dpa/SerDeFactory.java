@@ -14,7 +14,7 @@ import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.dpa.anno.BForwardMethod;
 import team.sailboat.commons.fan.dpa.anno.BReverseMethod;
 import team.sailboat.commons.fan.excep.WrapException;
-import team.sailboat.commons.fan.http.IURLBuilder;
+import team.sailboat.commons.fan.http.URLBuilder;
 import team.sailboat.commons.fan.json.JSONArray;
 import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.lang.JCommon;
@@ -164,7 +164,7 @@ public class SerDeFactory
 		{
 			IMultiMap map = XC.multiMap() ;
 			if(aVal != null)
-				IURLBuilder.parseQueryStr(aVal.toString() , map);
+				URLBuilder.parseQueryStr(aVal.toString() , map);
 			return map ;
 		}
 	}

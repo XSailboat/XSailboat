@@ -1,0 +1,70 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  
+xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:xweb="http://www.thymeleaf.org/extras/xweb"
+th:replace="~{decorators/main::layout(~{::head},~{::.content},~{::components},~{::.script})}">
+<head>
+<meta charset="UTF-8">
+<title>认证中心 | [[${banner}]]</title>
+</head>
+<body>
+	<div class="content bg-pane">
+	 	<el-card style="width: 500px; padding: 0 20px;transform: translateX(-50%); position: absolute; top: 20%; left: 50%;">
+	 		<div slot="header" style="font-size: 16px;display: flex;align-items: center;">
+	 			<i class="icon icon-icon_shouquan" style="color: #409EFF;font-size: 1.6em;margin-right: 12px;"></i>
+	 			<span>[[${app.name}]] - [[${banner}]]</span>
+ 			</div>
+	 		
+	 		<el-form status-icon th:action="@{/oauth2/authorize}" @submit.native="submitForm" method="post" size="small" label-width="80px">
+	 			<div style="display: flex;align-items: center;justify-content: space-between;margin-bottom: 44px;">
+	 				<div style="flex: 1;">
+	 					<div style="margin-bottom: 12px;">允许 <b>[[${app.name}]]</b> 获取以下信息</div>
+		 				<el-checkbox-group v-model="checkConsents" style="display: flex; flex-direction: column;line-height: 28px;margin-left:20px;pointer-events: none;">
+						    <el-checkbox v-for="item in consents" :label="item.code">{{item.description}}</el-checkbox>
+					  	</el-checkbox-group>
+				  	</div>
+				  	<div style="display: flex;align-items: center;justify-content: space-between;width: 150px;">
+				  		<i class="icon icon-jinxingzhong" style="font-size: 2.5em;color: #409EFF;"></i>
+				  		<el-avatar class="user-icon" :size="72" style="background:  #409EFF;font-size: 2em;">[[${app.simpleName}]]</el-avatar>
+				  	</div>
+	 			</div>
+			  	<div style="display:none;">
+			  		<input type="hidden" name="client_id" th:value="${app.appKey}">
+			  		<input v-for="scope in checkConsents" type="hidden" name="scope" :value="scope">
+			  		<input type="hidden" name="state" th:value="${state}">
+				</div>
+			  	<el-form-item style="text-align: right">
+			    	<button ref="submit_btn" id="submit_btn" type="submit" style="display: none;"></button>
+			    	<el-button type="primary" @click="submitForm">确 认</el-button>
+			    	<button class="el-button el-button--reset el-button--small" type="reset">取 消</button>
+			  	</el-form-item>
+			</el-form>
+	 	</el-card>
+ 	</div>
+<components>
+</components>
+<script class="script" th:inline="javascript">
+	var exVueOpts = {
+		data() {
+			return {
+				consents: /*[[${consents}]]*/[],
+				checkConsents: [],
+			}
+	    },
+	    components:{
+	    },
+	    mounted(){
+	    	this.consents.forEach(item => {
+	    		this.checkConsents.push(item.code);
+	    	})
+	    },
+	    methods:{
+	     	submitForm(){
+	     		this.$refs.submit_btn.click();
+	     	},
+	    	resetForm() {
+	     	}
+	    }
+ 	};
+ </script>
+</body>
+</html>

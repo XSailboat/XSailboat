@@ -7,9 +7,11 @@ public interface ACKeys_Common extends ACKeys
 	public static final String sServiceCfg = "ServiceCfg" ;
 	
 	/**
-	 * 类型是String[] ，Service包名
+	 * 类型是String[] ，Controller包名		<br />
+	 * 我们的框架会把这些包加入到Spring的扫描路径中。	<br />
+	 * 如果启用了Swagger，也会将这些包下的Controller纳入到生成OpenAPI文档的范围
 	 */
-	public static final String sServicePackages = "ServicePackages" ;
+	public static final String sControllerPackages = "ControllerPackages" ;
 	
 	public static final String sPathSupport = "PathSupport" ;
 	

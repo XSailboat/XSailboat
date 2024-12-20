@@ -1,0 +1,103 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="pwdInput">
+	<template id="pwdInput">
+		<el-input v-model="value" :placeholder="placeholder" :prefix-icon="prefixIcon" :suffix-icon="suffixIcon"
+			:show-password="showPassword" :size="size" :readonly="readonly" :disabled="disabled" :clearable="clearable"
+			@change="change" @input="input" @focus="focus" @blur="blur" @clear="clear"
+			:formatter="formatter"></el-input>
+	</template>
+	<script>
+		var PwdInput = {
+			template: "#pwdInput",
+			model: {
+				prop: 'val',
+				event: 'update'
+			},
+			props: {
+				val: {
+					type: String,
+					default: ''
+				},
+				placeholder: {
+					type: String,
+					default: ''
+				},
+				readonly: {
+					type: Boolean,
+					default: false
+				},
+				showPassword: {
+					type: Boolean,
+					default: true
+				},
+				disabled: {
+					type: Boolean,
+					default: false
+				},
+				clearable: {
+					type: Boolean,
+					default: false
+				},
+				size: {
+					type: String,
+					default: ''
+				},
+				suffixIcon: {
+					type: String,
+					default: ''
+				},
+				prefixIcon: {
+					type: String,
+					default: 'lock'
+				},
+				showWordLimit: {
+					type: Boolean,
+					default: true
+				},
+			},
+			data() {
+				return {
+					value: this.val,
+				}
+			},
+			computed: {
+			},
+			methods: {
+				formatter(val) {
+					return val.replace(/[^a-zA-Z0-9`~!@#$%&*()_\-+=<>?:;{}|\[\]\\\/,.]/g, '');
+				},
+				input(val) {
+					var value = val.replace(/[^a-zA-Z0-9`~!@#$%&*()_\-+=<>?:;{}|\[\]\\\/,.]/g, '');
+					this.$emit('update', value)
+					this.$nextTick(() => {
+						this.$emit('input', value);
+					})
+				},
+				change(val) {
+					this.$emit('change', val);
+				},
+				focus() {
+					this.$emit('focus');
+				},
+				blur() {
+					this.$emit('blur');
+				},
+				clear() {
+					this.$emit('clear');
+				}
+			},
+			watch: {
+				val(_new, _old) {
+					this.value = _new;
+				}
+			},
+			mounted() {
+			},
+			created() {
+			}
+		}
+	</script>
+</th:block>
+
+</html>

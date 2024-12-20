@@ -15,4 +15,5 @@ public class MSLauncher implements IMSLauncher
 		System.out.println("类加载器是："+getClass().getClassLoader().getClass().getName());
 		MainApplication.main(aArgs) ;
 	}
+
 }

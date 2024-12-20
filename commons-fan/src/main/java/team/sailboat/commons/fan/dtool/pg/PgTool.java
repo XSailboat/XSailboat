@@ -567,10 +567,15 @@ public class PgTool extends DBTool implements PgConst
 		StringBuilder createTblSqlBld = new StringBuilder("CREATE TABLE \"")
 			.append(aTblSchema.getFullName()).append("\" (") ;
 		final First first = new First() ;
+		List<String> autoUpdateTsColNameList = XC.arrayList() ;
 		for(ColumnSchema colSchema :aTblSchema.getColumnSchemas())
 		{
 			first.checkAndNotFirstDo(()->createTblSqlBld.append(" , ")) ;
 			createTblSqlBld.append(colSchema.getSqlText()) ;
+			if(((PgColumnSchema)colSchema).isAutoUpdateTimestamp())
+			{
+				autoUpdateTsColNameList.add(colSchema.getColumnName()) ;
+			}
 		}
 		
 		//处理主键、且是单列约束
@@ -644,7 +649,53 @@ public class PgTool extends DBTool implements PgConst
 			if(XString.isNotEmpty(tblSchema.getRowFormat()))
 				createTblSqlBld.append(" ROW_FORMAT=").append(tblSchema.getRowFormat()) ;
 		}
+		
+		// 处理timestamp的authupdate类型的字段，定义函数，再定义触发器
+		if(!autoUpdateTsColNameList.isEmpty())
+		{
+			for(String colName : autoUpdateTsColNameList)
+			{
+				sqlList.add(getSql_createTriggerFunc(colName)) ;
+				sqlList.add(getSql_createTrigger(aTblSchema.getFullName() , colName)) ;
+			}
+		}
+		
 		return sqlList ;
+	}
+	
+	/**
+	 * 
+	 * 创建更新时间的函数
+	 * 
+	 * @param aColName
+	 * @return
+	 */
+	String getSql_createTriggerFunc(String aColName)
+	{
+		return "CREATE OR REPLACE FUNCTION func_upd_ts_%1$s()"
+				+ "  RETURNS TRIGGER AS $$"
+				+ "  BEGIN"
+				+ "    NEW.%1$s = NOW();"
+				+ "    RETURN NEW;"
+				+ "  END;"
+				+ "  $$ LANGUAGE plpgsql;".formatted(aColName) ;
+	}
+	
+	/**
+	 * 
+	 * 创建更新时间的触发器
+	 * 
+	 * @param aTableName
+	 * @param aColName
+	 * @return
+	 */
+	String getSql_createTrigger(String aTableName , String aColName)
+	{
+		return "CREATE TRIGGER tg_upd_ts_%1$s_%2$s"
+				+ "  BEFORE UPDATE ON %1$s"
+				+ "  FOR EACH ROW"
+				+ "  EXECUTE FUNCTION func_upd_ts_%2$s();"
+				.formatted(aTableName , aColName) ;
 	}
 	
 	@Override

@@ -87,7 +87,7 @@ public class AliyunAppSigner implements ISigner
 		Tuples.T2<String, String> signEntry = sign(aAppSecret, aRequest.getMethod() 
 				, FileUtils.getPath(aContextPath, aRequest.getPath()) 
 				, aRequest.getHeaderMap()
-				, aRequest.getUrlParamMap()
+				, aRequest.getQueryParamMap()
 				, aRequest.getFormParamMap()
 				, new ArrayList<>()) ;
     	

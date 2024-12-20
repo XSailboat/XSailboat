@@ -123,7 +123,7 @@ class SSHConfigurator:
                     logger.info(f"{host}上不存在authorized_keys,准备创建...")
                     is_success = self.ensure_authorized_keys_exists(client, None)
                     if is_success:
-                        logger.info(f"{host}创建上不存在authorized_keys文件成功!")
+                        logger.info(f"{host}创建authorized_keys文件成功!")
 
             # 检查远程服务器上的 authorized_keys 文件是否已经包含公钥
             _, stdout, stderr = client.exec_command(f"grep -Fx '{public_key}' ~/.ssh/authorized_keys")
@@ -200,18 +200,3 @@ class SSHConfigurator:
                                                                                  self.public_key)
             results.append(result_check_and_add and result_append_public_key)
         return all(results)
-
-
-if __name__ == '__main__':
-    # 创建 SSHConfigurator 实例
-    configurator = SSHConfigurator()
-
-    # 多个远程主机信息，格式为 用户名@主机名@密码，用逗号分隔
-    hosts_info = "hadoop@slave@123456"
-
-    # 配置多个远程主机
-    result = configurator.configure_hosts(hosts_info)
-    if result:
-        logger.info("所有主机配置成功")
-    else:
-        logger.info("至少有一个主机配置失败")

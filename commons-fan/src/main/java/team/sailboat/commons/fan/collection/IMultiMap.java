@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
-import team.sailboat.commons.fan.http.IURLBuilder;
+import team.sailboat.commons.fan.http.URLBuilder;
 import team.sailboat.commons.fan.infc.BiIteratorPredicate;
 
 public interface IMultiMap<K , V>
@@ -78,6 +78,6 @@ public interface IMultiMap<K , V>
 	
 	public static IMultiMap<String, String> parseFromUrlParams(String aParamsStr)
 	{
-		return IURLBuilder.parseQueryStr(aParamsStr) ;
+		return URLBuilder.parseQueryStr(aParamsStr) ;
 	}
 }

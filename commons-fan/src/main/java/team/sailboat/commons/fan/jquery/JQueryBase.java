@@ -23,6 +23,12 @@ import team.sailboat.commons.fan.json.JSONArray;
 import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.lang.Assert;
 
+/**
+ * 
+ *
+ * @author yyl
+ * @since 2024年12月11日
+ */
 public abstract class JQueryBase extends JSqlBuilderImpl implements JQuery
 {
 	

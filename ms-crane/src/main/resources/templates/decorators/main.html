@@ -10,7 +10,7 @@
 <th:block th:include="decorators/incHeader::includes" />
 <th:block th:include="${head}" />
 <!-- <link rel="icon" th:href="@{./favicon.ico}" type="image/x-icon"> -->
-	<link th:href="@{/css/main.css}" rel="stylesheet" type="text/css" title="main">
+<link th:href="@{/css/main.css}" rel="stylesheet" type="text/css" title="main">
 <link th:href="@{/3rds/iconfont/icon/iconfont.css}" rel="stylesheet" type="text/css" title="main">
 </head>
 <body>
@@ -26,37 +26,8 @@
 	
 	<th:block th:insert="${script}?: ~{}" />
   
-	<script type="text/javascript" th:inline="javascript">
-
-		Vue.config.productionTip = false;
-		Vue.prototype.reLogining = false;
-		Vue.prototype.siteList = [];
-
-		// 只允许输入数字与小数点
-		Vue.directive('LimitInputNumber', {
-			bind (el) {
-				el.oninput = () => {
-					el.children[0].value = el.children[0].value.trim(); // 去除前后空格
-					el.children[0].value = el.children[0].value.replace(/[^\d.]/g, ''); // 只保留数字和小数点
-					el.children[0].value = el.children[0].value.replace(/^\./g, ''); // 开头不能是小数点
-					el.children[0].value = el.children[0].value.replace(/\.{2,}/g, '.'); // 多个小数点合并成一个
-					el.children[0].value = el.children[0].value.replace('.', '$#$').replace(/\./g, '').replace('$#$', '.'); // 只允许一个小数点
-					el.children[0].value = el.children[0].value.replace(/^0\d+/g, '0'); // 开头不能是多个0
-				}
-			}
-		});
-
-		Vue.directive('LimitInputInt', {
-			bind(el) {
-				el.oninput = () => {
-					el.children[0].value = el.children[0].value.trim(); // 去除前后空格
-					el.children[0].value = el.children[0].value.replace(/[^\d]/g, ''); // 只保留数字
-					el.children[0].value = el.children[0].value.replace(/^0\d+/g, '0'); // 开头不能是多个0
-				}
-			}
-		});
-		
-		var storeOpts = {
+	<script type="text/javascript" th:inline="javascript">		
+		const storeOpts = {
 			state: {
 				csrf: {
 					enable: /*[(${_csrf != null})]*/ false,
@@ -65,21 +36,12 @@
 			},
 			modules: {}
 		};
-		var store = new Vuex.Store($.extend(true, {}, storeOpts, typeof exStoreOpts == 'undefined' ? {} : exStoreOpts));
-		Vue.prototype.$store = store;
-		var vueOpts = {
-			store,
+		const store = new Vuex.Store($.extend(true, {}, storeOpts, typeof exStoreOpts == 'undefined' ? {} : exStoreOpts));
+		const vueOpts = {
 			data() {
 				return {
-					pageLoading: false,
 					theme: /*[[${theme}]]*/ "default",
 					activeMenu: /*[[${session.ACTIVE_MENU}]]*/ 'home',
-					runModel: /*[[${session.runModel}]]*/ 'dev',
-					stackVisibles: false,
-					stack: null,
-					siteId: '',
-					sites: [],
-					siteMap: {},
 				}
 			},
 			
@@ -92,43 +54,58 @@
 				csrfPair() {
 					return this.csrfEnable ? { "_csrf": this.csrfValue } : {};
 				},
-				greetingTime() {
-					var h = new Date().getHours();
-					var str = "";
-					if (h >= 6 && h < 11)
-						str = "早上";
-					else if (h >= 11 && h < 13)
-						str = "中午";
-					else if (h >= 13 && h < 18)
-						str = "下午";
-					else
-						str = "晚上";
-					return str;
-				},
-
-
 			},
 			methods: {
 
 			},
 			mounted: function(){
-				this.delUrlParam('token');
 				let activeMenu =  /*[[${session.ACTIVE_MENU}]]*/ 'home';
 				$('#' + activeMenu).addClass('active');				
 		    },
 
 			beforeCreate() {
-				Vue.prototype.$bus = this;	// 安装全局事件总线
 			},
 
 		    created() {
 
 		    },
 		};
-		var Main = Vue.extend(vueOpts);
-		var extOps = typeof exVueOpts == 'undefined' ? {} : exVueOpts;
-		extOps.el = "#app";
-		var vue = new Main(extOps);
+		const app = Vue.createApp($.extend(true, {}, typeof exVueOpts == 'undefined' ? {} : exVueOpts));
+		app.mixin(vueOpts).use(store).use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+		for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+		  	app.component(key, component)
+		}
+		
+		app.directive('LimitInputInt', {
+			mounted(el) {
+				const inputEl = el.querySelector('input');
+				inputEl.oninput = () => {
+					inputEl.value = inputEl.value.trim(); // 去除前后空格
+					inputEl.value = inputEl.value.replace(/[^\d]/g, ''); // 只保留数字
+					inputEl.value = inputEl.value.replace(/^0\d+/g, '0'); // 开头不能是多个0
+				} 
+			}
+		});
+		
+		// 只允许输入数字与小数点
+		app.directive('LimitInputNumber', {
+			mounted(el) {
+				const inputEl = el.querySelector('input');
+				inputEl.oninput = () => {
+					inputEl.value = inputEl.value.trim(); // 去除前后空格
+					inputEl.value = inputEl.value.replace(/[^\d.]/g, ''); // 只保留数字和小数点
+					inputEl.value = inputEl.value.replace(/^\./g, ''); // 开头不能是小数点
+					inputEl.value = inputEl.value.replace(/\.{2,}/g, '.'); // 多个小数点合并成一个
+					inputEl.value = inputEl.value.replace('.', '$#$').replace(/\./g, '').replace('$#$', '.'); // 只允许一个小数点
+					inputEl.value = inputEl.value.replace(/^0\d+/g, '0'); // 开头不能是多个0
+				}
+			}
+		});
+		
+	</script>
+	<script type="text/javascript" th:src="@{/js/common.js}"></script>
+	<script type="text/javascript">
+		app.mount('#app');
 	</script>
 </body>
 

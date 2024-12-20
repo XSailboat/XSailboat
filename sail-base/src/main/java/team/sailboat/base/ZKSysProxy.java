@@ -31,6 +31,12 @@ import team.sailboat.commons.fan.struct.Tuples;
 import team.sailboat.commons.fan.text.XString;
 import team.sailboat.commons.fan.time.XTime;
 
+/**
+ * 平台的Zookeeper操作代理
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 {
 	
@@ -80,7 +86,7 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 						{
 							// 模块的节点内容发生改变
 							String moduleName = FileUtils.getFileName(aEvent.getPath()) ;
-							JSONObject jo = new JSONObject(getNodeData_Str(aEvent.getPath()))
+							JSONObject jo = JSONObject.of(getNodeData_Str(aEvent.getPath()))
 									.put("moduleName" , moduleName) ;
 							
 							JSONObject jo_hold = mModulesJo.optJSONObject(moduleName) ;
@@ -130,9 +136,9 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 	 * @throws Exception 
 	 */
 	@Override
-	public void registerWebModule(String aModuleName , String aDisplayName , String aServiceAddr , String aPagePath , String aIconPath , double aOrder) throws Exception
+	public void registerSailboatWebModule(String aModuleName , String aDisplayName , String aServiceAddr , String aPagePath , String aIconPath , double aOrder) throws Exception
 	{
-		setNodeData(XString.msgFmt(SysConst.sZK_PathPtn_XWebModule , aModuleName) 
+		setNodeData(XString.msgFmt(SysConst.sZK_SysPathPtn_SailboatWebModuleOne , aModuleName) 
 				, new JSONObject().put("moduleName" , aModuleName)
 					.put("displayName" , aDisplayName)
 					.put("serviceAddr", aServiceAddr)
@@ -143,11 +149,11 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 	}
 	
 	@Override
-	public JSONArray getRegisteredWebModules() throws JSONException, Exception
+	public JSONArray getRegisteredSailboatWebModules() throws JSONException, Exception
 	{
 		if(mModulesJa == null)
 		{
-			mZK.exists(SysConst.sZK_SysPath_XWebModules, (event)->{
+			mZK.exists(SysConst.sZK_SysPath_SailboatWebModules, (event)->{
 				switch(event.getType())
 				{
 				case NodeChildrenChanged:
@@ -174,7 +180,7 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 	}
 	
 	@Override
-	public JSONObject getRegisteredWebModule(String aName) throws JSONException, Exception
+	public JSONObject getRegisteredSailboatWebModule(String aName) throws JSONException, Exception
 	{
 		if(XTime.pass(mLastRefreshTime , 3600_000))
 		{
@@ -186,16 +192,16 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 	
 	synchronized void _refreshXWebModules() throws JSONException, Exception
 	{
-		List<String> children = mZK.getChildren(SysConst.sZK_SysPath_XWebModules , false) ;
+		List<String> children = mZK.getChildren(SysConst.sZK_SysPath_SailboatWebModules , false) ;
 		boolean changed = false ;
 		for(String child : children)
 		{
 			JSONObject moduleJo = mModulesJo.optJSONObject(child) ;
 			if(moduleJo == null)
 			{
-				String path = SysConst.sZK_SysPath_XWebModules+"/"+child ;
+				String path = SysConst.sZK_SysPath_SailboatWebModules+"/"+child ;
 				mZK.exists(path, mWebModuleDataWatcher) ;
-				moduleJo = new JSONObject(getNodeData_Str(path))
+				moduleJo = JSONObject.of(getNodeData_Str(path))
 						.put("moduleName", child) ;
 				mModulesJo.put(child, moduleJo) ;
 				mModulesJa.put(moduleJo) ;
@@ -243,10 +249,11 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 	}
 	
 	@Override
-	public void registerService(String aServiceName, Properties aInfo, ClusterMode aMode
+	public void _registerApiService(String aServiceName, Properties aInfo, ClusterMode aMode
 			, String aProtocol , String aAddrs) throws Exception
 	{	
-		String protocolPath = XString.msgFmt(SysConst.sZK_SysPathPtn_special , aServiceName , aProtocol) ;
+		String protocolPath = XString.msgFmt(SysConst.sZK_SysPathPtn_ApiService_special
+				, aServiceName , aProtocol) ;
 		ServiceRegistery reg = mServiceRegisteryMap.get(protocolPath) ;
 		if(reg == null)
 		{
@@ -266,7 +273,8 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 		// 创建协议容器节点
 		if(mZK.exists(protocolPath , false) == null)
 		{
-			String servicePath = XString.msgFmt(SysConst.sZK_SysPathPtn_service , aServiceName) ;
+			String servicePath = XString.msgFmt(SysConst.sZK_SysPathPtn_ApiService
+					, aServiceName) ;
 			if(mZK.exists(servicePath, false) == null)
 			{
 				ensureExists(servicePath) ;
@@ -390,7 +398,7 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 		{
 			for(ServiceRegistery reg : mServiceRegisteryMap.values())
 			{
-				registerService(reg.getServiceName() 
+				_registerApiService(reg.getServiceName() 
 						, reg.getInfo()
 						, reg.getMode()
 						, reg.getProtocol()
@@ -636,6 +644,164 @@ public class ZKSysProxy extends ZKProxy implements IZKSysProxy
 	{
 		IZKProxy proxy = ZKProxy.get(sDefaultQuorum) ;
 		return proxy.getKafkaBootstrapServers() ;
+	}
+	
+	@Override
+	public void registerWebApp(String aAppName, PropertiesEx aProp
+			, ClusterMode aMode, String aServiceUri) throws Exception
+	{	
+		String webAppPath = XString.msgFmt(SysConst.sZK_SysPathPtn_WebApp
+				, aAppName) ;
+		String activeWebAppPath = XString.msgFmt(SysConst.sZK_SysPathPtn_ActiveWebApp
+				, aAppName) ;
+		ServiceRegistery reg = mServiceRegisteryMap.get(activeWebAppPath) ;
+		if(reg == null)
+		{
+			reg = new ServiceRegistery(null , aAppName) ;
+			reg.setAddrs(aServiceUri) ;
+			reg.setInfo(aProp) ;
+			reg.setMode(aMode) ;
+			mServiceRegisteryMap.put(activeWebAppPath , reg) ;
+		}
+		else 
+		{
+			reg.setAddrs(aServiceUri) ;
+			reg.setInfo(aProp) ;
+			reg.setMode(aMode) ;
+		}
+		byte[] addrsData = aServiceUri.getBytes(AppContext.sUTF8) ;
+		// 创建协议容器节点
+		boolean updatedWebAppNodeData = false ;
+		String appInfoStr_new = PropertiesEx.toString(reg.getInfo() , true, false) ;
+		if(mZK.exists(activeWebAppPath , false) == null)
+		{
+			if(mZK.exists(webAppPath , false) == null)
+			{
+				ensureExists(webAppPath) ;
+				setNodeData(webAppPath , appInfoStr_new);
+				updatedWebAppNodeData = true ;
+			}
+			ensureExists(activeWebAppPath) ;
+		}
+		if(!updatedWebAppNodeData)
+		{
+			String appInfoStr = getNodeData_Str(webAppPath) ;
+			if(!appInfoStr_new.equals(appInfoStr))
+			{
+				setNodeData(webAppPath , appInfoStr_new);
+				updatedWebAppNodeData = true ;
+			}
+		}
+		if(XString.isEmpty(reg.getWatchNodeDataId()))
+		{
+			String watchNodeDataId = watchNode(activeWebAppPath , new Watcher()
+			{
+				@Override
+				public void process(WatchedEvent aEvent)
+				{
+					if(aEvent.getType() == EventType.NodeDataChanged)
+					{
+						notifyServiceAddressChanged(aEvent.getPath() , aServiceUri) ;
+					}
+				}
+			}) ;
+			reg.setWatchNodeDataId(watchNodeDataId) ;
+		}
+		
+		if(XString.isEmpty(reg.getWatchChildrenId()))
+		{
+			String watchChildrenId = watchChildren(activeWebAppPath , new Watcher()
+			{	
+				@Override
+				public void process(WatchedEvent aEvent)
+				{
+					if(aEvent.getType() == EventType.NodeChildrenChanged)
+					{
+						try
+						{
+							Stat stat = new Stat() ;
+							byte[] currentAddrData = getNodeData(activeWebAppPath , stat) ;
+							switch(aMode)
+							{
+							case MasterSlave:
+							{
+								// 覆盖
+								List<String> children = getChildren(aEvent.getPath(), false) ;
+								byte[] lastNode_addrData = JCommon.sEmptyByteArray ;
+								if(!children.isEmpty())
+								{
+									Collections.sort(children) ;
+									// 选取最新的一个临时节点
+									String lastNode = XC.getLast(children) ;
+									lastNode_addrData = getNodeData(activeWebAppPath+"/"+lastNode) ;
+								}
+								if(!JCommon.equals(currentAddrData, lastNode_addrData))
+								{
+									setNodeData(activeWebAppPath , lastNode_addrData , stat) ;
+								}
+								else if(App.instance().getStatus() != Status.Active)
+								{
+									// 如果这地址是自己的地址，则触发一下
+									notifyServiceAddressChanged(activeWebAppPath , aServiceUri) ;
+								}
+							}
+							break ;
+							case Federation:
+							{
+								// 追加
+								List<String> children = getChildren(aEvent.getPath(), false) ;
+								byte[] new_addrData = JCommon.sEmptyByteArray ;
+								if(!children.isEmpty())
+								{
+									Collections.sort(children) ;
+									StringBuilder strBld = new StringBuilder() ;
+									for(String child : children)
+									{
+										if(strBld.length()>0)
+											strBld.append(',') ;
+										strBld.append(getNodeData_Str(activeWebAppPath+"/"+child)) ;
+									}
+									new_addrData = strBld.toString().getBytes(AppContext.sUTF8) ;
+								}
+								if(!JCommon.equals(currentAddrData, new_addrData))
+								{
+									setNodeData(activeWebAppPath , new_addrData , stat) ;
+								}
+							}
+							break ;
+							}
+						}
+						catch (Exception e)
+						{
+							mLogger.error(ExceptionAssist.getClearMessage(getClass(), e)) ;
+						}
+					}
+				}
+			}) ;
+			reg.setWatchChildrenId(watchChildrenId) ;
+		}
+		// 在协议节点下面创建实例临时节点
+		String instPath = activeWebAppPath+"/"+App.instance().getStartTime().getTime() ;
+		// 认定这个节点肯定已经不存在了
+		instPath = mZK.create(instPath , addrsData, Ids.OPEN_ACL_UNSAFE , CreateMode.EPHEMERAL) ;
+	}
+	
+	@Override
+	public JSONObject getRegisteredWebApp(String aName) throws Exception
+	{
+		String webAppPath = XString.msgFmt(SysConst.sZK_SysPathPtn_WebApp , aName) ;
+		String str = getNodeData_Str(webAppPath) ;
+		if(str != null)
+		{
+			JSONObject appInfoJo = JSONObject.of(PropertiesEx.loadFromReader(new StringReader(str))
+					.toStringMap()) ;
+			// 取下面临时节点中的服务地址信息
+			String activeNodePath = XString.msgFmt(SysConst.sZK_SysPathPtn_ActiveWebApp , aName) ;
+			appInfoJo.put("serviceUri" , getNodeData_Str(activeNodePath))
+					.put("active" , XC.isNotEmpty(getChildren(activeNodePath , false)));
+			return appInfoJo ;
+		}
+		return null ;
 	}
 	
 	static class ServiceRegistery

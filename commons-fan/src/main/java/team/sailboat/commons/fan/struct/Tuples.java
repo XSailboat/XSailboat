@@ -9,6 +9,13 @@ import java.util.Map.Entry;
 import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.lang.JCommon;
 
+/**
+ * 
+ * 元组
+ *
+ * @author yyl
+ * @since 2024年10月31日
+ */
 public class Tuples
 {
 	public static class T2<E1 , E2> implements Serializable  , Entry<E1, E2>

@@ -1093,8 +1093,9 @@ public class XTime
 	
 	private static void fillDateFmt(AutoSortedList<CountElement<DateFormat>> aFmtList)
 	{
-		aFmtList.add(new CountElement<>(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"))) ;
 		aFmtList.add(new CountElement<>(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"))) ;
+		aFmtList.add(new CountElement<>(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX"))) ;
+		aFmtList.add(new CountElement<>(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"))) ;
 		aFmtList.add(new CountElement<>(new SimpleDateFormat("yyyy-MM-dd"))) ;
 		aFmtList.add(new CountElement<>(new SimpleDateFormat("yyyyMMdd_HHmmss"))) ;
 		aFmtList.add(new CountElement<>(new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss"))) ;

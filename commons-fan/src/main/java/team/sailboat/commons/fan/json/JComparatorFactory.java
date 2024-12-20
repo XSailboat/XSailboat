@@ -7,6 +7,13 @@ import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.text.ChineseComparator;
 
+/**
+ * 
+ * 比较器工厂
+ *
+ * @author yyl
+ * @since 2024年11月4日
+ */
 public class JComparatorFactory
 {
 	public static Comparator<Object> newJSONObjectComparator_String(String aField , boolean aHead , String...aEndValues)
@@ -74,6 +81,18 @@ public class JComparatorFactory
 		return newComparator_String(null, 0) ;
 	}
 	
+	/**  
+	 * 创建一个自定义的Comparator<Object>，用于根据给定的字符串数组（aHeads）的顺序对对象进行比较。  
+	 * 如果对象转换为字符串后存在于aHeads数组中，则按照aHeads中的顺序进行比较；  
+	 * 如果不存在于aHeads数组中，则根据aTailStartIndex参数和另一个对象的顺序值进行比较，  
+	 * 或者使用拼音比较器（ChineseComparator.comparePingYin）进行比较。  
+	 *  
+	 * @param aHeads 字符串数组，定义了比较顺序的头部列表。  
+	 * @param aTailStartIndex 一个整数，定义了不在aHeads中的字符串的默认顺序索引。  
+	 *                         如果aTailStartIndex大于等于某个在aHeads中的字符串的顺序值，  
+	 *                         则不在aHeads中的字符串被认为大于该字符串；否则，被认为小于。  
+	 * @return 一个Comparator<Object>，用于比较两个对象。  
+	 */  
 	public static Comparator<Object> newComparator_String(String[] aHeads , int aTailStartIndex)
 	{
 		

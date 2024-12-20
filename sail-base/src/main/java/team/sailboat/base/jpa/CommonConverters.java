@@ -13,6 +13,12 @@ import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 通用的数据转换器。用在JPA持久化中
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public class CommonConverters
 {
 	public static class LinkedHashSet_String implements AttributeConverter<LinkedHashSet<String>, String>
@@ -21,7 +27,7 @@ public class CommonConverters
 		@Override
 		public String convertToDatabaseColumn(LinkedHashSet<String> aAttribute)
 		{
-			return aAttribute == null?null:new JSONArray(aAttribute).toJSONString() ;
+			return aAttribute == null?null:JSONArray.of(aAttribute).toJSONString() ;
 		}
 
 		@Override
@@ -66,7 +72,7 @@ public class CommonConverters
 		@Override
 		public JSONObject convertToEntityAttribute(String aDbData)
 		{
-			return new JSONObject(aDbData) ;
+			return JSONObject.of(aDbData) ;
 		}
 
 	}

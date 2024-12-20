@@ -9,14 +9,18 @@ from fastapi import FastAPI
 from loguru import logger
 
 from team.sailboat.py.installer.api.app_core import app_core
+from team.sailboat.py.installer.api.file_api import file_api
 from team.sailboat.py.installer.api.iptables import iptables
+from team.sailboat.py.installer.api.user_api import user_api
 from team.sailboat.py.installer.common.app_storage import AppStorage
 from team.sailboat.py.installer.common.app_util.app_path import AppPath
 from team.sailboat.py.installer.common.app_util.app_sys_command import AppSysCmd
+from team.sailboat.py.installer.common.app_variable import AppVariable
 from team.sailboat.py.installer.common.handler.http_handler import IPFilterMiddleware
 from team.sailboat.py.installer.custom_command import *  # 引入自定义命令包
 
 app_storage = AppStorage()
+app_variable = AppVariable()
 
 
 def close_firewalld():
@@ -29,12 +33,13 @@ def close_firewalld():
 
 # 加载主机配置
 def load_default():
-    filepath = AppPath.find_file(".hostProfile.json", os.path.dirname(os.getcwd()))
-    if filepath is None:
+    filepath = "../config/py_apps/py_installer/.hostProfile.json"
+    if not os.path.exists(filepath):
         return
     with open(filepath, 'r', encoding='utf-8') as file:
         host_profile = json.load(file)
         app_storage["profile"] = host_profile
+    app_variable.load_variable()
     logger.info("缓存主机配置加载成功!")
 
 
@@ -46,8 +51,10 @@ app = FastAPI(
 # 注册中间件
 app.add_middleware(IPFilterMiddleware)
 # 添加路由
-app.include_router(router=iptables, prefix="/iptc", tags=["防火墙相关接口"])
-app.include_router(router=app_core, prefix="/core", tags=["系统配置接口"])
+app.include_router(router=iptables, prefix="/iptables", tags=["防火墙相关接口"])
+app.include_router(router=app_core, prefix="/core", tags=["系统核心接口"])
+app.include_router(router=user_api, prefix="/user", tags=["用户相关接口"])
+app.include_router(router=file_api, prefix="/file", tags=["文件相关接口"])
 close_firewalld()
 load_default()
 if __name__ == '__main__':

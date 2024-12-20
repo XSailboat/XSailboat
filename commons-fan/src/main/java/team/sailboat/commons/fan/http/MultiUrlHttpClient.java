@@ -2,7 +2,7 @@ package team.sailboat.commons.fan.http;
 
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
-import java.net.URL;
+import java.net.URI;
 import java.util.Map.Entry;
 
 import team.sailboat.commons.fan.lang.Assert;
@@ -14,26 +14,26 @@ public class MultiUrlHttpClient extends HttpClient
 	
 	boolean mPathAsContextPath ;
 	
-	URL[] mUrls ;
+	URI[] mUris ;
 	
 
-	MultiUrlHttpClient(URL[] aUrls , boolean aPathAsContextPath)
+	MultiUrlHttpClient(URI[] aUris , boolean aPathAsContextPath)
 	{
 		super() ;
-		Assert.notEmpty(aUrls , "未指定需要连接的URL！");
-		mUrls = aUrls ;
+		Assert.notEmpty(aUris , "未指定需要连接的URL！");
+		mUris = aUris ;
 		mPathAsContextPath = aPathAsContextPath ;
 		select(mSelectIndex);
 	}
 	
 	protected void select(int aIndex)
 	{
-		mSelectIndex = mSelectIndex % mUrls.length ;
-		URL url = mUrls[mSelectIndex] ;
-		setHost(url.getHost()) ;
-		setPort(url.getPort() == -1 ? url.getDefaultPort() : url.getPort()) ;
+		mSelectIndex = mSelectIndex % mUris.length ;
+		URI uri = mUris[mSelectIndex] ;
+		setHost(uri.getHost()) ;
+		setPort(uri.getPort() == -1 ? ("https".equals(uri.getScheme())?443:80) : uri.getPort()) ;
 		if(mPathAsContextPath)
-			setContextPath(url.getPath()) ;
+			setContextPath(uri.getPath()) ;
 	}
 	
 	@Override
@@ -45,7 +45,7 @@ public class MultiUrlHttpClient extends HttpClient
 		}
 		catch(SocketTimeoutException e)
 		{
-			for(int i=1 ; i<mUrls.length ; i++)
+			for(int i=1 ; i<mUris.length ; i++)
 			{
 				select(mSelectIndex+1) ;
 				try
@@ -63,7 +63,7 @@ public class MultiUrlHttpClient extends HttpClient
 	@Override
 	public String getProtocol()
 	{
-		return mUrls[mSelectIndex].getProtocol() ;
+		return mUris[mSelectIndex].getScheme() ;
 	}
 	
 	

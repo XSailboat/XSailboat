@@ -1,0 +1,110 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(head,content,components,script)">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="pragma" content="no-cache">
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="expires" content="0">
+	<meta name="viewport"
+		content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="icon" th:href="@{/favicon.ico}" type="image/x-icon">
+	<link th:href="@{/public/3rds/elementPlus/index.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/public/3rds/fontawesome/font-awesome.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/iconfont/iconfont.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/iconfont-color/iconfont.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/public/style/default/common.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/style/common.css}" rel="stylesheet" type="text/css">
+	<script type="text/javascript" th:src="@{/public/js/q.min.js}"></script>
+	<script type="text/javascript" th:src="@{/public/js/es6-promise.auto.min.js}"></script>
+	<script type="text/javascript" th:src="@{/public/3rds/vue/vue.global.js}"></script>
+	<script type="text/javascript" th:src="@{/public/3rds/vue/vuex.global.js}"></script>
+	<script type="text/javascript" th:src="@{/public/3rds/vue/axios.min.js}"></script>
+	<script type="text/javascript" th:src="@{/public/3rds/elementPlus/index.full.js}"></script>
+	<script type="text/javascript" th:src="@{/public/3rds/elementPlus/zh-cn.js}"></script>
+	<script type="text/javascript" th:src="@{/public/3rds/elementPlus/icons-vue.js}"></script>
+	<script type="text/javascript" th:src="@{/public/js/security.js}"></script>
+	<script type="text/javascript" th:src="@{/public/js/sailtool.js}"></script>
+	<script type="text/javascript" th:src="@{/public/js/common.js}"></script>
+	<th:block th:insert="${head}" />
+</head>
+
+<body>
+	<div id="app">
+		<div class="app-wrapper" v-cloak>
+			<div class="main-container" style="display: flex;flex-direction: column;">
+				<!-- <div class="dataworks-common-header">
+					<div class="topHeader">
+						<i class="icon icon-oauth-center logo-title"></i>
+						<span class="header-title">认证中心</span>
+						<el-divider direction="vertical"></el-divider>
+						<span class="header-title">[[${banner}]]</span>
+					</div>
+				</div> -->
+	 			<div th:insert="${content}" class="content-container" style="flex: 1;height: 0;"></div>
+	 			<!-- <div class="footer"><i class="fa fa-copyright" style="margin-right: 4px;"></i>版权所有</div> -->
+			</div>
+		</div>
+	</div>
+	<th:block th:insert="${components}?: ~{}" />
+	<th:block th:insert="${script}?: ~{}" />
+	<script type="text/javascript" th:inline="javascript">
+		RSAUtils.setMaxDigits(200); 
+		
+		SailTool.SysEnv = /*[[${sysEnv}]]*/ '';
+		SailTool.authes = /*[[${authes}]]*/ [];
+		
+		const {createApp, reactive, toRefs, ref, watch, getCurrentInstance, onMounted, computed, nextTick } = Vue;
+		const {ElMessageBox, ElMessage} = ElementPlus;
+		
+		var storeOpts = {
+			state: {
+				csrf: {
+					enable: /*[(${_csrf != null})]*/ false,
+					value: /*[[${_csrf != null?_csrf.token: ''}]]*/ ""
+				}
+			},
+			mutations: {},
+			modules: {}
+		};
+		const store = new Vuex.Store($.extend(true, {}, storeOpts, typeof exStoreOpts == 'undefined' ? {} : exStoreOpts));
+		
+		var vueOpts = {
+			data() {
+				return {
+				}
+			},
+			computed: {
+				...Vuex.mapState({
+					csrfEnable: state => state.csrf.enable,
+					csrfValue: state => state.csrf.value
+				}),
+				csrfPair() {
+					return this.csrfEnable ? { "_csrf": this.csrfValue } : {};
+				},
+			},
+			methods: {
+				encrypPwd(password, callback){
+					axios.get('public/security/rsa-publickey').then(res=>{
+						var key = new RSAUtils.getKeyPair(res.data.publicKeyExponent, '', res.data.publicKeyModulus);
+						let pwd = password.split("").reverse().join("");
+						var encrypedPwd = RSAUtils.encryptedString(key, pwd);
+						callback(res.data.codeId, encrypedPwd);
+					}).catch(error=>{
+						SailTool.exception(error);
+					})
+				},
+			},
+			mounted(){
+			},
+		};
+		const app = Vue.createApp($.extend(true, {}, typeof exVueOpts == 'undefined' ? {} : exVueOpts));
+		app.mixin(vueOpts).use(store).use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+		for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+		  app.component(key, component)
+		}
+		app.mount('#app');
+	</script>
+</body>
+	
+</html>

@@ -10,6 +10,12 @@ import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public class Expression
 {
 	String mText ;

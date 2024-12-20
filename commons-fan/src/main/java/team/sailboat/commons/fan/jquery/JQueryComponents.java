@@ -9,16 +9,61 @@ import team.sailboat.commons.fan.infc.EConsumer;
 import team.sailboat.commons.fan.infc.EFunction;
 import team.sailboat.commons.fan.json.JSONArray;
 import team.sailboat.commons.fan.json.JSONObject;
-
+/**
+ * 
+ * JQuery查询的功能构建
+ *
+ * @author yyl
+ * @since 2024年12月11日
+ */
 public class JQueryComponents
 {
-	static final ThreadLocal<JQueryComponents> sInstanceTL = new ThreadLocal<JQueryComponents>() ;
+	/**
+	 * 创建一个新的实例
+	 * 
+	 * @return
+	 */
+	public static JQueryComponents one()
+	{
+		return new JQueryComponents() ;
+	}
 	
 	protected JSONObject mMetaJo ;
 	
+	/**
+	 * 各列信息
+	 */
 	protected JSONObject mColumnsJo ;
 	
+	/**
+	 * 适用于矩阵型的返回数据			<br />
+	 * 列名数组			<br />
+	 * 例如：["ts" , "value"]
+	 */
+	protected JSONArray mColumnNamesJa ;
+	
 	protected JSONObject mResultJo ;
+	
+	public EConsumer<ResultSetMetaData , SQLException> columnsBuilder()
+	{
+		return (rsmd)->{
+			int len = rsmd.getColumnCount() ;
+			if(mColumnsJo == null)
+				mColumnsJo = JSONObject.one() ;
+			if(mColumnNamesJa == null)
+				mColumnNamesJa = JSONArray.one() ;
+			for(int i=1 ; i<=len ; i++)
+			{
+				String name = rsmd.getColumnLabel(i) ;
+				int j = name.indexOf('.') ; 
+				name = j == -1?name:name.substring(j+1) ; 
+				mColumnsJo.put(name , new JSONObject().put("dataType" , rsmd.getColumnTypeName(i) )
+						.put("index", i-1)
+						) ;
+				mColumnNamesJa.put(name) ;
+			}
+		} ;
+	}
 	
 	public EConsumer<ResultSetMetaData , SQLException> metaBuilder()
 	{
@@ -52,8 +97,9 @@ public class JQueryComponents
 			if(mResultJo == null)
 				mResultJo = new JSONObject() ;
 			return mResultJo.put("data", ja)
-					.put("columns" , mColumnsJo)
-					.put("meta", mMetaJo) ;
+					.putIf(mColumnsJo != null , "columns" , mColumnsJo)
+					.putIf(mColumnNamesJa != null , "columnNames", mColumnNamesJa)
+					.putIf(mMetaJo != null , "meta", mMetaJo) ;
 		} ;
 	}
 	
@@ -65,24 +111,5 @@ public class JQueryComponents
 			else
 				mResultJo.copyAllFrom(jo) ;
 		} ;
-	}
-	
-	static JQueryComponents newInstance_TL()
-	{
-		JQueryComponents instance = new JQueryComponents() ;
-		sInstanceTL.set(instance) ;
-		return instance ;
-	}
-	
-	static JQueryComponents getInstance_TL()
-	{
-		return sInstanceTL.get() ;
-	}
-	
-	static JQueryComponents clearInstance_TL()
-	{
-		JQueryComponents instance =  sInstanceTL.get() ;
-		sInstanceTL.remove();
-		return instance ;
 	}
 }

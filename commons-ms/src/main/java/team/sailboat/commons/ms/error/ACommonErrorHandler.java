@@ -27,7 +27,7 @@ public abstract class ACommonErrorHandler
 			String aMsg , String aUrl , int aStatusCode)
 	{
 		if(XString.isEmpty(aMsg))
-			aMsg = (String)aRequest.getAttribute("javax.servlet.error.message") ;
+			aMsg = (String)aRequest.getAttribute("jakarta.servlet.error.message") ;
 		
 		String errorViewName = null ;
 		switch(aStatusCode)

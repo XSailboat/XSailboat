@@ -1,0 +1,220 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  >
+<th:block th:fragment="api">
+	<template id="api">
+		<div style="display:flex; flex-direction: column;flex: 1;height: 0;">
+			<div class="container-title">
+				<span class="container-text">应用管理 <el-icon color="#fff"><arrow-right-bold/></el-icon> API授权</span>
+			</div>
+			<div class="el-card is-never-shadow" style="padding: 20px;display: flex;align-items: center; border-bottom: none;">
+		      	<span>选择应用：</span>
+		      	<el-select v-model="activedApp" placeholder="请选择" @change="loadApis" style="width: 220px;">
+				    <el-option v-for="app in apps" :key="app.id" :label="app.name" :value="app.id">
+				    </el-option>
+				</el-select>
+				<el-button type="primary" icon="search" style="margin-left: 8px;" @click="loadApis">查询</el-button>
+				<div style="display: inline-flex;flex: 1;justify-content: flex-end;">
+	    			<i class="icon icon-yingyong" style="font-size: 2.2em;color: #409EFF;"></i>							
+				<span style="font-size: 1.8em;margin: 0 8px;">{{appName}}</span>
+	    		</div>
+		    </div>
+		    <div class="el-card is-never-shadow role-container" style="flex: 1;height: 0;display: flex;border-top: none;flex-direction: column;">
+				<el-table ref="api_table" :data="apis" height="100%" trip border current-row-key="id" @select="apiChange" style="width: 100%">
+    					<el-table-column type="expand" width="50">
+      					<template #default="props">
+      						<div v-if="props.row.params == null">没有参数</div>
+      						<table v-else class="api-params-table">
+      							<caption>请求参数信息</caption>
+      							<tr style="background: #F4F5F9;">
+      								<th style="width: 140px;">参数名</th>
+      								<th style="width: 140px;">参数位置</th>
+      								<th style="width: 80px;">必填</th>
+      								<th>默认值</th>
+      								<th>描述</th>
+   								</tr>
+      							<tr v-for="(val, key) in props.row.params">
+      								<td><el-input v-model="val.name" readonly></el-input></td>
+      								<td><el-input v-model="val.loc" readonly></el-input></td>
+      								<td align="center"><el-checkbox v-model="val.required" disabled></el-checkbox></td>
+      								<td><el-input v-model="val.defaultValue" readonly></el-input></td>
+      								<td><el-input v-model="val.description" readonly></el-input></td>
+      							</tr>
+      						</table>
+				      	</template>
+				    </el-table-column>
+	    				<el-table-column sec:authorize="hasAuthority('CDU_ClientAppData')" type="selection" :selectable="selectable" width="50" align="center"></el-table-column>
+				    <el-table-column type="index" label="#" width="50" align="center"> </el-table-column>
+	    				<el-table-column prop="name" label="API名称" min-width="120"> </el-table-column>
+					<el-table-column prop="description" label="描述" min-width="200"> </el-table-column>
+					<el-table-column prop="method" label="Method" width="100"> </el-table-column>
+					<el-table-column prop="path" label="Path" min-width="140"> </el-table-column>
+					<el-table-column prop="createTime" label="创建时间" min-width="160">
+						<template #default="scope">
+							<div style="font-size: 13px;">{{scope.row.createTime.replace('T', ' ').substring(0, 19)}} 创建</div>
+							<div style="font-size: 13px;">{{scope.row.lastEditTime.replace('T', ' ').substring(0, 19)}} 修改</div>
+						</template>
+					</el-table-column>
+ 				</el-table>
+			</div>
+		</div>
+	</template>
+<script>
+	const Api = {
+		template: "#api",
+		props: {
+			apps: {
+				type: Array,
+				default: () => []
+			}
+		},
+		setup(props, context) {
+			const data = reactive({
+				init: true,
+				activedApp: '',
+				appName: '',
+				allApis: [],
+				apis: [],
+				apiVisible: false,
+				grantApis: [],
+				initialApis: [],
+				props: {
+					key: 'id',
+					label: 'path'
+				},
+				
+				api_table: null
+			})
+			
+			const {proxy} = getCurrentInstance();
+
+			const loadApis = val => { 
+				axios.get('api/all').then(res=>{
+					data.apis = res.data;
+					data.apis.forEach(api => {
+						api.params = JSON.parse(api.params);
+					});
+					loadAppApis();
+				}).catch(error=>{
+					SailTool.exception(error);
+				})
+				proxy.$parent.activeAppId = val || data.activedApp; 
+				SailTool.urlPush('appId', encodeURIComponent(data.activedApp));
+			};
+			const loadAppApis = () => {
+				axios.get('clientApp/api/all', {
+					params: {
+						clientAppId: data.activedApp
+					}
+				}).then(res=>{
+					if(res.data.length > 0){
+						let _apis = [];
+						res.data.forEach(api => {
+							_apis.push(api.id);
+						});
+						data.apis.forEach(api => {
+							if(_apis.indexOf(api.id) != -1){
+								data.api_table.toggleRowSelection(api, true);
+							}
+						})
+					}
+					nextTick(() => {
+						data.init = true;
+					})
+				}).catch(error=>{
+					SailTool.exception(error);
+				})
+				props.apps.forEach( app => {
+					if(app.id == data.activedApp){
+						data.appName = app.name
+					}
+				})
+				SailTool.urlPush('appId', encodeURIComponent(data.activedApp));
+			};
+			const selectable = row => {
+				return row.name != 'Oauth2TokenPOST';
+			};
+			const apiChange = (selection, row) => {
+				if (!data.init) {
+					return;
+				}
+				let operType = 'unbind';
+				selection.forEach(auth => {
+					if (auth == row) {
+						operType = 'bind';
+					}
+				});
+				if (operType == 'unbind')
+					unbindApiToApp(row);
+				else
+					bindApiToApp(row);
+			};
+			
+			const bindApiToApp = api => {
+				axios({
+					url: 'clientApp/api/one',
+					method: 'post',
+					params: {
+						clientAppId: data.activedApp,
+						apiId: api.id
+					}
+				}).then(res => {
+					if (res.status == '200') {
+						ElMessage.$success('操作成功！');
+					} else {
+						ElMessage.$error('操作失败！');
+						data.api_table.toggleRowSelection(api, false);
+					}
+				}).catch(error => {
+					SailTool.exception(error);
+					data.api_table.toggleRowSelection(api, false);
+				})
+			};
+			
+			const unbindApiToApp = api => {
+				axios.delete('clientApp/api/one', {
+					params: {
+						clientAppId: data.activedApp,
+						apiId: api.id
+					}
+				}).then(res => {
+					if (res.status == '200') {
+						ElMessage.$success('操作成功！');
+					} else {
+						ElMessage.$error('操作失败！');
+						data.api_table.toggleRowSelection(api, true);
+					}
+				}).catch(error => {
+					SailTool.exception(error);
+					data.api_table.toggleRowSelection(api, true);
+				})
+			};
+
+			const filterMethod = (query, item) => {
+				return item.path.indexOf(query) > -1;
+			}
+			
+			proxy.$parent.loadApps(false, apps=>{
+				if(proxy.$parent.activeAppId){
+					data.activedApp = proxy.$parent.activeAppId;
+				}else if(apps.length > 0){
+					data.activedApp = apps[0]['id'];
+				}
+				apps.forEach( app => {
+					if(app.id == data.activedApp){
+						data.appName = app.name
+					}
+				})
+				loadApis();
+			});
+			
+			return {
+				...toRefs(data),
+				loadApis,
+				apiChange,
+				selectable,
+			}
+		}
+	}
+</script>
+</th:block>
+</html>

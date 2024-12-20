@@ -166,7 +166,7 @@ public class HttpEnvelop
 			{
 				try
 				{
-					JSONObject msgJo = new JSONObject(msg) ;
+					JSONObject msgJo = JSONObject.of(msg) ;
 					if(msgJo.has("message") && msgJo.has("rootExceptionClass"))
 					{
 						RestApiException.createAndThrow(aHttpConn.getRequestMethod() , aHttpConn.getURL()

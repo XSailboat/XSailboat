@@ -15,6 +15,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import team.sailboat.commons.fan.excep.WrapException;
 import team.sailboat.commons.fan.gadget.RSAKeyPairMaker;
 import team.sailboat.commons.fan.lang.Assert;
+import team.sailboat.commons.fan.text.XString;
 
 public class RSAKeyPairMaker4JS extends RSAKeyPairMaker
 {
@@ -54,8 +55,19 @@ public class RSAKeyPairMaker4JS extends RSAKeyPairMaker
 		return mDelegate.newOne() ;
 	}
 
+	/**
+	 * 
+	 * 适用于前端js库的RSA加密后的秘文
+	 * 
+	 * @param aId				动态RSA秘钥标识。如果为空，将不解密，直接返回aSecretText
+	 * @param aSecretText		加密后的秘文
+	 * @return
+	 * @throws Exception
+	 */
 	public String decrypt4js(String aId, String aSecretText) throws Exception
 	{
+		if(XString.isEmpty(aId))
+			return aSecretText ;
 		RSAPrivateKey pk = mDelegate.getPrivateKey(aId);
 		Assert.notNull(pk, "无效的id[%s]", aId);
 		if(aSecretText.endsWith(".js"))

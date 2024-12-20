@@ -9,8 +9,8 @@ import team.sailboat.commons.fan.dtool.DBHelper;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.statestore.IStateStore;
 import team.sailboat.commons.fan.statestore.IStateStoreBuilder;
-import team.sailboat.commons.fan.statestore.RDBStateStore;
 import team.sailboat.commons.fan.statestore.IStateStoreBuilder.IRDBStateStoreBuilder;
+import team.sailboat.commons.fan.statestore.StateStore_RDB;
 
 public class StateStoreBuilders
 {
@@ -22,7 +22,7 @@ public class StateStoreBuilders
 	public static IStateStoreBuilder newStateStore(PropertiesEx aPropEx)
 	{
 		String className = aPropEx.getString("state-store.className") ;
-		if(RDBStateStore.class.getName().equals(className))
+		if(StateStore_RDB.class.getName().equals(className))
 		{
 			return StateStoreBuilders.ofRdb().connUrl(aPropEx.getString("state-store.connUrl"))
 					.username(aPropEx.getString("state-store.username"))
@@ -91,7 +91,7 @@ public class StateStoreBuilders
 			{
 				throw new IllegalStateException(e) ;
 			}
-			return new RDBStateStore(ds , mTableName , aDomainName , ds.getUrl()) ;
+			return new StateStore_RDB(ds , mTableName , aDomainName , ds.getUrl()) ;
 		}
 		
 	}

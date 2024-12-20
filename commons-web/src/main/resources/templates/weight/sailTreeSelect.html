@@ -1,0 +1,175 @@
+<!--
+ 树形选择控件
+ @author 冬季里歌唱的鱼
+ @since 2024-12-02
+-->
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org"
+>
+<th:block th:fragment="sailTreeSelect">
+    <template id="sailTreeSelect">
+        <el-popover ref="tree_popover" placement="bottom" :teleported="false" width="100%" trigger="click">
+            <sail-tree
+                    :data="data"
+                    :lazy="lazy"
+                    height="height"
+                    :max-height="maxHeight"
+                    ref="sailTreeRef"
+                    ref-id="elTreeRef"
+                    :node-key="nodeKey"
+                    :load="load"
+                    :support-search="supportSearch"
+                    @query-search="querySearch"
+                    @node-click="nodeClick"
+                    :highlight-current="highlightCurrent"
+                    :props="props"
+                    :expand-on-click-node="expandOnClickNode">
+                <template #icon="{ node, data }">
+                    <slot name="icon" :data="data" :node="node">
+                    </slot>
+                </template>
+
+                <template #label="{data, node}">
+                    <slot name="label" :data="data" :node="node">
+
+                    </slot>
+                </template>
+
+                <template #append="{data, node}">
+                    <slot name="append" :data="data" :node="node">
+                    </slot>
+                </template>
+            </sail-tree>
+
+            <template #reference>
+
+                <el-input-tag
+                        @remove-tag="removeTag"
+                        style="flex: 1"
+                        tag-type="primary"
+                        v-model="values"
+                        trigger="#"
+                        placeholder="请选择">
+                    <template #tag="{ value }">
+                        <span>{{ value[label] }}</span>
+                    </template>
+                </el-input-tag>
+
+            </template>
+        </el-popover>
+    </template>
+
+    <components>
+        <th:block th:insert="~{weight/sailTree::sailTree}"/>
+    </components>
+
+    <script>
+        var SailTreeSelect = {
+            template: "#sailTreeSelect",
+
+            props: {
+                data: {
+                    type: Array,
+                    default: () => []
+                },
+                lazy: {
+                    type: Boolean,
+                    default: false
+                },
+                nodeKey: {
+                    type: String,
+                    required: false
+                },
+                highlightCurrent: {
+                    type: Boolean,
+                    default: false
+                },
+                props: {
+                    type: Object,
+                    default: {
+                        label: 'label',
+                        children: 'children'
+                    }
+                },
+                expandOnClickNode: {
+                    type: Boolean,
+                    default: true
+                },
+                load: {
+                    type: Function
+                },
+                multiple: {
+                    type: Boolean,
+                    default: false
+                },
+                supportSearch: {
+                    type: Boolean,
+                    default: false
+                },
+                height: {
+                    type: String,
+                    default: '100%'
+                },
+                maxHeight: {
+                    type: String,
+                    default: '100%'
+                },
+                modelValue: {
+                    type: Array,
+                    required: true
+                }
+            },
+
+            components: {
+                'sail-tree': SailTree
+            },
+
+            emits: ['querySearch', 'nodeClick', 'update:modelValue', 'removeTag'],
+
+            setup(props, context) {
+
+
+                const rdata = reactive({
+                    sailTreeRef: null,
+                    values: [...props.modelValue],
+                    label: props.props.label
+                });
+
+                const querySearch = (searchText, refresh) => {
+                    context.emit('querySearch', searchText, refresh);
+                }
+
+                const nodeClick = (data, node) => {
+
+                    const index = rdata.values.findIndex(val => val.id === data.id);
+                    if (index > -1) {
+                        // 删除
+                        rdata.values.splice(index, 1);
+                    } else {
+                        rdata.values.push(data);
+                    }
+
+                    context.emit('update:modelValue', rdata.values);
+                    context.emit('nodeClick', data, node);
+
+                }
+
+                const removeTag = (val) => {
+                    context.emit('remove-tag', val);
+                    context.emit('update:modelValue', rdata.values);
+                }
+
+
+                return {
+                    ...toRefs(rdata),
+                    querySearch,
+                    nodeClick,
+                    removeTag
+                }
+            }
+        }
+    </script>
+</th:block>
+</html>

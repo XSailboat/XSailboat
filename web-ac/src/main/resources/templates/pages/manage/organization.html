@@ -1,0 +1,589 @@
+<!--
+ 组织单元页面
+ @author 冬季里歌唱的鱼
+ @since 2024-12-02
+-->
+
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="organization">
+	<template id="organization">
+		<div style="flex: 1; width: 100%; display: flex;" class="organization">
+			<div class="container-title">
+				<span class="container-text">组织架构</span>
+			</div>
+			<div class="sail-left-pane" style="border-right: 1px solid #eaeef5;">
+				<div style="display: flex;align-items: center;padding: 16px 8px;border-bottom: 1px solid #eaeef5;margin-bottom: 8px;">
+					<i class="icon icon-zuzhijiagou"></i>
+					<span style="flex: 1;">组织树</span>
+					<el-tooltip content="刷新" placement="top">
+						<el-icon @click="refreshOrgTree" style="font-size: 16px;">
+							<Refresh />
+						</el-icon>
+					</el-tooltip>
+
+					<el-tooltip content="添加顶级组织单元" placement="top">
+						<i sec:authorize="hasAuthority('CDU_OrgUnit')" class="fa fa-plus-square-o" style="font-size: 16px; margin-left: 8px;" @click="addOrgView('')"></i>
+					</el-tooltip>
+				</div>
+				<div style="flex: 1; padding: 8px 0; display: flex; flex-direction: column; overflow: hidden;">
+					<sail-tree :data="treeData" ref="sail_tree" ref-id="elTreeRef" :lazy="true" :draggable="true" node-key="id" :support-search="true" :load="loadOrgTree" @node-click="nodeClick"
+						@node-drop="nodeDrop" @query-search="querySearch" :highlight-current="true" :props="defaultProps" @node-contextmenu-click="clickNodeContextmenu" :expand-on-click-node="false">
+						<template #icon>
+							<i class="icon icon-zuzhiDataOrganization9"></i>
+						</template>
+					</sail-tree>
+				</div>
+			</div>
+
+			<div style="flex: 1; height: 100%; box-sizing: border-box; padding: 8px; display: flex; flex-direction: column;">
+				<div style="display: flex; padding: 2px 4px 14px;">
+					<el-input v-model="orgUserKey" style="width: 240px" placeholder="请输入关键字" prefix-icon="Search"></el-input>
+					<span style="flex: 1"></span>
+					<el-button sec:authorize="hasAuthority('CDU_OrgUnit')" type="primary" @click="userAddToOrg"><i class="icon icon-xinjianyonghu"></i> 添加用户
+					</el-button>
+				</div>
+
+				<sail-table style="flex: 1;" ref="user_table" :data="filterOrgUsers" height="100%" border current-row-key="id">
+					<el-table-column type="index" label="#" width="50" align="center"></el-table-column>
+					<el-table-column prop="realName" label="用户名" width="140"></el-table-column>
+					<el-table-column prop="sex" label="性别" width="80" align="center"></el-table-column>
+					<el-table-column prop="department" label="部门" min-width="160"></el-table-column>
+					<el-table-column prop="job" label="职位" min-width="160">
+						<template #default="scope">
+							<div v-if="!scope.row.jobEditStatus" style="min-height: 20px;">
+								{{ scope.row.job }}
+								<el-tooltip content="编辑职位" placement="top">
+									<el-icon @click="editJob(scope.row, 'jobEditStatus')" color="#409efc">
+										<Edit />
+									</el-icon>
+								</el-tooltip>
+							</div>
+							<el-input v-else v-model="scope.row.job" ref="value_input" style="width: 100%" @blur="updatePropertyOne(scope.row)"></el-input>
+						</template>
+					</el-table-column>
+					<el-table-column prop="job" label="操作" width="130" align="center">
+						<template #default="scope">
+							<el-button type="danger" size="small" icon="Delete" @click="removeUserFromOrgUnit(scope.row)">移 除
+							</el-button>
+						</template>
+
+					</el-table-column>
+				</sail-table>
+			</div>
+
+			<!-- 操作 -->
+			<el-dialog :title="org.id ? '编辑组织单元' : '添加组织单元'" v-model="orgVisible" width="420px" destroy-on-close :close-on-press-escape="false" :close-on-click-modal="false" :show-close="false">
+				<el-form ref="org_unit_form" :model="org" :rules="rules" label-width="80px" style="margin: 20px;">
+
+					<el-form-item label="上层名称" v-if="org.parentName">
+						<el-input class="sail-el-input-disabled" :value="org.parentName" :disabled="true"></el-input>
+					</el-form-item>
+
+					<el-form-item label="名称" prop="name">
+						<el-input v-model="org.name"></el-input>
+					</el-form-item>
+					<el-form-item label="简称" prop="simpleName">
+						<el-input v-model="org.simpleName"></el-input>
+					</el-form-item>
+				</el-form>
+				<template #footer>
+					<span class="dialog-footer">
+						<el-button type="primary" @click="orgSubmit">确 定</el-button>
+						<el-button @click="orgVisible = false">取 消</el-button>
+					</span>
+				</template>
+			</el-dialog>
+
+			<!-- 添加用户 -->
+			<el-dialog title="用户" v-model="userAddVisible" class="big-dialog" top="0" destroy-on-close :close-on-press-escape="false" :close-on-click-modal="false">
+				<template #title>
+					<span><i class="icon icon-xinjianyonghu"></i> 添加用户</span>
+				</template>
+
+				<div style="display: flex; flex-direction: column; height: 100%">
+					<div style="padding-bottom: 8px; padding-top: 8px;">
+						<el-input v-model="userKey" style="width: 240px" placeholder="请输入关键字" prefix-icon="Search"></el-input>
+					</div>
+
+					<sail-table ref="user_table" :data="filterUsers" border style="flex: 1; display: flex; flex-direction: column;" current-row-key="id" :support-pagination="true"
+						@handle-size-change="handleSizeChange" @handle-current-change="handleCurrentChange" :multiple-select="true" v-model="bindUsers" :total="userTotal">
+						<el-table-column type="selection" width="55"></el-table-column>
+						<el-table-column type="index" label="#" width="50" align="center"></el-table-column>
+						<el-table-column prop="username" label="用户名" min-width="140"></el-table-column>
+						<el-table-column prop="realName" label="真实用户名" minwidth="140"></el-table-column>
+						<el-table-column prop="sex" label="性别" width="80" align="center"></el-table-column>
+						<el-table-column prop="createTime" label="创建时间" sortable min-width="160">
+							<template #default="scope">
+								{{scope.row.createTime.substring(0, 19).replace('T', ' ')}}
+							</template>
+						</el-table-column>
+					</sail-table>
+				</div>
+
+
+				<template #footer>
+					<div class="dialog-footer">
+						<el-button type="primary" @click="confirmUserMount">确 定</el-button>
+						<el-button @click="userAddVisible = false">取 消</el-button>
+					</div>
+				</template>
+			</el-dialog>
+		</div>
+	</template>
+
+	<components>
+		<th:block th:insert="~{weight/sailTree::sailTree}" />
+		<th:block th:insert="~{weight/sailTable::sailTable}" />
+	</components>
+
+	<script>
+		const Organization = {
+			template: "#organization",
+
+			components: {
+				"sail-tree": SailTree,
+				"sail-table": SailTable
+			},
+
+			setup() {
+				// 当前编辑的职位数据行
+				let curEditJobRow = {};
+				const data = reactive({
+					treeData: [],
+					bindUsers: [], // 挂接到该组织单元的用户
+					defaultProps: {
+						label: 'name',
+						children: 'children',
+						isLeaf: 'isLeaf',
+						menu: {
+							show: SailTool.hasAuthority('CDU_OrgUnit'),
+							type: 'context',
+							data: [
+								{
+									type: 'item',        //菜单项
+									key: 'add-child',         //点击返回关键字
+									name: '添加下一层',        //名称
+									icon: 'fa fa-plus-square-o',  //图标类名
+									disabled: false      //是否禁用
+								},
+								{
+									type: 'item',        //菜单项
+									key: 'add-brother',         //点击返回关键字
+									name: '添加同一层',        //名称
+									icon: 'fa fa-plus-square-o',  //图标类名
+									disabled: false      //是否禁用
+								},
+								{
+									type: 'item',
+									key: 'edit',
+									name: '编辑',
+									icon: 'fa fa-pencil-square-o',
+									disabled: false
+								},
+								{
+									type: 'item',
+									key: 'delete',
+									name: '删除',
+									icon: 'icon icon-shanchu',
+									disabled: false
+								},
+							]
+						}
+					},
+					orgVisible: false,
+
+					org: {},
+
+					rules: {
+						name: [
+							{required: true, message: '请输入名称', trigger: 'change'},
+						],
+					},
+
+					// 当前组织单元下的用户
+					orgUsers: [],
+
+					// 系统中的所有用户
+					allUsers: [],
+
+					dialogVisible: true,
+					// 用户挂接到组织单元的对话框
+					userAddVisible: false,
+					// 用户搜索关键字
+					userKey: null,
+					// 挂接到组织单元的用户搜索关键字
+					orgUserKey: null,
+
+					// 用户的总数量
+					userTotal: 0,
+					page: 1,
+					pageSize: 10,
+
+					sail_tree: null,
+					org_unit_form: null,
+					value_input: null,
+					elTreeRef: null
+				});
+
+				data.filterUsers = computed(() => {
+					return data.allUsers.filter(userInfo => {
+						return (userInfo.username && userInfo.username.indexOf(data.userKey) > -1) ||
+							(userInfo.realName && userInfo.realName.indexOf(data.userKey) > -1) ||
+							!data.userKey
+					});
+				});
+
+				data.filterOrgUsers = computed(() => {
+					return data.orgUsers.filter(userInfo => !data.orgUserKey || userInfo.realName.indexOf(data.orgUserKey) > -1);
+				});
+
+
+				/**********对组织单元进行操作的方法************/
+				const addOrgView = parent => {
+					data.org = {
+						parentId: parent.id || '',
+						parentName: parent.name,
+						name: '',
+						simpleName: ''
+					}
+					data.orgVisible = true;
+
+				}
+
+				// 编辑组织单元
+				const editOrgUnit = (mdata, node) => {
+					data.org = SailTool.clone(mdata);
+					data.org.parentName = node.parent.data.name;
+					data.org.parentId = node.parent.data.id;
+					data.orgVisible = true;
+				}
+
+				// 删除组织单元
+				const deleteOrgUnit = (mdata, node) => {
+
+					axios.delete('orgUnit/one', {
+						params: {
+							orgUnitId: mdata.id
+						}
+					}).then(res => {
+						ElMessage({
+							message: '删除成功',
+							grouping: true,
+							type: 'success',
+						});
+
+						data.sail_tree.remove(mdata.id);
+
+					}).catch(error => {
+						SailTool.exception(error);
+					});
+
+				}
+
+				const orgSubmit = () => {
+					data.org_unit_form.validate((valid) => {
+						if (valid) {
+							const method = data.org.id ? 'put' : 'post';
+							axios({
+								url: 'orgUnit/one',
+								method,
+								data: data.org
+							}).then(_ => {
+								ElMessage({
+									message: data.org.id ? '修改成功' : '创建成功',
+									grouping: true,
+									type: 'success',
+								});
+								data.orgVisible = false;
+								doLoadOrgTree({data: {id: data.org.parentId}}, res => {
+									data.sail_tree.updateKeyChildren(data.org.parentId, res);
+								});
+
+							}).catch(error => {
+								SailTool.exception(error);
+							});
+						}
+					});
+				}
+
+				const refreshOrgTree = () => {
+					doLoadOrgTree(null, res => data.treeData = res);
+				}
+
+				const doLoadOrgTree = (node, callback) => {
+					axios.get('orgUnit/child/all', {
+						params: {
+							parentId: node ? node.data.id : null
+						}
+					}).then(res => {
+
+						res.data.forEach(item => {
+							item.isLeaf = !item.hasChildren;
+						});
+
+						callback && callback(res.data);
+						
+						if (node.level == 0 && res.data.length > 0) {
+							nextTick(() => {
+								data.sail_tree.setCurrentNode(res.data[0]);
+								nodeClick(res.data[0])
+							})
+						}
+						
+					}).catch(error => {
+						SailTool.exception(error);
+					});
+				}
+
+				const loadOrgTree = (node, resolve) => {
+					if (!node) return;
+					doLoadOrgTree(node, resolve);
+				}
+
+				const nodeClick = node => {
+					// 用户选中的组织单元
+					data.curOrg = node;
+
+					axios.get('orgUnit/child/user/all', {
+						params: {
+							orgUnitId: node.id
+						}
+					}).then(res => {
+						data.orgUsers = res.data;
+						// 绑定用户的简要信息
+						data.bindBriefUsersInfo = res.data;
+					}).catch(error => {
+						SailTool.exception(error);
+					});
+				}
+
+				const nodeDrop = (curNode, endNode, pos, event, refresh) => {
+
+					if (pos !== 'inner') {
+						curNode.data.parentId = endNode.parent ? endNode.parent.data.id : null;
+					} else {
+						curNode.data.parentId = endNode.data.id;
+					}
+					axios.put('orgUnit/one', curNode.data).then(res => {
+						ElementPlus.ElMessage.$success('修改成功');
+						refresh();
+					}).catch(error => {
+						SailTool.exception(error);
+					});
+				}
+
+				// 鼠标右键树节点
+				const clickNodeContextmenu = (key, nodeData, node) => {
+					if (key === 'delete') {
+						if (!node.isLeaf) {
+							ElMessage.$error(nodeData.name + '有子组织单元，删除失败');
+							return;
+						}
+
+						ElMessageBox.confirm("确定要删除组织单元【" + nodeData.name + "】？", '确认删除', {
+							dangerouslyUseHTMLString: true,
+							showClose: false,
+							type: 'error',
+							confirmButtonText: '删除',
+							cancelButtonClass: 'concel-right',
+							confirmButtonClass: 'el-button--danger'
+						}).then(_ => {
+							deleteOrgUnit(nodeData, node);
+						}).catch(_ => { });
+
+					} else if (key === 'edit') {
+						editOrgUnit(nodeData, node);
+					} else if (key === 'add-child') {
+						addOrgView(nodeData);
+					} else if (key === 'add-brother') {
+						addOrgView(node.parent.data);
+					}
+				}
+
+				const querySearch = (searchText, refresh) => {
+					if (searchText) {
+						axios.get('orgUnit/tree/_search', {
+							params: {
+								searchText
+							}
+						}).then(res => {
+							const treeData = buildTree(res.data.data, res.data.rootNodeIds);
+							// 刷新树
+							refresh(treeData);
+						}).catch(error => {
+							SailTool.exception(error);
+						});
+					} else {
+						// 重新加载树
+						doLoadOrgTree(null, res => refresh(res));
+					}
+				}
+
+				const buildTree = (resData, childIds) => {
+					const children = [];
+					if (childIds) {
+						for (let i = 0; i < childIds.length; i++) {
+							resData[childIds[i]].children = buildTree(resData, resData[childIds[i]].childIds);
+							children.push(resData[childIds[i]]);
+						}
+					}
+					return children;
+				}
+
+
+				/************将用户挂载到组织单元的操作***************/
+				// 加载所有的用户
+				const loadAllUsers = () => {
+					axios.get('user/all', {
+						pageSize: data.pageSize,
+						pageIndex: data.page - 1
+					}).then(res => {
+						data.allUsers = res.data.data;
+						data.userTotal = res.data.totalAmount;
+
+						const bindUsers = [];
+						if (data.bindBriefUsersInfo)
+							for (let i = 0; i < data.bindBriefUsersInfo.length; i++) {
+								let index = data.allUsers.findIndex(user => data.bindBriefUsersInfo[i].id === user.id);
+								if (index > -1) {
+									bindUsers.push(data.allUsers[index]);
+								}
+							}
+
+						data.bindUsers = bindUsers;
+
+
+					}).catch(error => {
+						SailTool.exception(error);
+					});
+				}
+
+
+				// 组织单元添加用户
+				const userAddToOrg = () => {
+					data.userAddVisible = true;
+					loadAllUsers();
+				}
+
+
+				// 将用户挂到指定的组织单元上，并且设定或更新用户在这个组织单元中的职位
+				const confirmUserMount = () => {
+
+					axios({
+						method: 'post',
+						url: 'orgUnit/user/many',
+						params: {
+							orgUnitId: data.curOrg.id,
+							userIds: data.bindUsers.map(user => user.id).join(',')
+						}
+					}).then(_ => {
+						ElementPlus.ElMessage.$success('成功将用户挂载到了' + data.curOrg.name);
+						nodeClick(data.curOrg);
+						data.userAddVisible = false;
+					}).catch(error => {
+						SailTool.exception(error);
+
+					});
+				}
+
+				const handleSizeChange = val => {
+					data.pageSize = val;
+					// 当用户切换每页显示的大小时，应当判断this.page的大小是否超出了总的页码
+					const totalPage = Math.ceil(data.userTotal / data.pageSize);
+					data.page = data.page > totalPage ? totalPage : data.page
+					loadAllUsers();
+				}
+
+				const handleCurrentChange = (val) => {
+					data.page = val;
+					loadAllUsers();
+				}
+
+				const removeUserFromOrgUnit = (user) => {
+					ElMessageBox.confirm("确定要从组织删除用户【" + user.realName + "】？", '确认删除', {
+						dangerouslyUseHTMLString: true,
+						showClose: false,
+						type: 'error',
+						confirmButtonText: '删除',
+						cancelButtonClass: 'concel-right',
+						confirmButtonClass: 'el-button--danger'
+					}).then(_ => {
+						axios.delete('orgUnit/user/one', {
+							params: {
+								orgUnitId: data.curOrg.id,
+								userId: user.id
+							}
+						}).then(_ => {
+							ElementPlus.ElMessage.$success('删除成功！');
+							nodeClick(data.curOrg);
+						}).catch(_ => {
+							SailTool.exception(error);
+						})
+					}).catch(_ => { });
+				}
+
+				// 双击编辑属性值或者描述
+				const editJob = (row, editArea) => {
+					curEditJobRow = SailTool.clone(row);
+					// 设置这一行的属性值处于编辑状态
+					row[editArea] = true;
+					nextTick(() => {
+						data.value_input.focus();
+					});
+				}
+
+
+
+				// 失去焦点就更新属性
+				const updatePropertyOne = user => {
+
+					if (curEditJobRow.job === (user.job ? user.job.trim() : user.job)) {
+						user.jobEditStatus = false;
+						return;
+					}
+
+					// 更新副本，
+					curEditJobRow = SailTool.clone(user);
+					axios({
+						url: 'orgUnit/user/one',
+						method: 'post',
+						params: {
+							orgUnitId: data.curOrg.id,
+							userId: user.id,
+							job: user.job
+
+						}
+					}).then(res => {
+						ElementPlus.ElMessage.$success('更新成功');
+						user.jobEditStatus = false;
+					}).catch(error => {
+						SailTool.exception(error);
+					});
+
+				}
+
+				return {
+					...toRefs(data),
+					addOrgView,
+					orgSubmit,
+					loadOrgTree,
+					nodeClick,
+					userAddToOrg,
+					clickNodeContextmenu,
+					handleSizeChange,
+					handleCurrentChange,
+					refreshOrgTree,
+					nodeDrop,
+					querySearch,
+					confirmUserMount,
+					removeUserFromOrgUnit,
+					editJob,
+					updatePropertyOne
+				}
+			}
+		}
+	</script>
+</th:block>
+
+</html>

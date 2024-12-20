@@ -18,7 +18,7 @@ import team.sailboat.commons.ms.log.LogPool;
  * @author yyl
  * @since 2024年10月23日
  */
-public abstract class Operator_LocalEnv implements IOperator
+public abstract class Operator_LocalEnv implements IOperator , ICmdExecLogger
 {
 	protected final Logger mLogger = LoggerFactory.getLogger(getClass()) ;
 	
@@ -42,12 +42,14 @@ public abstract class Operator_LocalEnv implements IOperator
 		mFinishLsnAssist.addLastListener(aLsn) ;
 	}
 	
-	protected void logInfo(String aMsg , Object...aArgs)
+	@Override
+	public void logInfo(String aMsg , Object...aArgs)
 	{
 		IOperator.logInfo(mLogPool, null , aMsg, aArgs) ;
 	}
 	
-	protected void logError(String aMsg , Object...aArgs)
+	@Override
+	public void logError(String aMsg , Object...aArgs)
 	{
 		IOperator.logError(mLogPool, null, aMsg, aArgs) ;
 	}

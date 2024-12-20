@@ -2,11 +2,11 @@ const chars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 
 			'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' , 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
 			's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
-Vue.prototype.reLogioning = false;
-Vue.prototype.loginSuccess = false;
-Vue.prototype.dataRequestConfig = null;
+app.config.globalProperties.reLogioning = false;
+app.config.globalProperties.loginSuccess = false;
+app.config.globalProperties.dataRequestConfig = null;
 
-Vue.prototype.confirm = function(){
+app.config.globalProperties.confirm = function(){
 	return new Promise(resolve => {
 		this.$confirm('您的登录已超时，您是否要在新窗口中重新登录？', "提示", {
 			showClose: false,
@@ -22,7 +22,7 @@ Vue.prototype.confirm = function(){
 	})
 }
 
-Vue.prototype.checkLoginStatusAsync = function(){
+app.config.globalProperties.checkLoginStatusAsync = function(){
 	return new Promise(resolve => {
 		setTimeout(() => {
 			axios.get('api/status').then(() => {
@@ -35,10 +35,10 @@ Vue.prototype.checkLoginStatusAsync = function(){
 	})
 }
 
-Vue.prototype.isLoginSuccessAsync = function(){
+app.config.globalProperties.isLoginSuccessAsync = function(){
 	return new Promise(resolve => {
 		setTimeout(() => {
-			resolve(Vue.prototype.loginSuccess);
+			resolve(app.config.globalProperties.loginSuccess);
 		}, 1000)
 	})
 }
@@ -59,36 +59,36 @@ if(axios){
 		return response;
 	}, async error => {
 		if(error.response && error.response.status == 401 && error.response.config.url.indexOf("api/status") == -1){
-			if(!Vue.prototype.reLogioning){
-				Vue.prototype.reLogioning = true;
-				Vue.prototype.dataRequestConfig = error.response.config;
+			if(!app.config.globalProperties.reLogioning){
+				app.config.globalProperties.reLogioning = true;
+				app.config.globalProperties.dataRequestConfig = error.response.config;
 				
-				var confirm = await Vue.prototype.confirm();
+				var confirm = await app.config.globalProperties.confirm();
 				if(confirm){
 					var url = JSON.parse(error.response.data.message).path;
 		    		window.open(url);
-					Vue.prototype.loginSuccess = false;
+					app.config.globalProperties.loginSuccess = false;
 					for(var i = 0; i < 60; i++){
-						let _loginSuccess = await Vue.prototype.checkLoginStatusAsync();
+						let _loginSuccess = await app.config.globalProperties.checkLoginStatusAsync();
 						if(_loginSuccess){
-							Vue.prototype.loginSuccess = _loginSuccess;
-							Vue.prototype.reLogioning = false;
+							app.config.globalProperties.loginSuccess = _loginSuccess;
+							app.config.globalProperties.reLogioning = false;
 							return new Promise(resolve => {
-								resolve(axios(Vue.prototype.dataRequestConfig));
+								resolve(axios(app.config.globalProperties.dataRequestConfig));
 							})
 						}
 					}
-					Vue.prototype.reLogioning = false;
+					app.config.globalProperties.reLogioning = false;
 					return Promise.reject(error);
 				}else {
 					return Promise.reject(error);
 				}
 			}else{
 				for(var i = 0; i < 120; i++){
-					let _loginSuccess = await Vue.prototype.isLoginSuccessAsync();
+					let _loginSuccess = await app.config.globalProperties.isLoginSuccessAsync();
 					if(_loginSuccess){
 						return new Promise(resolve => {
-							resolve(axios(Vue.prototype.dataRequestConfig));
+							resolve(axios(app.config.globalProperties.dataRequestConfig));
 						})
 					}
 				}
@@ -140,7 +140,7 @@ String.prototype.contains = function(s) {
 }
 
 
-Vue.prototype.getSvgPathBys = function(s) {
+app.config.globalProperties.getSvgPathBys = function(s) {
 	let iconClass = "default";
 	
 	if (!s) return "/3rds/icon-svg/" + iconClass + '.svg';;
@@ -169,12 +169,14 @@ Vue.prototype.getSvgPathBys = function(s) {
 		iconClass = "kafka";
 	} else if (s.contains("hive")) {
 		iconClass = "hive";
+	} else if (s.contains("redis")) {
+		iconClass = "redis";
 	}
 	
 	return "/3rds/icon-svg/" + iconClass + '.svg';
 }
 
-Vue.prototype.formatBytes = function(bytes) {
+app.config.globalProperties.formatBytes = function(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
@@ -216,17 +218,17 @@ Date.prototype.format = function(fmt) {
 /**
  * 当前浏览器是否为谷歌浏览器
  */	
-Vue.prototype.isChrome = (/chrome/.test(navigator.userAgent.toLowerCase()));
+app.config.globalProperties.isChrome = (/chrome/.test(navigator.userAgent.toLowerCase()));
 
 /**
  * el标签默认尺寸
  */	
-Vue.prototype.$ELEMENT = { size: 'mini'};
+app.config.globalProperties.$ELEMENT = { size: 'mini'};
 
 /**
  * 复制文本到剪切板
  */
-Vue.prototype.copyToClipboard = function copyToClipboard(text) {
+app.config.globalProperties.copyToClipboard = function copyToClipboard(text) {
 	var textarea = document.createElement("textarea"); //创建input对象
     var currentFocus = document.activeElement; //当前获得焦点的元素
     var toolBoxwrap = document.getElementById('app'); //将文本框插入到NewsToolBox这个之后
@@ -257,18 +259,18 @@ Vue.prototype.copyToClipboard = function copyToClipboard(text) {
 /**
  * el-table列值有中文排序（静态）
  */
-Vue.prototype.sortZhColumn = function(str1, str2, type) {
+app.config.globalProperties.sortZhColumn = function(str1, str2, type) {
    return str1[type].localeCompare(str2[type]);
 }
 
-Vue.prototype.clone = function(val){
+app.config.globalProperties.clone = function(val){
 	return JSON.parse(JSON.stringify(val));
 }
 
 /**
  * 向URL追加k-v
  */
-Vue.prototype.urlPush = function(key, value) {
+app.config.globalProperties.urlPush = function(key, value) {
 	if(!value)
 		this.delUrlParam(key);
 	else{
@@ -290,7 +292,7 @@ Vue.prototype.urlPush = function(key, value) {
 /**
  * 删除url中的锚点信息
  */
-Vue.prototype.delUrlAnchor = function() {
+app.config.globalProperties.delUrlAnchor = function() {
 	var newUrl = window.location.origin + window.location.pathname +  window.location.search;
 	window.history.replaceState({path: newUrl}, '', newUrl);
 };
@@ -298,7 +300,7 @@ Vue.prototype.delUrlAnchor = function() {
 /**
  * 删除URL中的参数k-v
  */
-Vue.prototype.delUrlParam = function(paramKey) {
+app.config.globalProperties.delUrlParam = function(paramKey) {
     var url = window.location.href, newUrl = '';    //页面url
     var urlParam = window.location.search.substring(1);   //页面参数
     var beforeUrl = url.substr(0, url.indexOf("?"));   //页面主地址（参数之前地址）
@@ -325,7 +327,7 @@ Vue.prototype.delUrlParam = function(paramKey) {
 /**
  * 获取URL参数k-v
  */
-Vue.prototype.urlParams = function(){
+app.config.globalProperties.urlParams = function(){
 	var params = {has: false};
 	var query = window.location.search.substring(1);
 	if(query){
@@ -353,7 +355,7 @@ Vue.prototype.urlParams = function(){
  * msg： 通知信息
  *
  */
-Vue.prototype.message = function(type, obj){
+app.config.globalProperties.message = function(type, obj){
 	if(obj.status == 504){
 		this.$alert('服务器连接超时！', '警告', {
 			confirmButtonText: '确定',
@@ -387,7 +389,7 @@ Vue.prototype.message = function(type, obj){
  * bytes： 文件大小
  *
  */
-Vue.prototype.bytesToSize = function(bytes) {
+app.config.globalProperties.bytesToSize = function(bytes) {
     if (bytes === 0) return '0 B';
     if(!bytes) return '';
     var k = 1024, // or 1024
@@ -404,7 +406,7 @@ Vue.prototype.bytesToSize = function(bytes) {
  *
  * showMs： 是否显示毫秒信息
  */
-Vue.prototype.msToTimeStr = function(ms, showMs=false){
+app.config.globalProperties.msToTimeStr = function(ms, showMs=false){
 	var text = [];
 	var msStr = ms % 1000, aSeconds = ms / 1000;
 	if(aSeconds || aSeconds === 0){
@@ -444,7 +446,7 @@ Vue.prototype.msToTimeStr = function(ms, showMs=false){
  * timestamp： 时间戳小
  *
  */
-Vue.prototype.timestampToTime = function(timestamp) {
+app.config.globalProperties.timestampToTime = function(timestamp) {
 	if(!timestamp) return '';
     var date = new Date(timestamp);//时间戳为10位需*1000，时间戳为13位的话不需乘1000
     var Y = date.getFullYear() + '-';
@@ -456,7 +458,7 @@ Vue.prototype.timestampToTime = function(timestamp) {
     return Y+M+D+h+m+s;
 }
 
-Vue.prototype.toMs = function(val, unit) {
+app.config.globalProperties.toMs = function(val, unit) {
 	if(val){
 		if(unit == 's')
 			return val * 1000;
@@ -468,7 +470,7 @@ Vue.prototype.toMs = function(val, unit) {
 	return val;
 }
 
-Vue.prototype.toUnit = function(val, unit) {
+app.config.globalProperties.toUnit = function(val, unit) {
 	if(val){
 		if(unit == 's' || !unit)
 			return val / 1000;
@@ -486,7 +488,7 @@ Vue.prototype.toUnit = function(val, unit) {
  * length： 长度
  *
  */
-Vue.prototype.randomNumber = function(length) {
+app.config.globalProperties.randomNumber = function(length) {
 	if(!length) length = 6;
 	var number = '';
 	for (var i = 0; i < length; i++) {
@@ -503,7 +505,7 @@ Vue.prototype.randomNumber = function(length) {
  * W: 菜单面板宽度
  *
  */
-Vue.prototype.contextmenuPos = function(MouseEvent, H, W) {
+app.config.globalProperties.contextmenuPos = function(MouseEvent, H, W) {
 	let X = MouseEvent.clientX, Y = MouseEvent.clientY - 6;
 	if(MouseEvent.clientX > document.body.clientWidth - W)
 		X = X - W + 10;
@@ -516,7 +518,7 @@ Vue.prototype.contextmenuPos = function(MouseEvent, H, W) {
  * 生成UUID
  *
  */
-Vue.prototype.UUID = function() {
+app.config.globalProperties.UUID = function() {
     var d = new Date().getTime();
     if (window.performance && typeof window.performance.now === "function") {
         d += performance.now(); //use high-precision timer if available
@@ -529,11 +531,11 @@ Vue.prototype.UUID = function() {
     return uuid.toUpperCase();
 }
 
-Vue.prototype.Base64Encode = function(text){
+app.config.globalProperties.Base64Encode = function(text){
 	return Base64.encode(text).split("").reverse().join("");
 }
 
-Vue.prototype.Base64Decode = function(text){
+app.config.globalProperties.Base64Decode = function(text){
 	return Base64.decode(text.split("").reverse().join(""));
 }
 
@@ -541,7 +543,7 @@ Vue.prototype.Base64Decode = function(text){
  * 时间  YY-MM-dd HH:mm:ss
  *
  */
-Vue.prototype.latestDate = function(type1) {
+app.config.globalProperties.latestDate = function(type1) {
 	var date = new Date();
 	var year = date.getFullYear(), 
 		month = date.getMonth() + 1, 
@@ -573,11 +575,11 @@ Vue.prototype.latestDate = function(type1) {
  * 等待
  *
  */
-Vue.prototype.sleep = async function(time) {
+app.config.globalProperties.sleep = async function(time) {
 	await this.sleepTime(time);
 }
 
-Vue.prototype.sleepTime = function(time) {
+app.config.globalProperties.sleepTime = function(time) {
 	if(isNaN(time)) {
 		return;
 	}
@@ -591,7 +593,7 @@ Vue.prototype.sleepTime = function(time) {
  * name： 文件名
  *
  */
-Vue.prototype.downloadFile = function(url, args, name, callback){
+app.config.globalProperties.downloadFile = function(url, args, name, callback){
 	axios({
         method: 'post',
         url: url,
@@ -618,7 +620,7 @@ Vue.prototype.downloadFile = function(url, args, name, callback){
  * fileName： 文件名称
  * tempFileId: 临时文件ID
  */
-Vue.prototype.downloadTempFile = function(fileName, tempFileId){
+app.config.globalProperties.downloadTempFile = function(fileName, tempFileId){
 	window.location.href = "/sailworks/api/downloadTempFile/"+ tempFileId +"?fileName=" + encodeURIComponent(encodeURIComponent(fileName));
 }
 
@@ -627,7 +629,7 @@ Vue.prototype.downloadTempFile = function(fileName, tempFileId){
  * fileName: 文件名
  * content: 文件内容
  */
-Vue.prototype.downloadStringToFile = function(fileName, content){
+app.config.globalProperties.downloadStringToFile = function(fileName, content){
 	var eleLink = document.createElement('a')
 	  // 设置a标签 download 属性，以及文件名
 	eleLink.download = fileName
@@ -645,11 +647,11 @@ Vue.prototype.downloadStringToFile = function(fileName, content){
 	document.body.removeChild(eleLink)
 }
 
-Vue.prototype.clone = function(val){
+app.config.globalProperties.clone = function(val){
 	return JSON.parse(JSON.stringify(val));
 }
 
-Vue.prototype.localStorage = function(key, val){
+app.config.globalProperties.localStorage = function(key, val){
 	let _this = this;
 	while(_this.$parent){
 		_this = _this.$parent;
@@ -666,7 +668,7 @@ Vue.prototype.localStorage = function(key, val){
 	}
 }
 
-Vue.prototype.validForbid = function (value, number = 512) {
+app.config.globalProperties.validForbid = function (value, number = 512) {
   value = value.replace(/[`~!@#$%^&*()\-+=<>?:"{}|,./;'\\[\]·~！@#￥%……&*（）——\-+={}|《》？：“”【】、；‘’，。、]/g, '').replace(/\s/g, "");
   if (value.length >= number) {
     this.$message({
@@ -677,7 +679,7 @@ Vue.prototype.validForbid = function (value, number = 512) {
   return value;
 }
 
-Vue.prototype.base64 = function(input) {
+app.config.globalProperties.base64 = function(input) {
 	var keyStr = "ABCDEFGHIJKLMNOP" + "QRSTUVWXYZabcdef" + "ghijklmnopqrstuvwxyz0123456789+/" + "=";
 
 	var output = "";
@@ -706,14 +708,14 @@ Vue.prototype.base64 = function(input) {
 	return output;
 }
 
-Vue.prototype.hasAuth = function(authName, subspaceId){
+app.config.globalProperties.hasAuth = function(authName, subspaceId){
 	if(subspaceId){
 		authName = subspaceId + ':' + authName;
 	}
 	return this.authes.indexOf(authName) != -1;
 }
 
-Vue.prototype.shareChart = function(option, url, callback){
+app.config.globalProperties.shareChart = function(option, url, callback){
 	axios.post('api/chart/share', {
 		id: url.split('xz_c_id=')[1],
 		option: JSON.stringify({...option, dataset: {}})
@@ -724,7 +726,7 @@ Vue.prototype.shareChart = function(option, url, callback){
 	})
 }
 
-Vue.prototype.xzChart = function(chart, option, url){
+app.config.globalProperties.xzChart = function(chart, option, url){
 	var myButtons = {
 		myDownload: {
 			show: this.isShowDownloadAll,
@@ -797,12 +799,12 @@ Vue.prototype.xzChart = function(chart, option, url){
 	})
 }
 
-const successMessage = Vue.prototype.$message.success,
-	infoMessage = Vue.prototype.$message.info,
-	errorMessage = Vue.prototype.$message.error,
-	warnMessage = Vue.prototype.$message.warning;
+const successMessage = app.config.globalProperties.$message.success,
+	infoMessage = app.config.globalProperties.$message.info,
+	errorMessage = app.config.globalProperties.$message.error,
+	warnMessage = app.config.globalProperties.$message.warning;
 
-Vue.prototype.$message.success = function (msg) {
+app.config.globalProperties.$message.success = function (msg) {
 	if(typeof msg == 'string')
 		successMessage({
 			customClass: 'fixed',
@@ -814,7 +816,7 @@ Vue.prototype.$message.success = function (msg) {
 		successMessage(msg);
 }
 
-Vue.prototype.$message.info = function (msg) {
+app.config.globalProperties.$message.info = function (msg) {
 	if(typeof msg == 'string')
 		infoMessage({
 			customClass: 'fixed',
@@ -826,7 +828,7 @@ Vue.prototype.$message.info = function (msg) {
 		infoMessage(msg);
 }
 
-Vue.prototype.$message.error = function (msg) {
+app.config.globalProperties.$message.error = function (msg) {
 	if(typeof msg == 'string')
 		errorMessage({
 			customClass: 'fixed',
@@ -838,7 +840,7 @@ Vue.prototype.$message.error = function (msg) {
 		errorMessage(msg);
 }
 
-Vue.prototype.$message.warning = function (msg) {
+app.config.globalProperties.$message.warning = function (msg) {
 	if(typeof msg == 'string')
 		warnMessage({
 			customClass: 'fixed',
@@ -850,7 +852,7 @@ Vue.prototype.$message.warning = function (msg) {
 		warnMessage(msg);
 }
 
-Vue.prototype.format$yyyyMMddHHmmss = function (timestamp) {
+app.config.globalProperties.format$yyyyMMddHHmmss = function (timestamp) {
 	let date = new Date(timestamp)
 	let year = date.getFullYear()
 	let month = date.getMonth() + 1
@@ -866,18 +868,18 @@ Vue.prototype.format$yyyyMMddHHmmss = function (timestamp) {
 	return  year + '-' + month + '-' + day + ' ' + HH + ':' + mm + ':' + ss
 }
 
-Vue.prototype.format$yyyyMMdd = function (timestamp) {
+app.config.globalProperties.format$yyyyMMdd = function (timestamp) {
 	let date =  this.format$yyyyMMddHHmmss(timestamp)
 	// yyyy-MM-dd
 	return date.substring(0, 10)
 }
 
 
-Vue.prototype.parse$timestamp = function (dateStr) {
+app.config.globalProperties.parse$timestamp = function (dateStr) {
 	return new Date(dateStr).getTime()
 }
 
-Vue.prototype.lastDateStr = function(dateStr) {
+app.config.globalProperties.lastDateStr = function(dateStr) {
 	if(!dateStr || (typeof dateStr !== 'string')) return "";
 
 	var newDate = new Date();
@@ -922,4 +924,36 @@ Vue.prototype.lastDateStr = function(dateStr) {
 		return dateStr.substring(5, 19);
 	else
 		return dateStr.substring(0, 19);
+}
+
+
+app.config.globalProperties.success = function(message) {
+	ElementPlus.ElMessage({
+	    showClose: true,
+	    message,
+	    type: 'success'
+	});
+}
+
+app.config.globalProperties.error = function(message) {
+	ElementPlus.ElMessage({
+	    showClose: true,
+	    message,
+	    type: 'error'
+	});
+}
+
+app.config.globalProperties.warning = function(message) {
+	ElementPlus.ElMessage({
+	    showClose: true,
+	    message,
+	    type: 'warning'
+	});
+}
+
+app.config.globalProperties.info = function(message) {
+	ElementPlus.ElMessage({
+	    showClose: true,
+	    message
+	});
 }

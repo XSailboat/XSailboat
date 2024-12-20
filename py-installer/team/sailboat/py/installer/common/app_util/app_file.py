@@ -517,13 +517,23 @@ class YamlFile:
         加载 YAML 文件
         :return: YAML 文件中的数据字典
         """
-        with open(self.file_path, 'r', encoding='utf-8') as file:
-            return yaml.safe_load(file)
+        if not os.path.exists(self.file_path):
+            dirname = os.path.dirname(self.file_path)
+            os.makedirs(dirname, exist_ok=True)
+            with open(self.file_path, 'w', encoding='utf-8') as file:
+                pass
 
-    def save(self):
+        with open(self.file_path, 'r', encoding='utf-8') as file:
+            data = yaml.safe_load(file)
+            return {} if data is None else data
+
+    def save(self, file_path=None):
         """
-        将修改后的 YAML 文件保存回磁盘
+        将修改后的 YAML 文件保存
         """
+        if file_path is not None:
+            self.file_path = file_path
+
         with open(self.file_path, 'w', encoding='utf-8') as file:
             yaml.dump(self.data, file, default_flow_style=False, allow_unicode=True)
 
@@ -553,6 +563,14 @@ class YamlFile:
         """
         keys = key.split('.')
         return self._navigate_to(self.data, list(keys))
+
+    def contains_key(self, key):
+        keys = key.split('.')
+        try:
+            self._navigate_to(self.data, list(keys))
+        except:
+            return False
+        return True
 
     def set_value(self, key, value):
         """

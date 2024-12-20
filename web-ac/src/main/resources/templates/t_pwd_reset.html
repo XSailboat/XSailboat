@@ -1,0 +1,185 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:xweb="http://www.thymeleaf.org/extras/xweb" th:replace="decorators/main::layout(~{::head},~{::.content},~{::components},~{::.script})">
+<head>
+<meta charset="UTF-8">
+<script type="text/javascript" th:src="@{/assets/js/ddLogin.js}"></script>
+<script type="text/javascript" th:src="@{/assets/js/tac.min.js}"></script>
+<link th:href="@{/assets/style/tac.css}" rel="stylesheet" type="text/css">
+<title>认证中心 | 密码重置</title>
+<style type="text/css">
+	.logo{
+		color: #ff6a00;
+		display: flex;
+		align-items: center;
+		z-index: 1;
+		position: fixed;
+		top: 20px;
+		left: 20px;
+	}
+	.login-pane{
+		width: 320px;
+		height: 420px;
+	}
+	.el-input-group__append{
+		padding: 0px !important;
+		border: none !important;
+		width: 83px !important;
+	}
+	.third-login{
+		font-size: 2.2em !important;
+		margin-right: 12px;
+		cursor: pointer;
+	}
+	.forget-pwd{
+		font-size: 12px;
+		color: #909399;
+	    cursor: pointer;
+	    text-decoration: underline;
+	}
+	.forget-pwd:hover {
+		text-decoration: underline;
+	}
+	.line{
+		flex: 1;
+	    height: 1px;
+	    background: linear-gradient(90deg, #747383 1.22%, #ebe9f3 100.61%);
+	    opacity: 0.25;
+	    background-color: rgb(219, 224, 232);
+	}
+</style>
+</head>
+<body>
+	<div class="content bg2-pane">
+		<div class="logo">
+			<i class="icon icon-oauth-center" style="font-size: 28px;font-weight: bold;margin-right: 4px;"></i>
+			<img alt="认证中心" th:src="@{/assets/images/logo-title.png}" style="width: 120px;">
+		</div>
+	 	<el-card class="login-pane" style="padding: 20px 20px 0;transform: translateX(-50%); position: absolute; top: 18%; left: 50%;text-align: center;">
+	 		<div class="login-title" style="display: flex;align-items: center;justify-content: center;z-index: 1;position: relative;">
+	 			<span>请设置新密码</span>
+ 			</div>
+ 			
+ 			<div style="position: relative;">
+		 		<el-form ref="pwdForm" th:action="@{/user/password/reset/forExpired}" @submit.native="submitForm" method="post" :model="pwdForm" :rules="rules" size="medium" style="margin: 0 12px;">
+		 			<el-tooltip v-model="capsTooltip" effect="light" content="大写键已锁定" placement="right" manual>
+					  	<el-form-item label="新密码" prop="password" style="margin-bottom: 12px;">
+					    	<el-input ref="password" prefix-icon="el-icon-lock" placeholder="请输入密码" clearable @keyup.enter.native="validForm" type="password" show-password name="password" v-model="pwdForm.password" autocomplete="off"  @keyup.native="checkCapslock" @blur="capsTooltip = false"></el-input>
+					  	</el-form-item>
+				  	</el-tooltip>
+				  	<el-tooltip v-model="capsTooltip" effect="light" content="大写键已锁定" placement="right" manual>
+					  	<el-form-item label="确认密码" prop="rePassword">
+					    	<el-input prefix-icon="el-icon-lock" placeholder="请输入密码" clearable @keyup.enter.native="validForm" type="password" show-password name="rePassword" v-model="pwdForm.rePassword" autocomplete="off"  @keyup.native="checkCapslock" @blur="capsTooltip = false"></el-input>
+					  	</el-form-item>
+				  	</el-tooltip>
+				  	<div style="display:none;">
+				  		<el-input v-model="pwdForm.codeId" name="codeId"></el-input>
+						<input th:if="${_csrf}"  type="hidden" th:name="${_csrf.parameterName}"	th:value="${_csrf.token}"/>
+						<input type="hidden" name="authToken"	th:value="${authToken}"/>
+					</div>
+				  	<el-form-item>
+				    	<button ref="submit_btn" id="submit_btn" v-if="valided" type="submit" style="display: none;"></button>
+				    	<el-button type="success" @click="validForm" style="width:100%;margin-top: 12px;">重置密码</el-button>
+				    	<div class="forget-pwd" @click="toLogin">返回登录</div>
+				  	</el-form-item>
+				</el-form>
+			</div>
+			<div style="opacity: 0.4; font-size: 12px;transform: translateY(14px);">密码有效期为90天</div>
+	 	</el-card>
+ 	</div>
+<components>
+</components>
+<script class="script" th:inline="javascript">
+	RSAUtils.setMaxDigits(200); 
+	var exVueOpts = {
+		data() {
+			var validatePass = (rule, value, callback) => {
+				if (value === '') {
+					callback(new Error('请输入密码'));
+				} else if (value.length < 8) {
+					callback(new Error('密码长度不能小于8位'));
+				} else {
+					var regex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[~!@#$%^&*_+\-\=,./?<>|]).+$/;
+					if(!regex.test(value)){
+						callback(new Error('密码必须包含字母、数字、特殊字符的组合'));
+					}
+					callback();
+		        }
+		    };
+		    var validateRePass = (rule, value, callback) => {
+		    		if (!value || value === '') {
+		      		callback(new Error('请再次输入密码'));
+			    } else if(value !== this.pwdForm.password){
+			    	callback(new Error('两次密码不一致'));
+			    } else {
+			      	callback();
+			    }
+		  	};
+			return {
+				pwdForm: {
+					codeId: '',
+					password: '',
+					rePassword: '',
+				},
+				capsTooltip: false,
+				rules: {
+					password: [{ validator: validatePass, trigger: 'change' }],
+					rePassword: [{ validator: validateRePass, trigger: 'change' }],
+				},
+				valided: false,
+				errMsg:  /*[[${errMsg}]]*/ '',
+			}
+	    },
+	    components:{
+	    },
+	    methods:{
+	    	checkCapslock(e) {
+		      	const { key } = e;
+		      	if(key){
+			      	let flg = e.getModifierState('CapsLock');;
+		      		this.capsTooltip = flg;
+		      	}
+		    },
+	    	validForm() {
+	     		this.$refs.pwdForm.validate((valid) => {
+	           		if (valid) {
+	           			this.valided = true;
+	           			this.encrypPwd((codeId, encrypedPwd) => {
+	    		  			this.$set(this.pwdForm, 'codeId', codeId);
+	    		  			this.$set(this.pwdForm, 'password', encrypedPwd);
+	    		  			this.$set(this.pwdForm, 'rePassword', encrypedPwd);
+	            			this.$nextTick(() => {
+	                			this.$refs.submit_btn.click();
+	            			})
+	    		  		})
+	              	} else {
+	                	return false;
+	         		}
+	      		});
+	     	},
+	     	submitForm(){
+	     		return true;
+	     	},
+			encrypPwd(callback){
+	     		axios.get('/public/security/rsa-publickey').then(res=>{
+	     			var key = new RSAUtils.getKeyPair(res.data.publicKeyExponent, '', res.data.publicKeyModulus);
+	     			let pwd = this.pwdForm.password.split("").reverse().join("");
+				 	var encrypedPwd = RSAUtils.encryptedString(key, pwd);  
+				 	callback(res.data.codeId, encrypedPwd);
+				}).catch(error=>{
+					this.message('error',error);
+				})
+	     	},
+	    	resetForm() {
+	    		this.$refs.pwdForm.resetFields();
+	     	},
+	     	toLogin(){
+	     		window.open('login_view', '_self')
+	     	}
+	    },
+	    mounted(){
+	    	this.$refs.password.focus();
+	    },
+ 	};
+ </script>
+</body>
+</html>

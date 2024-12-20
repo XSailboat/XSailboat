@@ -2,6 +2,7 @@ package team.sailboat.ms.base.dataset.tool;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.net.URL;
 import java.util.Date;
 
@@ -84,7 +85,7 @@ public class RestTplClient implements IRestClient
 				catch (JSONException e)
 				{}
 			}
-			HttpException.createAndThrow(req.getMethod() , new URL(req.getRequestURL().toString()) 
+			HttpException.createAndThrow(req.getMethod() , URI.create(req.getRequestURL().toString()) 
 					, resp.getStatus() ,  msg) ;
 			return null ;		// dead code
 		}
@@ -125,7 +126,7 @@ public class RestTplClient implements IRestClient
 			builder = MockMvcRequestBuilders.post(aReq.getPath()) ;
 			break ;
 		}
-		IMultiMap<String, String> paramMap = aReq.getUrlParamMap() ;
+		IMultiMap<String, String> paramMap = aReq.getFormParamMap() ;
 		if(paramMap != null)
 		{
 			for(String key : paramMap.keySet())

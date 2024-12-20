@@ -1,0 +1,73 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  >
+<th:block th:fragment="myApps">
+	<template id="myApps">
+		<div style="display:flex; flex-direction: column;flex: 1;">
+			<div class="container-title">
+				<span class="container-text">我的应用</span>
+			</div>
+			<div class="el-card is-never-shadow" style="padding: 20px 40px;display: flex;align-items: center;">
+    			<i class="icon icon-wodezhanghao" style="font-size: 2.2em;color: #409EFF;"></i>							
+				<span style="font-size: 1.8em;margin: 0 8px;">你好，[[${user.displayName}]]</span>
+		    </div>
+		    <div class="el-card is-never-shadow" style="flex: 1;height: 0;display: flex;border-top: none;padding: 20px;">
+		    	<div v-if="init && apps.length == 0" class="no-apps">
+					<i class="icon icon-zanwushuju" style="font-size: 8em;"></i>
+					<span style="margin: 12px 0;font-size: 14px;">你还没有授权访问的应用</span>
+					<el-button type="primary" icon="plus" @click="appCreate('oper')">创建新应用</el-button>
+				</div>
+		    	<el-scrollbar v-else style="width: 100%;height: 100%;overflow-x:hidden;">
+					<div class="apps">
+						<div v-for="app in apps" class="app" @click="open(app)">
+							<div class="item">
+								<span class="logo">{{app.simpleName}}</span>
+								<span style="font-size: 1.8em;">{{app.name}}</span>
+							</div>
+							<div class="item" style="margin: 20px 0 10px 0;">
+								<i class="icon icon-gongsi"></i>
+								<span>{{app.company}}</span>
+							</div>
+							<div class="item">
+								<i class="icon icon-miaoshu"></i>
+								<span>{{app.description}}</span>
+							</div>
+							
+							<div :class="'app-enable app-enable-' + app.enable"></div>
+						</div>
+					</div>
+				</el-scrollbar>
+		    </div>
+		</div>
+	</template>
+<script>
+	var MyApps = {
+		template: "#myApps",
+		data() {
+			return {
+				init: true,
+				apps: [],
+			}
+		},
+		methods: {
+			loadAccApps(){
+				axios.get('user/self/clientAppBrief/ofCanVisit').then(res=>{
+					this.apps = res.data;
+				}).catch(error=>{
+					this.message('error',error);
+				})
+			},
+			open(app){
+				if(app.homePage){
+					window.open(app.homePage)
+				}
+			}
+		},
+		mounted(){
+		},
+		created(){
+			this.loadAccApps();
+		}
+	}
+</script>
+</th:block>
+</html>

@@ -8,6 +8,13 @@ import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.json.ToJSONObject;
 import team.sailboat.commons.fan.lang.Assert;
 
+/**
+ * 
+ * 一页数据
+ *
+ * @author yyl
+ * @since 2024年11月15日
+ */
 public class DPage<T extends DBean> implements ToJSONObject
 {
 	Class<T> mClass ;
@@ -92,7 +99,7 @@ public class DPage<T extends DBean> implements ToJSONObject
 	@Override
 	public JSONObject setTo(JSONObject aJSONObj)
 	{
-		return aJSONObj.put("data" , new JSONArray(mDataList))
+		return aJSONObj.put("data" , JSONArray.of(mDataList))
 				.put("pageSize" , mPageSize)
 				.put("pageIndex", mPageIndex)
 				.put("totalAmount", mTotalAmount)

@@ -5,11 +5,12 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import team.sailboat.commons.fan.app.AppContext;
@@ -28,6 +29,13 @@ import team.sailboat.commons.fan.serial.FlexibleBInputStream;
 import team.sailboat.commons.fan.serial.StreamAssist;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * Http请求
+ *
+ * @author yyl
+ * @since 2024年11月27日
+ */
 public class Request implements Cloneable
 {
 	URLCoder mURLCoder = URLCoder.getDefault() ;
@@ -49,11 +57,20 @@ public class Request implements Cloneable
 		accept_any() ;
 	}
 	
+	/**
+     * 获取请求的HTTP方法（如GET, POST等）。
+     * @return 请求方法
+     */
 	public String getMethod()
 	{
 		return mMethod;
 	}
 	
+	/**
+     * 设置请求的路径，如果路径不以'/'开头，则自动添加。
+     * @param aPath 请求路径
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request path(String aPath)
 	{
 		if(aPath != null)
@@ -68,35 +85,56 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+     * 使用参数格式化请求路径。
+     * @param aPath 包含占位符的路径模板
+     * @param aPathParamVals 用于替换路径模板中占位符的参数值
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request path(String aPath , String... aPathParamVals)
 	{
 		mPath = XString.msgFmt(aPath , (Object[])aPathParamVals) ;
 		return this ;
 	}
 	
+	/**
+     * 使用参数映射格式化请求路径。
+     * @param aPath 包含占位符的路径模板
+     * @param aParamValues 用于替换路径模板中占位符的参数映射
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request path(String aPath , Map<String , Object> aParamValues)
 	{
 		mPath = XString.applyPlaceHolder(aPath, aParamValues) ;
 		return this ;
 	}
 	
+	/**
+     * 允许对Request对象进行自定义处理。
+     * @param aConsumer 自定义处理逻辑
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request filter(Consumer<Request> aConsumer)
 	{
 		aConsumer.accept(this) ;
 		return this ;
 	}
 	
+	/**
+     * 获取请求的路径。
+     * @return 请求路径
+     */
 	public String getPath()
 	{
 		return mPath;
 	}
 	
 	/**
-	 * 
-	 * @param aKey
-	 * @param aValue			如果aValue为Null，将忽略
-	 * @return
-	 */
+     * 添加查询参数（非空值）。
+     * @param aKey 查询参数的键
+     * @param aValue 查询参数的值。如果aValue为Null，将忽略
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request queryParam(String aKey , String aValue)
 	{
 		if(aValue != null)
@@ -105,14 +143,12 @@ public class Request implements Cloneable
 	}
 	
 	/**
-	 * 用queryParam代替
-	 **/
-	@Deprecated
-	public Request urlParam(String aKey , String aValue)
-	{
-		return queryParam(aKey, aValue) ;
-	}
-	
+     * 添加查询参数，如果值为空且指定忽略空值，则不进行添加。
+     * @param aKey 查询参数的键
+     * @param aValue 查询参数的值
+     * @param aIgnoreEmpty 是否忽略空值
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request queryParam(String aKey , String aValue
 			, boolean aIgnoreEmpty)
 	{
@@ -122,6 +158,15 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+	 * 
+     * 添加布尔查询参数，如果值为null且指定忽略null值，则不进行添加。
+     * 
+     * @param aKey 查询参数的键
+     * @param aValue 查询参数的值
+     * @param aIgnoreNull 是否忽略null值
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request queryParam(String aKey , Boolean aValue
 			, boolean aIgnoreNull)
 	{
@@ -129,16 +174,6 @@ public class Request implements Cloneable
 			return this ;
 		mUrlParamMap.put(aKey, JCommon.toString(aValue, "")) ;
 		return this ;
-	}
-	
-	/**
-	 * 用queryParam代替
-	 **/
-	@Deprecated
-	public Request urlParam(String aKey , String aValue
-			, boolean aIgnoreEmpty)
-	{
-		return queryParam(aKey, aValue, aIgnoreEmpty) ;
 	}
 	
 	public Request queryParam(String aKey ,int aValue)
@@ -151,25 +186,7 @@ public class Request implements Cloneable
 		return queryParam(aKey , Boolean.toString(aValue)) ;
 	}
 	
-	/**
-	 * 用queryParam代替
-	 **/
-	@Deprecated
-	public Request urlParam(String aKey ,int aValue)
-	{
-		return queryParam(aKey, Integer.toString(aValue)) ;
-	}
-	
 	public Request queryParam(String aKey ,long aValue)
-	{
-		return queryParam(aKey, Long.toString(aValue)) ;
-	}
-	
-	/**
-	 * 用queryParam代替
-	 **/
-	@Deprecated
-	public Request urlParam(String aKey ,long aValue)
 	{
 		return queryParam(aKey, Long.toString(aValue)) ;
 	}
@@ -185,14 +202,11 @@ public class Request implements Cloneable
 	}
 	
 	/**
-	 * 用queryParam代替
-	 **/
-	@Deprecated
-	public Request urlParam(String aKey ,double aValue)
-	{
-		return queryParam(aKey, Double.toString(aValue)) ;
-	}
-	
+     * 仅在查询参数不存在时添加。
+     * @param aKey 查询参数的键
+     * @param aValue 查询参数的值
+     * @return 当前Request对象（支持链式调用）
+     */
 	public Request queryParamIfAbsent(String aKey , String aValue)
 	{
 		if(!mUrlParamMap.containsKey(aKey))
@@ -200,27 +214,47 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
-	/**
-	 * 用queryParam代替
-	 **/
-	@Deprecated
-	public Request urlParamIfAbsent(String aKey , String aValue)
-	{
-		return queryParamIfAbsent(aKey, aValue) ;
-	}
-	
-	public Collection<String> getUrlParamKeys()
+	public Collection<String> getQueryParamKeys()
 	{
 		return mUrlParamMap.keySet() ;
 	}
 	
-	public SizeIter<String> getUrlParamValues(String aKey)
+	/**
+	 * 
+	 * 取得参数的键。<br />
+	 * 包括url中的查询参数和form表单提交中的参数
+	 * 
+	 * @return
+	 */
+	public Collection<String> getParameterKeys()
+	{
+		Set<String> paramNames =  XC.hashSet(mUrlParamMap.keySet()) ;
+		if(mFormParamMap != null)
+			paramNames.addAll(mFormParamMap.keySet()) ;
+		return paramNames ;
+	}
+	
+	/**
+	 * 
+	 * 取得参数的值。<br />
+	 * 包括url中的查询参数和form表单提交中的参数
+	 * 
+	 * @param aKey
+	 * @return
+	 */
+	public SizeIter<String> getParameterValues(String aKey)
+	{
+		SizeIter<String> it = mUrlParamMap.get(aKey) ;
+		return it == null?(JCommon.defaultIfNull(mFormParamMap.get(aKey), SizeIter::emptyIter)) : it ;
+	}
+	
+	public SizeIter<String> getQueryParamValues(String aKey)
 	{
 		SizeIter<String> it = mUrlParamMap.get(aKey) ;
 		return it == null?SizeIter.emptyIter():it ;
 	}
 	
-	public String getUrlParamValue(String aKey)
+	public String getQueryParamValue(String aKey)
 	{
 		return mUrlParamMap.getFirst(aKey) ;
 	}
@@ -275,12 +309,25 @@ public class Request implements Cloneable
 		return JCommon.defaultIfNull(getHeaderValue(HttpConst.sHeaderName_ContentType) , aDefaultVal) ;
 	}
 	
+	/**
+     * 添加表单参数，将int值转换为字符串后添加
+     * @param aKey 参数名
+     * @param aValue 参数值
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request formParam(String aKey , int aValue)
 	{
 		formParam(aKey, Integer.toString(aValue)) ;
 		return this ;
 	}
 	
+	/**
+     * 添加表单参数
+     * @param aKey 参数名
+     * @param aValue 参数值
+     * @return 当前Request对象，用于链式调用
+     * @throws AssertionError 如果当前请求方法不是POST
+     */
 	public Request formParam(String aKey , String aValue)
 	{
 		Assert.isTrue(HttpConst.sMethod_POST.equals(mMethod)
@@ -294,39 +341,62 @@ public class Request implements Cloneable
 	}
 	
 	/**
-	 * 一旦设置，会清空FormParam
-	 * @param aText
-	 * @return
-	 */
+     * 设置JSON字符串作为请求实体		<br />
+     * 一旦设置，会清空FormParam
+     * @param aText JSON字符串
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setJsonEntity(String aText)
 	{
 		return setEntity(aText , MediaType.APPLICATION_JSON_UTF8_VALUE) ;
 	}
 	
+	/**
+     * 设置JSONObject作为请求实体
+     * @param aJobj JSONObject对象
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setJsonEntity(JSONObject aJobj)
 	{
 		return setJsonEntity(aJobj.toString()) ;
 	}
 	
+	/**
+     * 设置JSONArray作为请求实体
+     * @param aJobj JSONArray对象
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setJsonEntity(JSONArray aJobj)
 	{
 		return setJsonEntity(aJobj.toString()) ;
 	}
 	
+	/**
+     * 设置可转换为JSONObject的对象作为请求实体
+     * @param aToJobj 可转换为JSONObject的对象
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setJsonEntity(ToJSONObject aToJobj)
 	{
 		return setJsonEntity(aToJobj.toJSONObject().toString()) ;
 	}
+	
 	/**
-	 * 一旦设置，会清空FormParam
-	 * @param aText
-	 * @return
-	 */
+     * 设置文本实体，会清空FormParam
+     * @param aText 文本内容
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setTextEntity(String aText)
 	{
 		return setEntity(aText, MediaType.TEXT_PLAIN_VALUE) ;
 	}
 	
+	/**
+     * 设置请求实体
+     * @param aText 实体内容
+     * @param aMediaType 媒体类型
+     * @return 当前Request对象，用于链式调用
+     */
 	protected Request setEntity(String aText , String aMediaType)
 	{
 		mFormParamMap = null ;
@@ -337,6 +407,12 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+     * 设置输入流作为请求实体
+     * @param aIns 输入流
+     * @param aSize 输入流大小
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setStreamEntity(InputStream aIns , long aSize)
 	{
 		mFormParamMap = null ;
@@ -349,6 +425,11 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+     * 设置字节数组作为请求实体
+     * @param aData 字节数组
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setStreamEntity(byte[] aData)
 	{
 		mFormParamMap = null ;
@@ -358,6 +439,11 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+     * 设置多部分表单实体
+     * @param aParts 多部分表单部分
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setMultiPartEntity(EntityPart... aParts)
 	{
 		mFormParamMap = null ;
@@ -373,16 +459,28 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+     * 判断请求是否为多部分表单
+     * @return 是否为多部分表单
+     */
 	public boolean isMultiPart()
 	{
 		return mEntity != null && mEntity instanceof MultiPartStream ;
 	}
 	
+	/**
+     * 获取原始实体
+     * @return 原始实体
+     */
 	public Object getRawEntity()
 	{
 		return mEntity ;
 	}
 	
+	/**
+     * 获取实体输出流处理函数
+     * @return 实体输出流处理函数
+     */
 	@SuppressWarnings({ "unchecked", "resource" })
 	public EConsumer<DataOutputStream , IOException> getEntity()
 	{
@@ -413,29 +511,60 @@ public class Request implements Cloneable
 		return (outs)->StreamAssist.transfer_cc((InputStream)entity_0 , outs);
 	}
 	
+	/**
+     * 设置请求头
+     * @param aKey 请求头名
+     * @param aValue 请求头值
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setHeader(String aKey , String aValue)
 	{
 		mHeaderMap.set(aKey, aValue) ;
 		return this ;
 	}
 	
+	/**
+     * 设置请求头（值为long类型）
+     * @param aKey 请求头名
+     * @param aValue 请求头值
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request setHeader(String aKey , long aValue)
 	{
 		return setHeader(aKey, Long.toString(aValue)) ;
 	}
 	
+	/**
+     * 移除请求头
+     * @param aKey 请求头名
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request removeHeader(String aKey)
 	{
 		mHeaderMap.removeAll(aKey) ;
 		return this ;
 	}
 	
+	/**
+     * 添加请求头（如果已存在则覆盖）
+     * @param aKey 请求头名
+     * @param aValue 请求头值
+     * @return 当前Request对象，用于链式调用
+     */
 	public Request header(String aKey , String aValue)
 	{
 		mHeaderMap.put(aKey, aValue) ;
 		return this ;
 	}
 	
+	/**
+	 * 添加一个请求头。如果aIgnoreEmpty为false或者aValue不为空，则添加。
+	 *
+	 * @param aKey 请求头的键
+	 * @param aValue 请求头的值
+	 * @param aIgnoreEmpty 如果为true且aValue为空，则不添加请求头
+	 * @return 返回当前的Request对象，支持链式调用
+	 */
 	public Request header(String aKey , String aValue , boolean aIgnoreEmpty)
 	{
 		if(!aIgnoreEmpty || XString.isNotEmpty(aValue))
@@ -443,6 +572,12 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+	 * 设置URL编码器。如果传入的aURLCoder不为null且与当前的mURLCoder不同，则更新。
+	 *
+	 * @param aURLCoder 新的URL编码器
+	 * @return 返回当前的Request对象，支持链式调用
+	 */
 	public Request urlCoder(URLCoder aURLCoder)
 	{
 		if(aURLCoder != null && mURLCoder != aURLCoder)
@@ -450,33 +585,61 @@ public class Request implements Cloneable
 		return this ;
 	}
 	
+	/**
+	 * 获取请求头映射。
+	 *
+	 * @return 请求头映射
+	 */
 	public IMultiMap<String, String> getHeaderMap()
 	{
 		return mHeaderMap;
 	}
 	
+	/**
+	 * 获取表单参数的所有键。
+	 *
+	 * @return 表单参数的所有键的集合
+	 */
 	public Collection<String> getFormParamKeys()
 	{
 		return mFormParamMap.keySet() ;
 	}
 	
+	/**
+	 * 根据键获取表单参数的值。
+	 *
+	 * @param aKey 表单参数的键
+	 * @return 表单参数的值
+	 */
 	public String getFormParamValue(String aKey)
 	{
 		return mFormParamMap.getFirst(aKey) ;
 	}
 	
+	/**
+	 * 获取表单参数的映射。
+	 *
+	 * @return 表单参数的映射
+	 */
 	public IMultiMap<String, String> getFormParamMap()
 	{
 		return mFormParamMap;
 	}
 	
-	public IMultiMap<String, String> getUrlParamMap()
+	/**
+	 * 获取URL参数的映射。
+	 *
+	 * @return URL参数的映射
+	 */
+	public IMultiMap<String, String> getQueryParamMap()
 	{
 		return mUrlParamMap;
 	}
 	
 	/**
-	 * 
+	 * 克隆当前的Request对象。
+	 *
+	 * @return 克隆后的Request对象
 	 */
 	public Request clone()
 	{
@@ -495,16 +658,32 @@ public class Request implements Cloneable
 		return clone ;
 	}
 	
+	/**
+	 * 创建一个GET请求的Request对象。
+	 *
+	 * @return GET请求的Request对象
+	 */
 	public static Request GET()
 	{
 		return new Request(HttpConst.sMethod_GET) ;
 	}
 	
-	public static Request GET(URL aUrl)
+	/**
+	 * 创建一个GET请求的Request对象，并设置URL。
+	 *
+	 * @param aUri 请求的URI
+	 * @return GET请求的Request对象
+	 */
+	public static Request GET(URI aUri)
 	{
-		return _build(new Request(HttpConst.sMethod_GET) , aUrl) ;
+		return _build(new Request(HttpConst.sMethod_GET) , aUri) ;
 	}
 	
+	/**
+	 * 创建一个POST请求的Request对象，并设置Content-Type为application/json。
+	 *
+	 * @return POST请求的Request对象
+	 */
 	public static Request POST()
 	{
 		// yyl @ 2022-11-26
@@ -520,21 +699,44 @@ public class Request implements Cloneable
 				.header(HttpConst.sHeaderName_ContentType , MediaType.APPLICATION_JSON_VALUE) ;
 	}
 	
-	public static Request POST(URL aUrl)
+	/**
+	 * 创建一个POST请求的Request对象，并设置URL和Content-Type为application/json。
+	 *
+	 * @param aUrl 请求的URL
+	 * @return POST请求的Request对象
+	 */
+	public static Request POST(URI aUrl)
 	{
 		return _build(new Request(HttpConst.sMethod_POST) , aUrl) ;
 	}
 	
+	/**
+	 * 创建一个PUT请求的Request对象。
+	 *
+	 * @return PUT请求的Request对象
+	 */
 	public static Request PUT()
 	{
 		return new Request(HttpConst.sMethod_PUT) ;
 	}
 	
-	public static Request PUT(URL aUrl)
+	/**
+	 * 创建一个PUT请求的Request对象，并设置URL。
+	 *
+	 * @param aUri 请求的URI
+	 * @return PUT请求的Request对象
+	 */
+	public static Request PUT(URI aUri)
 	{
-		return _build(new Request(HttpConst.sMethod_PUT) , aUrl) ;
+		return _build(new Request(HttpConst.sMethod_PUT) , aUri) ;
 	}
 	
+	/**
+	 * 根据传入的方法字符串创建一个Request对象。
+	 *
+	 * @param aMethod 请求的方法（如GET, POST等）
+	 * @return 对应方法的Request对象
+	 */
 	public static Request method(String aMethod)
 	{
 		String method = aMethod.toUpperCase() ;
@@ -542,48 +744,82 @@ public class Request implements Cloneable
 		return new Request(method) ;
 	}
 	
-	static Request _build(Request aRequest , URL aUrl)
+	/**
+	 * 根据传入的Request对象和URL构建一个完整的Request对象。
+	 *
+	 * @param aRequest 原始的Request对象
+	 * @param aUri 请求的URI
+	 * @return 构建后的Request对象
+	 */
+	static Request _build(Request aRequest , URI aUri)
 	{
 		try
 		{
-			aRequest.path(URLDecoder.decode(aUrl.getPath() , "UTF-8")) ;
+			aRequest.path(URLDecoder.decode(aUri.getPath() , "UTF-8")) ;
 		}
 		catch (UnsupportedEncodingException e)
 		{
 			WrapException.wrapThrow(e) ;
 		}
-		String queryStr = aUrl.getQuery() ;
+		String queryStr = aUri.getQuery() ;
 		if(XString.isNotEmpty(queryStr))
 		{
-			IMultiMap<String, String> map = IURLBuilder.parseQueryStr(aUrl.getQuery()) ;
+			IMultiMap<String, String> map = URLBuilder.parseQueryStr(aUri.getQuery()) ;
 			for(Entry<String , String> entry : map.entrySet())
 				aRequest.queryParam(entry.getKey(), entry.getValue()) ;
 		}
 		return aRequest ;
 	}
 	
+	/**
+	 * 创建一个HEAD请求的Request对象。
+	 *
+	 * @return HEAD请求的Request对象
+	 */
 	public static Request HEAD()
 	{
 		return new Request(HttpConst.sMethod_HEAD) ;
 	}
 	
+	/**
+	 * 创建一个DELETE请求的Request对象。
+	 *
+	 * @return DELETE请求的Request对象
+	 */
 	public static Request DELETE()
 	{
 		return new Request(HttpConst.sMethod_DELETE) ;
 	}
 	
-	public static Request DELETE(URL aUrl)
+	/**
+	 * 创建一个DELETE请求的Request对象，并设置URL。
+	 *
+	 * @param aUri 请求的URI
+	 * @return DELETE请求的Request对象
+	 */
+	public static Request DELETE(URI aUri)
 	{
-		return _build(new Request(HttpConst.sMethod_DELETE) , aUrl) ;
+		return _build(new Request(HttpConst.sMethod_DELETE) , aUri) ;
 	}
 	
+	/**
+	 * 创建一个PATCH请求的Request对象。
+	 *
+	 * @return PATCH请求的Request对象
+	 */
 	public static Request PATCH()
 	{
 		return new Request(HttpConst.sMethod_PATCH) ;
 	}
 	
-	public static Request PATCH(URL aUrl)
+	/**
+	 * 创建一个PATCH请求的Request对象，并设置URL。
+	 *
+	 * @param aUri 请求的URI
+	 * @return PATCH请求的Request对象
+	 */
+	public static Request PATCH(URI aUri)
 	{
-		return _build(new Request(HttpConst.sMethod_PATCH) , aUrl) ;
+		return _build(new Request(HttpConst.sMethod_PATCH) , aUri) ;
 	}
 }

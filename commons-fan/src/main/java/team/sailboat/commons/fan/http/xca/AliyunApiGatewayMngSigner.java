@@ -31,7 +31,7 @@ public class AliyunApiGatewayMngSigner implements ISigner
 		aRequest.urlCoder(mURLCoder) ;
 		String path = FileUtils.getPath(aContextPath, aRequest.getPath()) ;
 		String text = aRequest.getMethod()+"&"+(XString.isEmpty(path)?mURLCoder.encodeParam("/"):mURLCoder.splitEncodePath(aRequest.getPath())) 
-				+"&" + mURLCoder.encodeParam(mURLCoder.formatEncodeParams(aRequest.getUrlParamMap(), true)) ;
+				+"&" + mURLCoder.encodeParam(mURLCoder.formatEncodeParams(aRequest.getQueryParamMap(), true)) ;
 		Debug.cout("签名字符串："+text) ;
 		Mac hmacSha1 = Mac.getInstance(HMAC_SHA1) ;
 		byte[] keyBytes = (aAppSecret+"&").getBytes(AppContext.sUTF8);
@@ -44,12 +44,12 @@ public class AliyunApiGatewayMngSigner implements ISigner
 	
 	static String spliceUrlParams(Request aRequest)
 	{
-		String[] paramKeys = aRequest.getUrlParamKeys().toArray(JCommon.sEmptyStringArray) ;
+		String[] paramKeys = aRequest.getQueryParamKeys().toArray(JCommon.sEmptyStringArray) ;
 		Arrays.sort(paramKeys) ;
 		StringBuilder strBld = new StringBuilder() ;
 		for(String paramKey : paramKeys)
 		{
-			for(String val : aRequest.getUrlParamValues(paramKey))
+			for(String val : aRequest.getQueryParamValues(paramKey))
 			{
 				if(strBld.length()>0)
 					strBld.append('&') ;

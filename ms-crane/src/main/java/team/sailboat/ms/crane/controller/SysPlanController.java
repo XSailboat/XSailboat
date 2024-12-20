@@ -18,9 +18,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import team.sailboat.commons.fan.gadget.RSAUtils;
+import team.sailboat.commons.fan.text.XString;
+import team.sailboat.commons.ms.crypto.RSAKeyPairMaker4JS;
 import team.sailboat.ms.crane.bean.HostProfile;
-import team.sailboat.ms.crane.bean.HostValidResult;
 import team.sailboat.ms.crane.bean.SysProperty;
+import team.sailboat.ms.crane.bean.ValidResult;
 import team.sailboat.ms.crane.service.SysPlanService;
 
 /**
@@ -37,29 +40,51 @@ public class SysPlanController
 	@Autowired
 	SysPlanService mService ;
 	
-	@Operation(description = "取得所有主机信息")
-	@GetMapping(value="/host/profile/all" , produces = MediaType.APPLICATION_JSON_VALUE)
-	public Collection<HostProfile> getAllHostProfiles()
-	{
-		return mService.getAllHostProfiles() ;
-	}
+	@Autowired
+	RSAKeyPairMaker4JS mRSAMaker ;
 	
+	@Operation(description = "取得所有主机信息")
+	@Parameter(name="publicKey" , description = "客户端应用的公钥")
+	@GetMapping(value="/host/profile/all" , produces = MediaType.APPLICATION_JSON_VALUE)
+	public Collection<HostProfile> getAllHostProfiles( @RequestParam(name="publicKey" , required = false) String aPublicKey) throws Exception
+	{
+		Collection<HostProfile> hostProfiles = mService.getAllHostProfiles() ;
+		if(XString.isNotEmpty(aPublicKey))
+		{
+			for(HostProfile hostProfile : hostProfiles)
+			{
+				hostProfile.setAdminPswd(RSAUtils.encrypt(aPublicKey , hostProfile.getAdminPswd())) ;
+				hostProfile.setSysPswd(RSAUtils.encrypt(aPublicKey , hostProfile.getSysPswd())) ;
+			}
+		}
+		return hostProfiles ;
+	}
 
 	@Operation(description = "创建一个主机信息")
+	@Parameter(name="codeId" , description = "动态RSA秘钥的标识码。Https协议下，可以不用加密")
 	@RequestBody(description = "主机配置")
 	@PostMapping(value="/host/profile/one")
-	public void createHostProfile(@org.springframework.web.bind.annotation.RequestBody HostProfile aHostProfile) throws Exception
+	public void createHostProfile(@RequestParam(name="codeId" , required = false) String aCodeId
+			, @org.springframework.web.bind.annotation.RequestBody HostProfile aHostProfile) throws Exception
 	{
+		aHostProfile.setAdminPswd(mRSAMaker.decrypt4js(aCodeId , aHostProfile.getAdminPswd())) ;
+		aHostProfile.setSysPswd(mRSAMaker.decrypt4js(aCodeId , aHostProfile.getSysPswd())) ;
 		mService.createHostProfile(aHostProfile) ;
 	}
 	
 	@Operation(description = "更新指定主机名的一个主机信息。前端需要注意，如果用户修改了主机名，需要先调用删除操作，再调用创建操作")
+	@Parameters({
+		@Parameter(name="oldHostName" , description = "旧主机名。如果重命名了主机名，则必需指定") ,
+		@Parameter(name="codeId" , description = "动态RSA秘钥的标识码。Https协议下，可以不用加密")
+	})
 	@RequestBody(description = "主机配置")
-	@Parameter(name="oldHostName" , description = "旧主机名。如果重命名了主机名，则必需指定")
 	@PutMapping(value="/host/profile/one/_update")
 	public void updateHostProfile(@org.springframework.web.bind.annotation.RequestBody HostProfile aHostProfile
-			, @RequestParam(name="oldHostName" , required = false) String aOldHostName) throws Exception
+			, @RequestParam(name="oldHostName" , required = false) String aOldHostName
+			, @RequestParam(name="codeId" , required = false) String aCodeId) throws Exception
 	{
+		aHostProfile.setAdminPswd(mRSAMaker.decrypt4js(aCodeId , aHostProfile.getAdminPswd())) ;
+		aHostProfile.setSysPswd(mRSAMaker.decrypt4js(aCodeId , aHostProfile.getSysPswd())) ;
 		mService.updateHostProfile(aHostProfile , aOldHostName) ;
 	}
 	
@@ -124,9 +149,28 @@ public class SysPlanController
 	
 	@Operation(description = "验证主机的连通性，以及管理员账号和密码。返回验证结果")
 	@Parameter(name="hostName" , description = "主机名")
-	@GetMapping(value="/host/_validate" , produces = MediaType.APPLICATION_JSON_VALUE)
-	public HostValidResult validateHostInfo(@RequestParam("hostName") String aHostName)
+	@PostMapping(value="/host/_validate" , produces = MediaType.APPLICATION_JSON_VALUE)
+	public ValidResult validateHostInfo(@RequestParam("hostName") String aHostName)
 	{
 		return mService.validateHostInfo(aHostName) ;
+	}
+	
+	@Operation(description = "验证指定的用户名密码，在指定的主机上是否正确")
+	@Parameters({
+		@Parameter(name="ip" , description = "主机的ip地址") ,
+		@Parameter(name="port" , description = "SailPyInstaller的服务端口") ,
+		@Parameter(name="username" , description = "用户名") ,
+		@Parameter(name="codeId" , description = "动态RSA秘钥的标识码。") ,
+		@Parameter(name="password" , description = "密码。用动态RSA秘钥的公钥加密过后的密码。") ,
+	})
+	@PostMapping(value="/host/user_pswd/_validate" , produces = MediaType.APPLICATION_JSON_VALUE)
+	public ValidResult validateHostUserPswd(@RequestParam("ip") String aIp
+			, @RequestParam("port") int aPort 
+			, @RequestParam("username") String aUsername
+			, @RequestParam("codeId") String aCodeId
+			, @RequestParam("password") String aPassword) throws Exception
+	{
+		String password = mRSAMaker.decrypt4js(aCodeId , aPassword) ;
+		return mService.validateHostUserPswd(null , aIp , aPort , aUsername, password) ;
 	}
 }

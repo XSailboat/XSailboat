@@ -16,18 +16,18 @@
             <el-menu class="oper-menu" :collapse-transition="false" :default-openeds="defaultOpeneds" size="mini"
                      @select="menuSelect" style="min-height: 100%;" :default-active="activeMenu">
 
-                <el-submenu index="sys_plan">
-                    <template slot="title">
+                <el-sub-menu index="sys_plan">
+                    <template #title>
                         <i class="iconfont icon-sys-plan"></i>
                         <span>系统规划</span>
                     </template>
                     <el-menu-item index="app-ware"><i class="iconfont icon-app-store"></i> 应用仓库</el-menu-item>
                     <el-menu-item index="host-plan"><i class="iconfont icon-taskman"></i> 主机规划</el-menu-item>
                     <el-menu-item index="sys-param"><i class="iconfont icon-param"></i> 系统参数</el-menu-item>
-                </el-submenu>
+                </el-sub-menu>
                 
-                <el-submenu v-for="(submenus, key) in procedures" :key="key" :index="key">
-                    <template slot="title">
+                <el-sub-menu v-for="(submenus, key) in procedures" :key="key" :index="key">
+                    <template #title>
                     	<el-tooltip v-if="key.length > 14" effect="light" :content="key" placement="right">
                     		<div style="width: 100%;"><i class="iconfont icon-Folder-09"></i> <span>{{menuName(key)}}</span></div>
                     	</el-tooltip>
@@ -40,7 +40,7 @@
                     	</el-tooltip>
                     	<span v-else> <i class="iconfont icon-script"></i> {{ submenu.name }}</span>
                     </el-menu-item>
-                </el-submenu>
+                </el-sub-menu>
             </el-menu>
         </el-scrollbar>
     </div>
@@ -58,79 +58,83 @@
 
 <script class="script" th:inline="javascript">
 
-    var exVueOpts = {
-        data: {
-            activeMenu: 'app-ware',
-            procedures: {},
-            defaultOpeneds: ['sys_plan'],
-            menuIndex: ['app-ware', 'host-plan', 'sys-param'],
-            configs: {}
-        },
+	const { reactive, ref, computed, toRefs, getCurrentInstance, onMounted,
+			nextTick, watch } = Vue;
 
-        computed: {
-            showComponent() {
-                return this.isProcedure ? 'procedure' : this.activeMenu;
-            },
+    const exVueOpts = {
+    		
+    	setup() {
+    		const { proxy } = getCurrentInstance();
+    		let data = reactive({
+                activeMenu: 'app-ware',
+                procedures: {},
+                defaultOpeneds: ['sys_plan'],
+                menuIndex: ['app-ware', 'host-plan', 'sys-param'],
+                configs: {}
+    		});
+    		
+    		data.isProcedure = computed(() => {
+    			return data.menuIndex.findIndex(index => data.activeMenu === index) === -1;
+    		});
+    		
+    		data.showComponent = computed(() => {
+    			 return data.isProcedure ? 'procedure' : data.activeMenu;
+    		});
+    		
+    		
+    		const menuName = name => {
+				if(name.length > 14)
+					return name.substring(0, 5) + ' ... ' + name.substring(name.length - 8);
+				return name;
+    		};
+    		
+    		const menuSelect = (key, indexPath) => {
+    			    			
+            	const [firstLevelMenu, secondLevelMenu] = indexPath;
+                data.activeMenu = key;
+                proxy.urlPush('active', key);
+                proxy.urlPush('parent', firstLevelMenu);
+              	
+	      		if (data.isProcedure) {
+	               // 程式过程菜单项配置信息
+	               const index = data.procedures[firstLevelMenu].findIndex(submenu => submenu.name === secondLevelMenu);
+	               if (index > -1) {
+	               		data.configs = data.procedures[firstLevelMenu][index];	
+	               }                	
+	            }
+    		};
+    		
+            // 加载所有程式过程
+            const loadProcedureAll = () => {
+                axios.get('procedure/all/grouped').then(res => {
+                    data.procedures = res.data;
+                    const {active, parent} = proxy.urlParams();
+                    if (active && parent) {
+                    	menuSelect(active, [parent, active]);
+                    }
+                }).catch(error => {
+                    console.error(error);
+                });
+            };
             
-            // 是否是程式过程菜单
-            isProcedure() {
-            	return this.menuIndex.findIndex(index => this.activeMenu === index) === -1;
-            }
-        },
+            onMounted(() => {
+            	loadProcedureAll();
+            });
+    		
+    		return {
+    			...toRefs(data),
+    			menuName,
+    			menuSelect	
+    		}
+    	},
+    	
 
         components: {
             HostPlan,
             AppWare,
             SysParam,
             Procedure
-        },
-
-        methods: {
-        	
-        	menuName(name) {
-				if(name.length > 14)
-					return name.substring(0, 5) + ' ... ' + name.substring(name.length - 8);
-				return name;
-        	},
-
-            menuSelect(key, indexPath) {
-            	const [firstLevelMenu, secondLevelMenu] = indexPath;
-                this.activeMenu = key;
-                this.urlPush('active', key);
-                this.urlPush('parent', firstLevelMenu);
-              	
-	      		if (this.isProcedure) {
-	               // 程式过程菜单项配置信息
-	               const index = this.procedures[firstLevelMenu].findIndex(submenu => submenu.name === secondLevelMenu);
-	               if (index > -1) {
-	               		this.configs = this.procedures[firstLevelMenu][index];	
-	               }                	
-	            }
-            },
-
-            // 加载所有程式过程
-            loadProcedureAll() {
-                axios.get('procedure/all/grouped').then(res => {
-                    this.procedures = res.data;
-                    const {active, parent} = this.urlParams();
-                    if (active && parent) {
-                    	this.menuSelect(active, [parent, active]);
-                    }
-                }).catch(error => {
-                    console.log(error)
-                });
-            },
-        },
-
-        mounted() {
-            this.loadProcedureAll();
-
-        },
-
-        beforeDestroy() {
         }
-
-
     }
 
 </script>

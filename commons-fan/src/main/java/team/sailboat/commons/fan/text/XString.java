@@ -2243,7 +2243,10 @@ public class XString
 					else
 					{
 						if(newTextBld == null)
+						{
 							newTextBld = new StringBuilder() ;
+							newTextBld.append(aText, 0, pos) ;
+						}
 						newTextBld.append("${").append(ckeyBld).append('}') ;	
 					}	
 					ckeyBld = null ;

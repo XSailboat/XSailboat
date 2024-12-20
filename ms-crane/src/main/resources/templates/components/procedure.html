@@ -11,7 +11,7 @@
             <div class="app-repo" style="padding-left: 10px;">
                 <span class="title">{{configs.name}}</span>
                 <span class="description">{{configs.description}}</span>
-				<el-button type="primary" size="mini" @click="procedureExec" style="margin-right: 10px;">
+				<el-button type="primary" @click="procedureExec" style="margin-right: 10px;">
 					<i class="iconfont icon-exec"></i> <span style="vertical-align: text-top;">执 行</span>
 				</el-button>               
             </div>
@@ -22,16 +22,20 @@
                         v-for="(host, index) of hosts"
                         :key="index"
                         placement="bottom"
-                        :ref="'popover' + index"
+                        ref="popovers"
                         width="500"
                         popper-class="host-info-popover"
                         trigger="click">
-                    <div slot="reference">
-                       <span class="host">
-                            <i class="el-icon-monitor"></i> {{host.name}}
-                        </span>
-                        <span v-if="index !== hosts.length - 1">、</span>
-                    </div>
+                        
+                    <template #reference>
+	                    <div>
+	                       <span class="host">
+	                            <i class="el-icon-monitor"></i> {{host.name}}
+	                        </span>
+	                        <span v-if="index !== hosts.length - 1">、</span>
+	                    </div>
+                    </template>
+
                     
 					<div class="card">
                         <div class="base-info">
@@ -50,7 +54,7 @@
                             <div class="item" style="display: flex; height: 100%; flex-direction: column;">
                                 <span class="dev-module-label">
                                 	部署的模块
-                                	<i class="el-icon-close close-icon" @click="closePopover(index)"></i>
+                                	<el-icon class="close-icon" @click="closePopover(index)"><Close /></el-icon>
                                 </span>
                                 
                                 <div style="display: flex; flex-wrap: wrap; height: 100%;"
@@ -109,118 +113,118 @@
 
     </template>
     <script>
-        var Procedure = {
+        const Procedure = {
             template: "#procedure",
-            data() {
-                return {
-                    hosts: [],
-                    scriptName: '',
-                    scriptDescription: '',
-                    checkCommands: [],
-                    logDatas: []
-                    
-                }
-            },
+            
             props: {
                 configs: {
                     type: Object,
                     required: true
                 }
             },
-
-            computed: {},
-            methods: {
-            	closePopover(index) {
-            		this.$refs['popover' + index][0].doClose();
-            	},
+            
+            setup(props) {
+            	            	
+            	const { proxy } = getCurrentInstance();
+            	
+            	const data = reactive({
+                    hosts: [],
+                    scriptName: '',
+                    scriptDescription: '',
+                    checkCommands: [],
+                    logDatas: [],
+                    popovers: []
+            	});
+            	
+            	const closePopover = index => {
+            		data.popovers[index].hide()
+            	}
             	
             	// 复选框勾选状态发生变化触发
-            	checkboxChange(operation, index) {
+            	const checkboxChange = (operation, index) => {
             		// 是否启用了该命令
-            		const enabled = this.checkCommands.findIndex(key => key == index) > -1
+            		const enabled = data.checkCommands.findIndex(key => key == index) > -1
             		operation.enabled = enabled;
             		
             		axios({
             			url: 'procedure/one/operation/enabled',
             			method: 'post',
             			params: {
-            				procedureFileName: this.configs.name,
+            				procedureFileName: props.configs.name,
             				operationName: operation.name,
             				enabled
             			}
             		}).then(_ => {
             			
             		}).catch(error => {
-            			console.log(error);
-            			this.$message.error(`${enabled ? '启用' : '禁用'}命令【${operationName}】发生了异常！请联系管理员`);
+            			console.error(error);
+            			proxy.error(`${enabled ? '启用' : '禁用'}命令【${operationName}】发生了异常！请联系管理员`);
             		});
-            	},
+            	}
             	
             	// 加载执行日志
-            	loadExecLog(seq = 0) {
+            	const loadExecLog = (seq = 0) => {
             		axios.get('procedure/one/execLog/many', {
             			params: {
-            				procedureFileName: this.configs.name,
+            				procedureFileName: props.configs.name,
             				seq
             			}
             		}).then(res => {
-            			this.logDatas.push(...res.data.data);
-                        let wrap = $('#content_scroll').find('.el-scrollbar__wrap')[0];
+            			data.logDatas.push(...res.data.data);
+                        let wrap = $('#content_scroll')[0];
                         wrap.scrollTop = wrap.scrollHeight;
             			if (res.data.taskFinished){
             				return;
             			}
             			setTimeout(() => {
-            				this.loadExecLog(res.data.endSeq);
+            				loadExecLog(res.data.endSeq);
             			}, 1000);
             			
             		}).catch(error => {
-            			console.log(error);
-            			this.$message.error('加载执行日志过程中发生了异常！请联系管理员');
+            			console.error(error);
+            			proxy.error('加载执行日志过程中发生了异常！请联系管理员');
             		});
-            	},
+            	}
             	
-            	procedureExec() {
+            	const procedureExec = () => {
             		axios({
             			url: 'procedure/one/_exec',
             			method: 'post',
             			params: {
-            				procedureFileName: this.configs.name
+            				procedureFileName: props.configs.name
             			}
             		}).then(res => {
-            			this.$message.success('执行成功');
+            			proxy.success('执行成功');
             			setTimeout(() => {
-            				this.loadExecLog();
+            				loadExecLog();
             			}, 1000);
             			
             		}).catch(error => {
-            			console.log(error);
-            			this.$message.error('执行命令发生了异常！请联系管理员');
+            			console.error(error);
+            			proxy.error('执行命令发生了异常！请联系管理员');
             		});
-            	},
+            	}
             	
             	// 当用户点击操作命令时
-            	handleClickOperation(operation) {
-            		this.scriptName = operation.name;
-            		this.scriptDescription = operation.description;
+            	const handleClickOperation = operation => {
+            		data.scriptName = operation.name;
+            		data.scriptDescription = operation.description;
             		
-            		this.configs.operations.forEach(curOp => {
-            			this.$set(curOp, 'selected', false);
+            		props.configs.operations.forEach(curOp => {
+            			curOp.selected = false;
             		});
             		
-            		this.$set(operation, 'selected', true);
-            		
-            	},
+            		operation.selected = true;
+            	}
             	
                 // 加载所有主机信息
-                loadHostProfileAll() {
+                const loadHostProfileAll = () => {
                     axios.get('/sysPlan/host/profile/all').then(res => {
                         const hosts = res.data;
-                        const {modules} = this.configs;
-						                      
+                        const {modules} = props.configs;						                      
                         // 部署的模块
                         if (modules.findIndex(module => module.trim().toLowerCase() === 'all') > -1) {
-                            this.hosts = hosts;
+                            data.hosts = hosts;
                         } else {
                             const names = new Set();
                             // 部署模块与主机的映射
@@ -251,16 +255,17 @@
                             	requiredHosts.push(nameHostMap[name]);
                             });
                             
-                            this.hosts = requiredHosts;
+                            data.hosts = requiredHosts;
                         }
                     }).catch(error => {
-                        console.log(error);
-                        this.$message.error('加载所有主机信息过程中发生了异常！请联系管理员');
+                        console.error(error);
+                        proxy.error('加载所有主机信息过程中发生了异常！请联系管理员');
                     });
-                },
+                }
                 
-                setCheckCommands() {
-                	const { operations } = this.configs;
+                
+                const setCheckCommands = () => {
+                	const { operations } = props.configs;
                 	                	
                 	const checkCommands = [];
                 	
@@ -269,41 +274,45 @@
                 			checkCommands.push(i);
                 		}
                 	}
-                	this.checkCommands = checkCommands;
-                },
+                	data.checkCommands = checkCommands;
+                }
                 
-                reset() {
-                	this.scriptName = '';
-                	this.scriptDescription = '';
-                	this.logDatas = [];
-                },
+                const reset = () => {
+                	data.scriptName = '';
+                	data.scriptDescription = '';
+                	data.logDatas = [];
+                }
                 
                 // 加载页面 默认选中第一行
-                selectedOne() {
-                	const { operations } =  this.configs;
+                const selectedOne = () => {
+                	const { operations } =  props.configs;
                 	if (operations.length != 0)  {
-                		this.handleClickOperation(operations[0], 0);
+                		handleClickOperation(operations[0], 0);
                 	}
                 }
+                
+                onMounted(() => {
+                	selectedOne();
+                });
+                
+                loadHostProfileAll();
+                setCheckCommands();
+                
+                watch(() => props.configs, () => {
+                	loadHostProfileAll();
+                	setCheckCommands();
+                	reset();
+                	selectedOne();
+                });
+            	
+            	return {
+            		...toRefs(data),
+            		closePopover,
+            		procedureExec,
+            		handleClickOperation,
+            		checkboxChange
+            	}
             },
-
-            watch: {
-                configs() {
-                    this.loadHostProfileAll();
-                    this.setCheckCommands();
-                    this.reset();
-                    this.selectedOne();
-                }
-            },
-
-            mounted() {
-				this.selectedOne();
-
-            },
-            created() {
-                this.loadHostProfileAll();
-                this.setCheckCommands();
-            }
         }
     </script>
 </th:block>

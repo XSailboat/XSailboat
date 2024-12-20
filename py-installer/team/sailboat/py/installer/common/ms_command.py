@@ -4,6 +4,7 @@ import re
 import shlex
 import time
 
+import os
 from loguru import logger
 
 from team.sailboat.py.installer.common.app_storage import AppStorage
@@ -11,8 +12,10 @@ from team.sailboat.py.installer.common.app_util.app_file import AppFile
 from team.sailboat.py.installer.common.app_util.app_path import AppPath
 from team.sailboat.py.installer.common.app_util.app_sys_command import AppSysCmd
 from team.sailboat.py.installer.common.app_util.app_sys_config import AppSysConfig
+from team.sailboat.py.installer.common.app_variable import AppVariable
 
 app_storage = AppStorage()
+app_variable = AppVariable()
 # 命令行参数解析
 command_define = {
     "x_cd": [],
@@ -46,6 +49,7 @@ class CommandProcessor:
         # command_parts = self.parse_command(command_str)
         command_parts = None
         try:
+            command_str = self.parse_variable_injection(command_str)
             command_parts = shlex.split(command_str)
         except Exception as e:
             return {"code": False, "msg": str(e)}
@@ -63,6 +67,7 @@ class CommandProcessor:
             method = getattr(CustomCommandHelper, command_name, None)
 
         if command_name not in command_define.keys() and command_name not in custom_command_define.keys():  # 不是自定义命令
+
             # 判断当前用户，执行对应权限的命令
             if not app_storage.__contains__("current_user"):
                 # 未切换用户默认为平台用户
@@ -134,6 +139,8 @@ class CommandProcessor:
                     params = "\n".join(command_parts[1:]).strip()
 
         logger.info(f"命令参数解析:{params}")
+        params = self.parse_variable_injection(params)
+        print(params)
         return method(params)
 
     def parse_params(self, params_part, rule):
@@ -237,7 +244,12 @@ class CommandProcessor:
                     exec_sql = f"taos -u {app_storage['sql']['username']} -p'{app_storage['sql']['password']}' -d {app_storage['sql']['database']} -s \"{cmd}\""
                 else:
                     exec_sql = f"taos -u {app_storage['sql']['username']} -p'{app_storage['sql']['password']}' -s \"{cmd}\""
-
+            elif app_storage["sql"]["type"] == "pgsql":
+                os.environ['PGPASSWORD'] = app_storage['sql']['password']
+                if app_storage['sql']['database'] != "":
+                    exec_sql = f"psql -U {app_storage['sql']['username']} -d {app_storage['sql']['database']} -c \"{cmd}\""
+                else:
+                    exec_sql = f"psql -U {app_storage['sql']['username']} -c \"{cmd}\""
             else:
                 logger.info(f'【SQL命令执行】- 未知的数据库类型{app_storage["sql"]["type"]}')
                 return {"code": False,
@@ -270,6 +282,26 @@ class CommandProcessor:
                 my_shell.append(c.strip())
 
         return [" && ".join(shell)] + my_shell
+
+    def parse_variable_injection(self, params):
+        if type(params) == str:
+            return self.__replace_placeholders(params, app_variable)
+        elif type(params) == dict:
+            for key, value in dict(params).items():
+                params[key] = self.__replace_placeholders(value, app_variable)
+            return params
+
+    def __replace_placeholders(self, template_string, variables):
+        # 定义正则表达式模式，匹配 ${...} 格式的占位符
+        pattern = r'\$\{([^}]+)\}'
+
+        # 使用 re.sub 进行替换
+        def replacer(match):
+            key = match.group(1)
+            return str(variables.get_or_default(key, match.group(0)))  # 如果键不存在，则返回原字符串
+
+        result_string = re.sub(pattern, replacer, template_string)
+        return result_string
 
 
 # 其他定义命令
@@ -412,6 +444,7 @@ class CommandHelper:
         """自定义解压tar.gz文件"""
         source = None
         target = None
+        expect = None
         if type(params) == dict:
             if "source" not in params:
                 return {"code": False, "msg": "缺少参数名 -s"}
@@ -419,11 +452,12 @@ class CommandHelper:
                 return {"code": False, "msg": "缺少参数名 -t"}
             source = params["source"]
             target = params["target"]
+            expect = dict(params).get("expect", None)
         else:
             if params == None:
                 return {"code": False, "msg": "缺少参数"}
         try:
-            result = AppPath.untar_file(source, target)
+            result = AppPath.untar_file(source, target, expect)
             return {"code": result, "msg": "" if result else "文件解压失败!"}
         except FileNotFoundError as e:
             return {"code": False, "msg": str(e)}
@@ -555,10 +589,11 @@ class CommandHelper:
                 return {"code": False, "msg": "缺少参数名 -t"}
             if "username" not in params:
                 return {"code": False, "msg": "缺少参数名 -u"}
-            if "password" not in params:
+            if params["type"] != "pgsql" and "password" not in params:
                 return {"code": False, "msg": "缺少参数名 -p"}
         # 只要运行此条命令后，将会开启SQL命令执行模式
-        app_storage["sql"] = {"mode": True, "username": params["username"], "password": params["password"],
+        app_storage["sql"] = {"mode": True, "username": params["username"],
+                              "password": dict(params).get("password", ""),
                               "database": dict(params).get("database", ""), "type": params["type"]}
 
         return {"code": True, "msg": ""}

@@ -8,7 +8,7 @@ import team.sailboat.commons.fan.json.JSONArray;
 import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.text.XString;
 import team.sailboat.commons.ms.log.LogPool;
-import team.sailboat.ms.crane.AppConsts;
+import team.sailboat.ms.crane.IApis_PyInstaller;
 import team.sailboat.ms.crane.bean.HostProfile;
 import team.sailboat.ms.crane.cmd.ICmd;
 import team.sailboat.ms.crane.cmd.LocalCmds;
@@ -88,7 +88,7 @@ public class Operator_Cmds extends Operator_RemoteHost
 	
 	boolean doRemoteCommands(HttpClient aHttpClient , String[] aCommands) throws Exception
 	{
-		JSONArray ja = aHttpClient.askJa(Request.POST().path(AppConsts.sApi_ExecCommands_POST)
+		JSONArray ja = aHttpClient.askJa(Request.POST().path(IApis_PyInstaller.sPOST_ExecCommand)
 				.setJsonEntity(JSONObject.one().put("commands" , aCommands)))  ;
 		final int len = ja.size() ;
 		boolean success = true ;

@@ -1,0 +1,175 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  
+xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:xweb="http://www.thymeleaf.org/extras/xweb"
+th:replace="decorators/main::layout(~{::head},~{::.content},~{::components},~{::.script})">
+<head>
+<meta charset="UTF-8">
+<title>认证中心 | 用户绑定</title>
+<style type="text/css">
+	.overview{
+		width: 460px;
+		margin: 16px 26px;
+	}
+	.overview .big-btn{
+		padding: 20px 28px;
+	}
+	.overview .big-btn .icon{
+		font-size: 3em
+	}
+	@media screen and (max-width: 2000px){
+		.overview{
+			width: 400px;
+			margin: 10px 20px;
+		}
+		
+		.overview .big-btn{
+			padding: 20px 28px;
+		}
+		
+		.overview .big-btn .icon{
+			font-size: 2.5em
+		}
+	}
+</style>
+</head>
+<body>
+	<div class="content bg-pane">
+	 	<el-card style="width: auto;transform: translateX(-50%); position: absolute; top: 20%; left: 50%;">
+	 		
+ 	 		<div v-if="view == 'overview'" class="overview" style="display: flex;flex-direction: column;">
+	 			<span style="font-size: 18px;">你好，{{dUser == null ? '' : dUser.nick}}</span>
+	 			<span style="font-size: 15px;margin:10px 0;">检测到你是第一次使用钉钉账号登录，你可以：</span>
+	 			<div style="display: flex;align-items: center;justify-content: space-around;margin: 12px 0;">
+	 				<el-button plain type="primary" class="big-btn" @click="view='bind'"><i class="icon icon-bangdingzhanghao"></i><span>绑定已有账号</span></el-button>
+	 				<el-button plain type="success" class="big-btn" @click="newUser">
+	 					<i class="icon icon-xinjianyonghu"></i>
+	 					注册新账号
+ 					</el-button>
+	 			</div>
+	 		</div>
+	 	
+		 	<div v-else-if="view == 'bind'">
+		 		<div style="font-size: 15px;margin-bottom: 40px;display: flex;align-items: center;">
+		 			<el-page-header @back="view='overview'"></el-page-header>
+		 			<span>绑定已有账号</span>
+	 			</div>
+		 		
+		 		<el-form ref="pwdForm" status-icon th:action="@{/bindAccount/ding}" @submit.native="submitForm" method="post" :model="pwdForm" :rules="rules" size="medium" label-width="75px" style="margin: 0 20px;">
+		 			<el-form-item label="用户名" prop="username">
+				    	<el-input prefix-icon="el-icon-user" placeholder="请输入用户名" v-model="pwdForm.username" name="username"></el-input>
+				  	</el-form-item>
+				  	<el-tooltip v-model="capsTooltip" effect="light" content="大写键已锁定" placement="right" manual>
+					  	<el-form-item label="密码" prop="password">
+					    	<el-input prefix-icon="el-icon-lock" tabindex="pwd" type="password" name="password" placeholder="请输入密码" v-model="pwdForm.password" autocomplete="off" @keyup.native="checkCapslock" @blur="capsTooltip = false"></el-input>
+					  	</el-form-item>
+				  	</el-tooltip>
+				  	<div style="display:none;">
+				  		<el-input v-model="pwdForm.codeId" name="codeId"></el-input>
+						<input th:if="${_csrf}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+					</div>
+				  	<el-form-item style="text-align: right">
+				    	<button ref="submit_btn" id="submit_btn" v-show="valided" type="submit"></button>
+				    	<el-button type="primary" @click="validForm">确 定</el-button>
+				  	</el-form-item>
+				</el-form>
+			</div>
+			
+			<div v-else-if="view == 'create'">
+			
+			</div>
+	 	</el-card>
+ 	</div>
+<components>
+</components>
+<script class="script" th:inline="javascript">
+	RSAUtils.setMaxDigits(200); 
+	var exVueOpts = {
+		data() {
+			var validatePass = (rule, value, callback) => {
+		    	if (value === '') {
+		      		callback(new Error('请输入密码'));
+			    } else if(value.length < 6){
+			    	callback(new Error('密码最少6位数'));
+			    } else {
+			      	if (this.pwdForm.checkPass !== '') {
+			        	this.$refs.pwdForm.validateField('checkPass');
+			      	}
+			      	callback();
+			    }
+		  	};
+			return {
+				view: 'overview',
+				dUser: /*[[${session.dingCodeUserInfo}]]*/ {},
+				pwdForm: {
+					codeId: '',
+					username: '',
+					password: '',
+				},
+				capsTooltip: false,
+				rules: {
+					username: [{ required: true, message: "请输入用户名", trigger: 'blur' }],
+					password: [{ required: true, validator: validatePass, trigger: 'blur' }],
+				},
+				valided: false,
+			}
+	    },
+	    components:{
+	    },
+	    methods:{
+	    	checkCapslock(e) {
+		      	const { key } = e;
+		      	this.capsTooltip = e.getModifierState('CapsLock');
+		    },
+	    	validForm() {
+	     		this.$refs.pwdForm.validate((valid) => {
+	           		if (valid) {
+		           		this.encrypPwd((codeId, encrypedPwd) => {
+		           			this.$set(this.pwdForm, 'codeId', codeId);
+				  			this.$set(this.pwdForm, 'password', encrypedPwd);
+		           			this.$nextTick(() => {
+		           				this.$refs.submit_btn.click();
+                			})
+		           		})
+	              	} else {
+	                	return false;
+	         		}
+	      		});
+	     	},
+	     	submitForm(){
+	     		return true;
+	     	},
+			encrypPwd(callback){
+	     		axios.get('public/security/rsa-publickey').then(res=>{
+	     			var key = new RSAUtils.getKeyPair(res.data.publicKeyExponent, '', res.data.publicKeyModulus);
+	     			let pwd = this.pwdForm.password.split("").reverse().join("");
+				 	var encrypedPwd = RSAUtils.encryptedString(key, pwd);
+				 	callback(res.data.codeId, encrypedPwd);
+				}).catch(error=>{
+					this.message('error',error);
+				})
+	     	},
+	    	resetForm() {
+	    		this.$refs.pwdForm.resetFields();
+	     	},
+	     	newUser(){
+	     		axios.post('/creteNewAccount/ofDing').then(res=>{}).catch(error=>{
+					this.message('error',error);
+				})
+	     	}
+	    },
+	    mounted(){
+	    	console.log(this.dUser);
+	    },
+	    watch:{
+	    	view(val){
+	    		if(val=='bind'){
+	    			this.$nextTick(() => {
+	    				$('.el-form-item').removeAttr('tabindex');
+	    			})
+	    		}
+	    	}
+	    }
+ 	};
+ </script>
+</body>
+</html>

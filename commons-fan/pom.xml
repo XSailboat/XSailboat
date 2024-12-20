@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>team.sailboat</groupId>
 		<artifactId>sailboat</artifactId>
-		<version>0.0.1</version>
+		<version>0.0.2-beta</version>
 	</parent>
 	<artifactId>commons-fan</artifactId>
 	<name>Sail Commons Fan</name>
@@ -37,7 +37,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<scope>provided</scope>	<!-- 指定为 provided 作用域，表示编译时可用，运行时不需要 -->
+			<scope>provided</scope>	<!-- 指定为 provided 作用域，表示编译时可用，运行时不需要 -->  
 		</dependency>
 	</dependencies>
 
@@ -51,22 +51,22 @@
 				</configuration>
 				<version>${maven.plugin.compiler.version}</version>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>${maven.plugin.source.version}</version>
-				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+			<plugin>  
+	            <groupId>org.apache.maven.plugins</groupId>  
+	            <artifactId>maven-source-plugin</artifactId>  
+	            <version>${maven.plugin.source.version}</version>
+	            <executions>  
+	                <execution>  
+	                    <id>attach-sources</id>  
+	                    <goals>  
+	                        <goal>jar</goal>  
+	                    </goals>  
+	                </execution>  
+	            </executions>  
+	        </plugin>  
 		</plugins>
 	</build>
-
+	
 	<profiles>
 		<profile>
 			<id>to-publish</id>

@@ -3,8 +3,23 @@ package team.sailboat.base;
 import team.sailboat.commons.fan.collection.PropertiesEx;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 系统常量表
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public interface SysConst
 {
+	/**
+	 * 系统应用版本。全局统一
+	 */
+	public static final String sAppVer = "0.0.2-beta";
+	
+	/**
+	 * Spring应用的额外配置文件名
+	 */
+	public static final String sFN_SpringAppExtraConfig = "application-extra.yaml" ;
 	
 	/**
 	 * System.getProperty()的键<br />
@@ -12,17 +27,42 @@ public interface SysConst
 	 */
 	public static final String sPK_SysEnv = "sys_env" ;
 	
+	/**
+	 * 系统环境			<br />
+	 * 开发环境(dev)
+	 */
 	public static final String sPKV_SysEnv_dev = "dev" ;
+	
+	/**
+	 * 系统环境			<br />
+	 * 生产环境(prod)
+	 */
 	public static final String sPKV_SysEnv_prod = "prod" ;
+	
+	/**
+	 * 系统环境			<br />
+	 * 测试环境(test)
+	 */
 	public static final String sPKV_SysEnv_test = "test" ;
 	
 	public static final String sCompany = "威海欣智信息科技有限公司" ;
 	
+	/**
+	 * 服务类型是提供http(s)接口的微服务
+	 */
 	public static final String sServiceType_MS_HTTP_API = "MS-HTTP-API" ;
 	
-	public static final String sAppName_PyTask = "PyTask" ;
+	/**
+	 * 服务类型是SailboatWeb应用--认证中心
+	 */
+	public static final String sServiceType_SailboatWeb_AuthCenter = "SailboatWeb-AuthCenter" ;
 	
-	public static final String sAppName_AuthCenter = "AuthCenter" ;
+	/**
+	 * 服务类型是SailboatWeb应用--平台模块
+	 */
+	public static final String sServiceType_SailboatWeb_Module = "SailboatWeb-Module" ;
+	
+	public static final String sAppName_PyTask = "PyTask" ;
 	
 	public static final String sAppName_SailMSExecEngine = "SailMSExecEngine" ;
 	
@@ -32,6 +72,10 @@ public interface SysConst
 	
 	public static final String sAppName_SailMSWorks = "SailMSWorks" ;
 	
+	/**
+	 * 认证中心
+	 */
+	public static final String sAppName_SailAC = "SailAC" ;
 	
 	/**
 	 * xz是“协作”的缩写
@@ -40,19 +84,36 @@ public interface SysConst
 	
 	public static final String sZK_PathPtn_SysRoot = "/"+sSysCode+"/{}" ;
 	
-	public static final String sZK_SysPath_XWebModules = "/registry-site/xweb/module" ;
+	/**
+	 * Sailboat Web模块注册的ZK路径
+	 */
+	public static final String sZK_SysPath_SailboatWebModules = "/registry-site/SailboatWeb/module" ;
 	
-	public static final String sZK_PathPtn_XWebModule = "/registry-site/xweb/module/{}" ;
+	/**
+	 * 某个Sailboat Web模注册的ZK路径模版
+	 */
+	public static final String sZK_SysPathPtn_SailboatWebModuleOne = "/registry-site/SailboatWeb/module/{}" ;
 	
 	public static final String sZK_SysPath_RegistrySite = "/registry-site" ;
 	
-	public static final String sZK_SysPathPtn_service =  "/registry-site/{}" ;
+	public static final String sZK_SysPath_WebApp =  "/registry-site/WebApp" ;
 	
-	public static final String sZK_SysPathPtn_http =  "/registry-site/{}/http" ;
+	public static final String sZK_SysPathPtn_WebApp =  "/registry-site/WebApp/{}" ;
 	
-	public static final String sZK_SysPathPtn_https =  "/registry-site/{}/https" ;
+	/**
+	 * 活跃的WebApp实例，得下面有临时节点存在才可以。
+	 */
+	public static final String sZK_SysPathPtn_ActiveWebApp =  "/registry-site/WebApp/{}/active" ;
 	
-	public static final String sZK_SysPathPtn_special = "/registry-site/{}/{}" ;
+	public static final String sZK_SysPath_ApiService =  "/registry-site/ApiService" ;
+	
+	public static final String sZK_SysPathPtn_ApiService =  "/registry-site/ApiService/{}" ;
+	
+	public static final String sZK_SysPathPtn_http =  "/registry-site/ApiService/{}/http" ;
+	
+	public static final String sZK_SysPathPtn_https =  "/registry-site/ApiService/{}/https" ;
+	
+	public static final String sZK_SysPathPtn_ApiService_special = "/registry-site/ApiService/{}/{}" ;
 	
 	public static final String sZK_Path_SysCommon = "/"+sSysCode+"/common" ;
 	
@@ -95,7 +156,7 @@ public interface SysConst
 	
 	public static final String sZK_CommonPath_hosts = sZK_Path_SysCommon + "/hosts" ;
 	
-	public static String sZK_SysPath_Register_XTMS = XString.msgFmt(sZK_SysPathPtn_service , sAppName_XTMS) ;
+	public static String sZK_SysPath_Register_XTMS = XString.msgFmt(sZK_SysPathPtn_ApiService , sAppName_XTMS) ;
 	
 	public static String sZK_SysPathPtn_Job = sZK_SysPath_Register_XTMS +"/{}/{}/{}" ;
 	
@@ -172,13 +233,24 @@ public interface SysConst
 	 */
 	public static final String sAppName_SailMSOSS = "SailMSOSS" ;
 	
+	/**
+	 * 应用/系统进行的操作
+	 */
 	public static final String sUserId_sys = "__sys__" ;
 	
-	public static PropertiesEx getDefaultServiceProperties()
+	public static PropertiesEx getApiServiceProperties()
 	{
 		PropertiesEx prop = new PropertiesEx() ;
 		prop.put("company" , sCompany) ;
 		prop.put("produce" , sServiceType_MS_HTTP_API) ;
+		return prop ;
+	}
+	
+	public static PropertiesEx getSailboatWebModuleProperties()
+	{
+		PropertiesEx prop = new PropertiesEx() ;
+		prop.put("company" , sCompany) ;
+		prop.put("produce" , sServiceType_SailboatWeb_Module) ;
 		return prop ;
 	}
 	

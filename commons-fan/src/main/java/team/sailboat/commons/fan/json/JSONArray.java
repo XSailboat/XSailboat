@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.infc.BiIteratorPredicate;
@@ -746,23 +747,9 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 	 *   
 	 * @return 返回当前JSONArray对象，以便进行链式调用。  
 	 */  
-	public JSONArray put(Object aValue) {
-		if(aValue == null)
-			mEleList.add(null) ;
-		else if(aValue.getClass().equals(JSONArray.class))
-			mEleList.add(aValue) ;
-		else if(aValue instanceof ToJSONObject)
-			mEleList.add(((ToJSONObject)aValue).toJSONObject()) ;
-		else if(aValue instanceof Map)
-			mEleList.add(JSONObject.of((Map<String, Object>) aValue)) ;
-		else if(aValue.getClass().isArray())
-			mEleList.add(JSONArray.of((Object[])aValue)) ;
-		else if(aValue instanceof Iterable<?>)
-			put((Iterable<?>)aValue) ;
-		else if(aValue instanceof Enum<?>)
-			mEleList.add(((Enum<?>)aValue).name()) ;
-		else
-			mEleList.add(aValue) ;
+	public JSONArray put(Object aValue)
+	{
+		mEleList.add(toJSONElement(aValue)) ;
 		return this;
 	}
 	
@@ -1048,6 +1035,13 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 		return this ;
 	}
 	
+	/**
+	 * 从集合中移除所有满足给定谓词条件的元素。
+	 * 
+	 * @param aPred 一个谓词函数，它接受集合中的元素（类型为Object）作为参数，并返回一个布尔值。
+	 *              如果谓词函数对某个元素返回true，则该元素将从集合中移除。
+	 * @return 如果至少有一个元素被移除，则返回true；否则返回false。
+	 */
 	public boolean removeIf(Predicate<Object> aPred)
 	{
 		Iterator<Object> it = mEleList.iterator() ;
@@ -1063,7 +1057,21 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 		return removed ;
 	}
 	
-	public void removeIf_JSONArray(Predicate<JSONArray> aPred)
+	/**
+	 * 从JSONArray中移除所有满足给定谓词条件的JSONArray元素。
+	 * 
+	 * <p>此方法遍历JSONArray中的每个元素（假设元素本身也是JSONArray类型），
+	 * 并使用提供的谓词函数来测试每个元素。如果谓词函数对某个JSONArray元素返回true，
+	 * 则该元素将从JSONArray中移除。</p>
+	 * 
+	 * <p>注意：此方法直接修改调用它的JSONArray对象，并返回修改后的对象本身，
+	 * 支持链式调用。</p>
+	 * 
+	 * @param aPred 一个谓词函数，它接受一个JSONArray对象作为参数，并返回一个布尔值。
+	 *              如果谓词函数对某个JSONArray对象返回true，则该对象将从JSONArray中移除。
+	 * @return 返回操作后的当前JSONArray对象（支持链式调用）。
+	 */
+	public JSONArray removeIf_JSONArray(Predicate<JSONArray> aPred)
 	{
 		Iterator<Object> it = mEleList.iterator() ;
 		while(it.hasNext())
@@ -1071,9 +1079,17 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 			if(aPred.test((JSONArray)it.next()))
 				it.remove() ;
 		}
+		return this ;
 	}
 	
-	public void removeIf_JSONObject(Predicate<JSONObject> aPred)
+	/**
+	 * 从JSONArray中移除所有满足给定谓词条件的JSONObject元素。
+	 * 
+	 * @param aPred 一个谓词函数，它接受一个JSONObject对象作为参数，并返回一个布尔值。
+	 *              如果谓词函数对某个JSONObject对象返回true，则该对象将从JSONArray中移除。
+	 * @return 返回操作后的当前JSONArray对象（支持链式调用）。
+	 */
+	public JSONArray removeIf_JSONObject(Predicate<JSONObject> aPred)
 	{
 		Iterator<Object> it = mEleList.iterator() ;
 		while(it.hasNext())
@@ -1081,9 +1097,18 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 			if(aPred.test((JSONObject)it.next()))
 				it.remove() ;
 		}
+		return this ;
 	}
 	
-	public void retainIf_JSONArray(Predicate<JSONArray> aPred)
+	/**
+	 * 从JSONArray中保留所有满足给定谓词条件的JSONArray元素，移除不满足条件的元素。
+	 * 
+	 * @param aPred 一个谓词函数，它接受一个JSONArray对象作为参数，并返回一个布尔值。
+	 *              如果谓词函数对某个JSONArray对象返回true，则该对象将保留在JSONArray中；
+	 *              如果返回false，则该对象将被移除。
+	 * @return 返回操作后的当前JSONArray对象（支持链式调用）。
+	 */
+	public JSONArray retainIf_JSONArray(Predicate<JSONArray> aPred)
 	{
 		Iterator<Object> it = mEleList.iterator() ;
 		while(it.hasNext())
@@ -1091,9 +1116,18 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 			if(!aPred.test((JSONArray)it.next()))
 				it.remove() ;
 		}
+		return this ;
 	}
 	
-	public void retainIf_JSONObject(Predicate<JSONObject> aPred)
+	/**
+	 * 从JSONArray中保留所有满足给定谓词条件的JSONObject元素，移除不满足条件的元素。
+	 * 
+	 * @param aPred 一个谓词函数，它接受一个JSONObject对象作为参数，并返回一个布尔值。
+	 *              如果谓词函数对某个JSONObject对象返回true，则该对象将保留在JSONArray中；
+	 *              如果返回false，则该对象将被移除。
+	 * @return 返回操作后的当前JSONArray对象（支持链式调用）。
+	 */
+	public JSONArray retainIf_JSONObject(Predicate<JSONObject> aPred)
 	{
 		Iterator<Object> it = mEleList.iterator() ;
 		while(it.hasNext())
@@ -1101,6 +1135,7 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 			if(!aPred.test((JSONObject)it.next()))
 				it.remove() ;
 		}
+		return this ;
 	}
 
 	/**
@@ -1510,6 +1545,13 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 		return this ;
 	}
 	
+	/**
+	 * 条件性地将一个对象放入JSONArray中。
+	 * 
+	 * @param aCnd 条件表达式，如果为true，则将对象放入JSONArray。
+	 * @param aObj 要放入的对象。
+	 * @return 返回当前JSONArray对象，便于链式调用。
+	 */
 	public JSONArray putIf(boolean aCnd , Object aObj)
 	{
 		if(aCnd)
@@ -1517,19 +1559,63 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 		return this ;
 	}
 	
+	/**
+	 * 如果JSONArray中不存在指定的对象，则将其添加进去。
+	 * 注意：此处的“不存在”是基于toJSONElement转换后的对象进行比较的。
+	 * 
+	 * @param aObj 要检查并可能添加的对象。
+	 * @return 返回当前JSONArray对象，便于链式调用。
+	 */
 	public JSONArray putIfAbsent(Object aObj)
 	{
-		if(!mEleList.contains(aObj))
-			mEleList.add(aObj) ;
+		Object ele = toJSONElement(aObj) ;
+		if(!mEleList.contains(ele))
+			mEleList.add(ele) ;
 		return this ;
 	}
 	
-	public boolean contains(Object aObj)
+	/**
+	 * 遍历一个Iterable集合，如果JSONArray中不存在集合中的对象，则将其添加进去。
+	 * 注意：此处的“不存在”是基于toJSONElement转换后的对象进行比较的。
+	 * 
+	 * @param aObjs 要检查并可能添加的Iterable集合。
+	 * @return 返回当前JSONArray对象，便于链式调用。
+	 */
+	public JSONArray putAnyIfAbsent(Iterable<?> aObjs)
 	{
-		return mEleList.contains(aObj) ;
+		for(Object obj : aObjs)
+		{
+			putIfAbsent(obj) ;
+		}
+		return this ;
 	}
 	
-	public JSONArray insert(int aIndex , Collection<?> aValue)
+	/**
+	 * 检查JSONArray是否包含指定的对象。
+	 * 
+	 * 此方法通过调用toJSONElement将输入对象转换为JSON元素，并检查JSONArray中是否包含该元素。
+	 * 
+	 * @param aObj 要检查的对象。
+	 * @return 如果JSONArray包含指定的对象（转换为JSON元素后），则返回true；否则返回false。
+	 */
+	public boolean contains(Object aObj)
+	{
+		return mEleList.contains(toJSONElement(aObj)) ;
+	}
+	
+	/**
+	 * 在JSONArray的指定位置插入一个集合中的所有元素。
+	 * 
+	 * 如果集合为空，则不进行任何操作。
+	 * 如果指定的索引小于0，则将其设置为0。
+	 * 如果指定的索引小于JSONArray的大小，则在该索引处插入集合中的元素（转换为JSON元素后）。
+	 * 如果指定的索引大于或等于JSONArray的大小，则将集合中的所有元素添加到JSONArray的末尾。
+	 * 
+	 * @param aIndex 插入的起始索引。
+	 * @param aValue 要插入的集合。
+	 * @return 返回当前JSONArray对象，便于链式调用。
+	 */
+	public JSONArray insertAll(int aIndex , Collection<?> aValue)
 	{
 		if(XC.isEmpty(aValue))
 			return this ;
@@ -1538,29 +1624,31 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 		int i = aIndex ;
 		if(aIndex < mEleList.size())
 		{
-			for(Object e : aValue)
-			{
-				if(e != null && e instanceof ToJSONObject)
-					mEleList.add(i++ , ((ToJSONObject)e).toJSONObject()) ;
-				else
-					mEleList.add(i++ , e) ;
-			}
+			mEleList.addAll(i , aValue.stream().map(this::toJSONElement).collect(Collectors.toList())) ;
 		}
 		else
-			put(i , aValue) ;
+			putAll(aValue) ;
 		return this ;
 	}
 	
+	/**
+	 * 在JSONArray的指定位置插入一个对象。
+	 * 
+	 * 如果指定的索引小于0，则将其设置为0。
+	 * 如果指定的索引小于JSONArray的大小，则在该索引处插入对象（转换为JSON元素后）。
+	 * 如果指定的索引大于或等于JSONArray的大小，则调用put方法在JSONArray的末尾添加对象（注意：这里的put方法可能与insert方法的行为有所不同，特别是关于对象转换为JSON元素的处理）。
+	 * 
+	 * @param aIndex 插入的索引。
+	 * @param aValue 要插入的对象。
+	 * @return 返回当前JSONArray对象，便于链式调用。
+	 */
 	public JSONArray insert(int aIndex , Object aValue)
 	{
 		if(aIndex<0)
 			aIndex = 0 ;
 		if(aIndex < mEleList.size())
 		{
-			if(aValue != null && aValue instanceof ToJSONObject)
-				mEleList.add(aIndex , ((ToJSONObject)aValue).toJSONObject()) ;
-			else
-				mEleList.add(aIndex, aValue) ;
+			mEleList.add(aIndex, toJSONElement(aValue)) ;
 		}
 		else
 			put(aIndex, aValue) ;
@@ -1702,6 +1790,15 @@ public class JSONArray extends AbstractList<Object> implements JSONString , JSON
 				return (T) ele ;
 		}
 		return null ;
+	}
+	
+	/**
+	 * 构建一个新的JSONArray对象
+	 * @return
+	 */
+	public static JSONArray one()
+	{
+		return new JSONArray() ;
 	}
 	
 	/**

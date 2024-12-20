@@ -1,9 +1,7 @@
 package team.sailboat.base ;
 
 import java.io.StringReader;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.Map;
 
 import org.apache.zookeeper.WatchedEvent;
@@ -21,6 +19,13 @@ import team.sailboat.commons.fan.infc.EFunction;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * 基于Zookeeper中注册信息的HttpClient提供器
+ *
+ * @author yyl
+ * @since 2024年12月6日
+ */
 public class ZKHttpClientProvider extends HttpClientProvider
 {	
 	static final String sCK_SysDefaultHdfs = "sysDefaultHdfs" ;
@@ -28,12 +33,12 @@ public class ZKHttpClientProvider extends HttpClientProvider
 	String mZKPath_addr ;
 	IZKProxy mZKSysProxy ;
 	String mAppDirName ;
-	EFunction<byte[], URL , Exception> mDataParser ;
+	EFunction<byte[], URI , Exception> mDataParser ;
 	String mContextPath ;
 	
 	Watcher mWatcher ;
 	
-	protected ZKHttpClientProvider(IZKProxy aZKProxy , String aPath , EFunction<byte[], URL , Exception> aDataParser) throws Exception
+	protected ZKHttpClientProvider(IZKProxy aZKProxy , String aPath , EFunction<byte[], URI , Exception> aDataParser) throws Exception
 	{
 		this(aZKProxy, aPath, aDataParser, null) ;
 	}
@@ -44,7 +49,7 @@ public class ZKHttpClientProvider extends HttpClientProvider
 	 * @param aAppDirName
 	 * @throws Exception 
 	 */
-	protected ZKHttpClientProvider(IZKProxy aZKProxy , String aPath , EFunction<byte[], URL , Exception> aDataParser
+	protected ZKHttpClientProvider(IZKProxy aZKProxy , String aPath , EFunction<byte[], URI , Exception> aDataParser
 			, String aContextPath) throws Exception
 	{
 		super(aPath) ;
@@ -92,32 +97,32 @@ public class ZKHttpClientProvider extends HttpClientProvider
 		setServiceAddrs(getServiceUrlsFromZK());
 	}
 	
-	URL[] parseAddrsStr(String aProtocol , String aAddrsStr) throws MalformedURLException
+	URI[] parseAddrsStr(String aProtocol , String aAddrsStr)
 	{
 		String[] addrs = aAddrsStr.split(",") ;
-		URL[] urls = new URL[addrs.length] ;
+		URI[] uris = new URI[addrs.length] ;
 		for(int i=0 ; i<addrs.length ; i++)
 		{
-			urls[i] = new URL(aProtocol + "://"+ addrs[i]) ;
+			uris[i] = URI.create(aProtocol + "://"+ addrs[i]) ;
 		}
-		return urls ;
+		return uris ;
 	}
 	
-	URL[] getServiceUrlsFromZK() throws Exception
+	URI[] getServiceUrlsFromZK() throws Exception
 	{
-		URL[] urls = mDataParser==null?parseAddrsStr(XString.lastSeg_i(mZKPath_addr , '/' , 0) , mZKSysProxy.getNodeData_Str(mZKPath_addr))
-				: new URL[] { mDataParser.apply(mZKSysProxy.getNodeData(mZKPath_addr))} ;
+		URI[] uris = mDataParser==null?parseAddrsStr(XString.lastSeg_i(mZKPath_addr , '/' , 0) , mZKSysProxy.getNodeData_Str(mZKPath_addr))
+				: new URI[] { mDataParser.apply(mZKSysProxy.getNodeData(mZKPath_addr))} ;
 		if(XString.isNotEmpty(mContextPath))
 		{
-			for(int i=0 ; i<urls.length ; i++)
+			for(int i=0 ; i<uris.length ; i++)
 			{
-				if(XString.isEmpty(urls[i].getPath()))
+				if(XString.isEmpty(uris[i].getPath()))
 				{
-					urls[i] = new URL(urls[i].toString()+mContextPath) ;
+					uris[i] = URI.create(uris[i].toString()+mContextPath) ;
 				}
 			}
 		}
-		return urls ;
+		return uris ;
 	}
 	
 	static ZKHttpClientProvider ofSysApp_0(String aAppDirName , String aContextPath) throws Exception
@@ -172,10 +177,10 @@ public class ZKHttpClientProvider extends HttpClientProvider
 		return clientPvd ;
 	}
 	
-	static class HAZKInfoParser implements EFunction<byte[] , URL , Exception>
+	static class HAZKInfoParser implements EFunction<byte[] , URI , Exception>
 	{
 
-		Map<String, URL> mHostName_httpAddrMap = null; ;
+		Map<String, URI> mHostName_httpAddrMap = null; ;
 		
 		String mPvdCacheKey ;
 		
@@ -207,35 +212,35 @@ public class ZKHttpClientProvider extends HttpClientProvider
 		public void refreshAddresses(String aAddrStrs) throws Exception
 		{
 			String[] addrs = aAddrStrs.split(";") ;
-			Map<String, URL> hostURLMap = XC.hashMap() ;
+			Map<String, URI> hostURLMap = XC.hashMap() ;
 			for(int i=0 ; i<addrs.length ; i++)
 			{
-				URL url = URI.create("http://"+addrs[i]).toURL() ;
-				hostURLMap.put(url.getHost(), url) ;
+				URI uri = URI.create("http://"+addrs[i]) ;
+				hostURLMap.put(uri.getHost(), uri) ;
 			}
 			sLogger.info("缓存键 {} 对应的HttpClientProvider的服务地址切换成：{}" , mPvdCacheKey , aAddrStrs) ;
 			mHostName_httpAddrMap = hostURLMap ;
 			ZKHttpClientProvider clientPvd = (ZKHttpClientProvider) sHttpClientPvdMap.get(mPvdCacheKey) ;
 			if(clientPvd != null)
 			{
-				URL[] urls = clientPvd.getServiceUrlsFromZK() ;
-				if(XC.isEmpty(urls))
+				URI[] uris = clientPvd.getServiceUrlsFromZK() ;
+				if(XC.isEmpty(uris))
 					sLogger.error("无法从ZK中的{}节点取得服务地址信息，如果服务地址被注册，将自动连接上" , clientPvd.mZKPath_addr) ;
 				else
 				{
-					clientPvd.setServiceAddrs(urls) ; 
+					clientPvd.setServiceAddrs(uris) ; 
 				}
 			}
 		}
 		
 		@Override
-		public URL apply(byte[] aT) throws InvalidProtocolBufferException
+		public URI apply(byte[] aT) throws InvalidProtocolBufferException
 		{
 			ActiveNodeInfo activeNodeInfo = HAZKInfoProtos.ActiveNodeInfo.parseFrom(aT) ;
 			sLogger.info("ActiveNode是：{}" , activeNodeInfo.getHostname()) ;
-			URL url = mHostName_httpAddrMap.get(activeNodeInfo.getHostname()) ;
-			Assert.notNull(url, "没有取得主机[%s]对应的http服务地址！", activeNodeInfo.getHostname()) ;
-			return url ;
+			URI uri = mHostName_httpAddrMap.get(activeNodeInfo.getHostname()) ;
+			Assert.notNull(uri, "没有取得主机[%s]对应的http服务地址！", activeNodeInfo.getHostname()) ;
+			return uri ;
 		}
 	}
 

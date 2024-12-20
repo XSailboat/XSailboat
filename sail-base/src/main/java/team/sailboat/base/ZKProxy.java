@@ -37,6 +37,13 @@ import team.sailboat.commons.fan.struct.Wrapper;
 import team.sailboat.commons.fan.text.ChineseComparator;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * Zookeeper操作代理
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public class ZKProxy implements IZKProxy
 {
 	static final Logger sLogger = LoggerFactory.getLogger(ZKProxy.class) ;
@@ -702,7 +709,7 @@ public class ZKProxy implements IZKProxy
 		for (String id : ids)
 		{
 			String confStr = getNodeData_Str(SysConst.sZK_Path_KafkaBrokerIds + "/" + id);
-			JSONObject confJo = new JSONObject(confStr);
+			JSONObject confJo = JSONObject.of(confStr);
 			if (brokersBld.length() > 0)
 				brokersBld.append(",");
 			brokersBld.append(confJo.optString("host") + ":" + confJo.optString("port"));

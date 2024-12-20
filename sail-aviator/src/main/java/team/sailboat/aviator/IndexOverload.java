@@ -1,6 +1,7 @@
 package team.sailboat.aviator;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -9,13 +10,14 @@ import com.googlecode.aviator.lexer.token.OperatorType;
 import com.googlecode.aviator.runtime.type.AviatorObject;
 import com.googlecode.aviator.runtime.type.AviatorRuntimeJavaElementType;
 import com.googlecode.aviator.runtime.type.AviatorRuntimeJavaElementType.ContainerType;
+import com.googlecode.aviator.runtime.type.AviatorType;
 
+import team.sailboat.commons.fan.collection.XC;
 import team.sailboat.commons.fan.json.JSONArray;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.struct.Bool;
-
-import com.googlecode.aviator.runtime.type.AviatorType;
+import team.sailboat.commons.fan.struct.Tuples;
 
 public class IndexOverload extends WedgeFunction
 {
@@ -23,6 +25,12 @@ public class IndexOverload extends WedgeFunction
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	/**
+	 * 值的第1个元素是getterMethod，第2个元素是setterMethod
+	 */
+	final Map<String , Tuples.T2<Method, Method>> mMethodCache = XC.concurrentHashMap() ;
+	
 
 	@Override
 	public String getName()
@@ -95,6 +103,33 @@ public class IndexOverload extends WedgeFunction
 									return Array.get(obj, index0);
 								}
 							});
+				}
+				else
+				{
+					String fieldName = XClassUtil.toString(aArg2.getValue(aEnv)) ;
+					// 看看是不是有get方法
+					String methodCacheKey = obj.getClass().getName()+"."+fieldName ;
+					Tuples.T2<Method , Method> methods = mMethodCache.get(methodCacheKey) ;
+					if(methods == null)
+					{
+						Method getterMethod = XClassUtil.getMethod0(obj.getClass() , XClassUtil.getGetterMethodName(fieldName)) ;
+						Method setterMethod = null ;
+						if(getterMethod != null)
+						{
+							getterMethod.setAccessible(true) ;
+							setterMethod = XClassUtil.getMethod0(obj.getClass() , XClassUtil.getSetterMethodName(fieldName)
+								, getterMethod.getReturnType()) ;
+							if(setterMethod != null)
+								setterMethod.setAccessible(true) ;
+						}
+						methods = Tuples.of(getterMethod , setterMethod) ;
+						mMethodCache.put(methodCacheKey , methods) ;
+					}
+					if(methods.getEle_1() != null)
+					{
+						return new ObjectFieldIndexRuntimeJavaType(obj , fieldName
+								, methods.getEle_1() , methods.getEle_2()) ;
+					}
 				}
 			}
 		}

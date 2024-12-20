@@ -1,0 +1,203 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  
+xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:xweb="http://www.thymeleaf.org/extras/xweb"
+th:replace="~{decorators/main::layout(~{::head},~{::.content},~{::components},~{::.script})}">
+<head>
+<meta charset="UTF-8">
+<title>认证中心 | Management</title>
+<link th:href="@{/assets/style/index.css}" rel="stylesheet" type="text/css">
+<style type="text/css">
+	.tac{
+		height: 100%;
+	}
+</style>
+</head>
+<body>
+	<div class="content" style="display: flex;">
+		<div class="menu-pane">
+			<div style="height: 100%; flex-direction: column;display: flex;">
+				<div class="logo">
+					<span class="icon icon-oauth-center" style="font-size: 2.8em;"></span>
+					<div style="display: flex;flex-direction: column;padding-left: 12px;">
+						<span style="font-size: 22px;">认证中心</span>
+						<span class="en" style="font-size: 14px;">Auth Center</span>
+					</div>
+				</div>
+				<el-menu :default-active="activeMenu" :default-openeds="['app']" class="el-menu-vertical-mng" @select="menuSelect">
+					<el-menu-item sec:authorize="hasAuthority('View_HomePage')" index="home">
+				        <template #title>
+					        <i class="icon icon-shouye"></i>
+				        		<span>首页</span>
+				        </template>
+			      	</el-menu-item>
+			      	<el-sub-menu sec:authorize="hasAnyAuthority('CDU_ClientAppData', 'View_AllClientAppData', 'View_Special_ClientAppData:' + #resId, 'Update_Special_ClientAppData:' + #resId)" index="app">
+			      		<template #title>
+				      		<span ref="app_item" @click.stop="menuSelect('app')" style="display: block;height: 100%; width: 100%;">
+					          	<i class="icon icon-yingyong"></i>
+					        		<span>应用管理</span>
+					        </span>
+				        </template>
+				        <el-menu-item index="appInfo">
+				        		<template #title>
+						        	<i class="icon icon-jibenxinxi"></i>
+						        	<span>基本信息</span>
+					        	</template>
+				        </el-menu-item>
+				        <el-menu-item index="role">
+				        		<template #title>
+						        	<i class="icon icon-role"></i>
+						        	<!-- <span>角色管理</span> -->
+						        	<span>角色与权限</span>
+					        	</template>
+				        </el-menu-item>
+				        <!-- <el-menu-item index="auth">
+				        		<template #title>
+						        	<i class="icon icon-quanxian"></i>
+						        	<span>权限查看</span>
+					        </template>
+				        </el-menu-item> -->
+				        <el-menu-item index="resSapce">
+				        		<template #title>
+						        	<i class="icon icon-zikongjian"></i>
+						        	<span>用户授权</span>
+					        </template>
+				        </el-menu-item>
+				        <el-menu-item sec:authorize="hasAuthority('View_Apis')" index="api">
+				        		<template #title>
+					        		<i class="icon icon-api"></i>
+						        <span>API授权</span>
+					        </template>
+				      	</el-menu-item>
+				        <el-menu-item index="acc-user">
+				        		<template #title>
+						        	<i class="icon icon-kejianyonghu"></i>
+						        	<span>可访问用户</span>
+							</template>
+				        </el-menu-item>
+			      	</el-sub-menu>
+			      	<el-menu-item sec:authorize="hasAnyAuthority('View_OrgUnitAndUsers', 'CDU_OrgUnit')" index="organization">
+			      		<template #title>
+					        <i class="icon icon-zuzhijiagou"></i>
+					        <span>组织架构</span>
+				        </template>
+			      	</el-menu-item>
+			      	<el-menu-item sec:authorize="hasAnyAuthority('View_AllUsers', 'CDU_UserData')" index="users">
+			      		<template #title>
+					        <i class="icon icon-yonghu"></i>
+					        <span>用户管理</span>
+				        </template>
+			      	</el-menu-item>
+			      	<el-menu-item index="my-account">
+			      		<template #title>
+					        <i class="icon icon-wodezhanghao"></i>
+					        <span>我的账户</span>
+				        </template>
+			      	</el-menu-item>
+			      	<!-- 
+			      	<el-menu-item index="my-apps">
+			      		<template #title>
+					        <i class="icon icon-wodeyingyong"></i>
+					        <span>我的应用</span>
+				        </template>
+			      	</el-menu-item>
+			      	 -->
+	    		</el-menu>
+	    	</div>
+	    </div>
+	    <div style="flex: 1;width: 0;display: flex;flex-direction:column;position: relative;">
+   			<div class="top-head">
+   				<span style="font-size: 16px;color: #fff;">{{user.displayName}}</span>
+				<span style="margin: 0 4px;">
+   					<el-divider direction="vertical"></el-divider>
+   				</span>
+				<el-link href="./logout" :underline="false" style="color:#fff;font-size: 15px;" title="退出登录"><i class="icon icon-logout" style="font-size: 14px;"></i> 退出</el-link>
+  			</div>
+   			<component :is="activeMenu" class="container" :curr-user=user :apps="apps" @app-view="viewAppInfo"></component>
+    	</div>
+ 	</div>
+<components>
+	<th:block sec:authorize="hasAuthority('View_HomePage')" th:insert="~{pages/manage/home::home}"/>
+	<span sec:authorize="hasAnyAuthority('CDU_ClientAppData', 'View_AllClientAppData', 'View_Special_ClientAppData:' + #resId, 'Update_Special_ClientAppData:' + #resId)">
+		<th:block th:insert="~{pages/manage/apps::apps}"/>
+		<th:block th:insert="~{pages/manage/appInfo::appInfo}"/>
+		<th:block th:insert="~{pages/manage/role::role}"/>
+		<th:block th:insert="~{pages/manage/resSapce::resSapce}"/>
+		<th:block th:insert="~{pages/manage/accUser::accUser}"/>
+		<th:block sec:authorize="hasAuthority('View_Apis')" th:insert="~{pages/manage/api::api}"/>
+	</span>
+	<th:block sec:authorize="hasAnyAuthority('View_OrgUnitAndUsers', 'CDU_OrgUnit')" th:insert="~{pages/manage/organization::organization}"/>
+	<th:block sec:authorize="hasAnyAuthority('View_AllUsers', 'CDU_UserData')" th:insert="~{pages/manage/users::users}"/>
+	<th:block th:insert="~{pages/manage/myAccount::myAccount}"/>
+</components>
+<script class="script" th:inline="javascript">
+	const exVueOpts = {
+		data() {
+			let urlParams = SailTool.urlParams();
+			return {
+				activeMenu: SailTool.urlHash() || 'my-account',
+				user: /*[[${user}]]*/ {},
+				apps: [],
+				activeAppId: urlParams.appId || '',
+				credentialRenewalDays: /*[[${credentialRenewalDays}]]*/ '',
+				scopes: [],
+			}
+		},
+		components: {
+			'home': typeof Home == 'object' ? Home : null,
+			'app': typeof App == 'object' ? App : null,
+			'AppInfo': typeof AppInfo == 'object' ? AppInfo : null,
+			'Role': typeof Role == 'object' ? Role : null,
+			'ResSapce': typeof ResSapce == 'object' ? ResSapce : null,
+			'AccUser': typeof AccUser == 'object' ? AccUser : null,
+			'Organization': typeof Organization == 'object' ? Organization : null,
+			'Api': typeof Api == 'object' ? Api : null,
+			'Users': typeof Users == 'object' ? Users : null,
+			'MyAccount': typeof MyAccount == 'object' ? MyAccount : null
+		},
+		methods: {
+			menuSelect(key, keyPath) {
+				this.activeMenu = key;
+				SailTool.urlHash(key)
+				if (key == 'app') {
+					$(this.$refs.app_item).parent().addClass('actived');
+				} else {
+					$('.actived').removeClass('actived')
+				}
+
+				if (key != 'appInfo') {
+					SailTool.delUrlParam('appId')
+				}
+			},
+			viewAppInfo(id) {
+				this.activeAppId = id;
+				SailTool.urlPush('appId', encodeURIComponent(id));
+				this.menuSelect('appInfo');
+			},
+			loadApps(flag, callback) {
+				if (!flag && this.apps.length > 0) {
+					callback && callback(this.apps);
+				} else {
+					// clientApp/brief/ofCanView
+					axios.get('clientApp/brief/ofCanView').then(res => {
+						this.apps = res.data;
+						callback && callback(this.apps);
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				}
+			},
+		},
+		mounted() {
+			if (this.activeMenu == 'app') {
+				$(this.$refs.app_item).parent().addClass('actived');
+			}
+		},
+		created() {
+			if (SailTool.hasAuthority("View_HomePage") && !SailTool.urlHash()) {
+				this.activeMenu = "home";
+			}
+		}
+	};
+ </script>
+</body>
+</html>

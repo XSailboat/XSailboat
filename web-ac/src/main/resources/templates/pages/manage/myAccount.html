@@ -1,0 +1,369 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  >
+<th:block th:fragment="myAccount">
+	<template id="myAccount">
+		<div style="display:flex; flex-direction: column;flex: 1;height: 0;">
+			<div class="container-title">
+				<span class="container-text">我的账户</span>
+			</div>
+			<div class="el-card is-never-shadow" style="padding: 20px 40px;display: flex;align-items: center;">
+    				<i class="icon icon-wodezhanghao" style="font-size: 2.2em;color: #409EFF;"></i>							
+				<span style="font-size: 1.8em;margin: 0 8px;">你好，[[${user.displayName}]]</span>
+		    </div>
+			<div class="el-card is-never-shadow" style="flex: 1;height: 0;display: flex;border-top: none;">
+				<div class="el-card is-never-shadow" style="padding: 20px;flex: 1;max-width: 520px;height: 100%;border-top-width: 0;">
+					<div style="display: flex;align-items: center;padding: 0px 16px 18px;">
+		    				<i class="icon icon-jibenxinxi" style="font-size: 1.3em;color: #409EFF;"></i>							
+						<span style="font-size: 1.2em;margin: 0 8px;flex: 1;">基本信息</span>
+						<template v-if="!edit">
+							<!--
+							<el-tooltip effect="light" content="修改" placement="top">
+								<el-link icon="edit" type="primary" :underline="false" @click="edit=true"></el-link>
+							</el-tooltip>
+							<el-divider direction="vertical"></el-divider>
+							-->
+							<el-tooltip effect="light" content="重置密码" placement="top">
+								<el-link type="primary" :underline="false" @click="passwordReset('oper')"><i class="icon icon-chongzhimima"></i></el-link>
+							</el-tooltip>
+						</template>
+		    			</div>
+			    		<el-scrollbar>
+				    		<el-form ref="user_form" :model="user" :rules="rules" label-width="120px" style="padding-right: 8px;">
+				 			<el-form-item label="用户名称" prop="username">
+							    	<span>{{user.username}}</span>
+							    	<i v-if="user.locked" icon="icon icon-jinyong" title="账号已锁定" style="color: #F56C6C;font-size: 13px;"></i>
+							    	<i v-else class="el-icon-success" title="账号正常" style="color:#67C23A;"></i>
+						  	</el-form-item>
+						  	<el-form-item label="真实名称" prop="realName">
+							    	<el-input v-if="edit" v-model="user.realName" clearable></el-input>
+							    	<span v-else>{{user.realName}}</span>
+						  	</el-form-item>
+						  	<el-form-item label="性别" prop="sex">
+						    		<el-radio-group v-if="edit" v-model="user.sex">
+							      	<el-radio label="男"></el-radio>
+							      	<el-radio label="女"></el-radio>
+							    </el-radio-group>
+							    <span v-else>{{user.sex || '-'}}</span>
+						  	</el-form-item>
+						  	<el-form-item label="手机号" prop="mobile">
+							    	<el-input v-if="edit" v-model="user.mobile" clearable></el-input>
+							    	<span v-else>{{user.mobile || '-'}}</span>
+						  	</el-form-item>
+						  	<el-form-item label="邮箱" prop="email">
+							    	<el-input v-if="edit" v-model="user.email" clearable></el-input>
+							    	<span v-else>{{user.email || '-'}}</span>
+						  	</el-form-item>
+						  	<el-form-item label="部门" prop="department">
+							    	<el-input v-if="edit" v-model="user.department" clearable></el-input>
+							    	<span v-else>{{user.department || '-'}}</span>
+						  	</el-form-item>
+						  	<el-form-item label="附加信息" prop="extAttributes">
+						    		<el-input v-model="user.extAttributes" type="textarea" :rows="4" :readonly="!edit"></el-input>
+						  	</el-form-item>
+						  	<el-form-item label="账户到期时间">
+						  		<el-date-picker v-if="edit" v-model="user.accountExpiredTime" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" style="width: 100%;"></el-date-picker>
+						  		<span v-else>{{user.accountExpiredTime}}</span>
+					  		</el-form-item>
+					  		<el-form-item label="密码到期时间">
+						  		<el-date-picker v-if="edit" v-model="user.credentialsExpiredTime" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" style="width: 100%;"></el-date-picker>
+						  		<span v-else>{{user.credentialsExpiredTime}}</span>
+					  		</el-form-item>
+						  	<el-form-item label="创建时间">{{user.createTime}}</el-form-item>
+						</el-form>
+						<div v-if="edit" style="text-align: right;padding-right: 8px;">
+							<el-button type="primary" @click="userEdit">保存</el-button>
+							<el-button @click="concel">取消</el-button>
+						</div>
+					</el-scrollbar>
+				</div>
+				<div class="el-card is-never-shadow" style="padding: 20px;flex: 1;height: 100%;border-width: 0;display: flex;flex-direction: column;">
+					<div style="display: flex;align-items: center;padding: 0px 0px 24px 10px;">
+		    				<i class="icon icon-yingyong" style="font-size: 1.3em;color: #409EFF;"></i>							
+						<span style="font-size: 1.2em;margin: 0 8px;flex: 1;">可访问应用</span>
+		    			</div>
+			    		<el-scrollbar style="flex: 1;width: 100%;height: 0;overflow-x:hidden;">
+			    			<div class="apps" style="display: flex;padding: 0 10px;flex-wrap: wrap;">
+							<div v-for="app in apps" class="app app-mini" style="width: 40%;min-width: 300px;margin-bottom: 20px;">
+								<div class="item">
+									<span class="logo">{{app.simpleName}}</span>					
+									<span style="font-size: 1.3em;">{{app.name}}</span>
+								</div>
+								<div class="item" style="margin: 10px 0;">
+									<i class="icon icon-gongsi"></i>
+									<span>{{app.company}}</span>
+								</div>
+								<div class="item">
+									<i class="icon icon-miaoshu"></i>
+									<span>{{app.description}}</span>
+								</div>
+								<div :class="'app-enable app-enable-' + app.enable" style="left: calc(100% - 26px);"></div>
+							</div>
+							<el-empty v-if="apps.length == 0" :image-size="100" description="暂无可访问应用" style="margin: auto;"></el-empty>
+						</div>
+				    </el-scrollbar>
+				    <el-divider></el-divider>
+					<div style="display: flex;align-items: center;padding-left: 10px;">
+		    				<i class="icon icon-jibenxinxi" style="font-size: 1.3em;color: #409EFF;"></i>							
+						<span style="font-size: 1.2em;margin: 0 8px;flex: 1;">最近30访问应用</span>
+		    			</div>
+		    			<div id="chart" style="flex: 1;height: 0;width: 100%;padding-bottom: 40px;"></div>
+			   </div>
+		 	</div>
+		 	
+		 	<!-- 用户密码重置操作 -->
+		    <el-dialog title="密码重置" v-model="pwdVisible" width="420px" destroy-on-close :close-on-press-escape="false" :close-on-click-modal="false" :show-close="false">
+				<el-form ref="pwd_form" :model="resetPwd" :rules="rules" label-width="85px" style="margin: 20px;">
+					<el-form-item label="旧密码" prop="oldPassword">
+				    		<el-input ref="pwd_old" v-model="resetPwd.oldPassword" type="password" show-password autocomplete="off"></el-input>
+				  	</el-form-item>
+			  		<el-form-item label="新密码" prop="password">
+				    		<el-input ref="pwd_reset" v-model="resetPwd.password" type="password" show-password autocomplete="off"></el-input>
+				  	</el-form-item>
+				  	<el-form-item label="确认密码" prop="rePassword">
+				    		<el-input v-model="resetPwd.rePassword" type="password" show-password autocomplete="off"></el-input>
+				  	</el-form-item>
+				</el-form>
+				<template #footer>
+				  	<span class="dialog-footer">
+					    <el-button type="primary" @click="passwordReset('submit')">确 定</el-button>
+					    <el-button @click="pwdVisible = false">取 消</el-button>
+			  		</span>
+			  	</template>
+			</el-dialog>
+		</div>
+		
+	</template>
+<script>
+	const MyAccount = {
+		template: "#myAccount",
+		setup() {
+
+			const {proxy} = getCurrentInstance();
+
+			const mobileCheck = (rule, value, callback) => {
+				var reg = /^[1][3,4,5,7,8,9][0-9]{9}$/;
+				if (value && !reg.test(value)) {
+					callback(new Error("请填写正确的手机号码"));
+				} else {
+					callback()
+				}
+			};
+
+			const emailCheck = (rule, value, callback) => {
+				var reg = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/;
+				if (value && !reg.test(value)) {
+					callback(new Error("请填写正确的邮箱地址"));
+				} else {
+					callback()
+				}
+			};
+			const validatePass = (rule, value, callback) => {
+				if (!value || value === '') {
+					callback(new Error('请输入密码'));
+				} else if (value.length < 8) {
+					callback(new Error('密码长度不能小于8位'));
+				} else {
+					var regex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[~!@#$%^&*_+\-\=,./?<>|]).+$/;
+					if (!regex.test(value)) {
+						callback(new Error('密码必须包含字母、数字、特殊字符的组合'));
+					}
+					callback();
+				}
+			};
+			const validateRePass = (rule, value, callback) => {
+				if (!value || value === '') {
+					callback(new Error('请再次输入密码'));
+				} else if (value !== data.resetPwd.password) {
+					callback(new Error('两次密码不一致'));
+				} else {
+					callback();
+				}
+			};
+			const data = reactive({
+				edit: false,
+				srcUser: {},
+				user: {},
+				rules: {
+					username: [{required: true, message: '请输入名称', trigger: 'blur'}],
+					oldPassword: [{required: true, message: '请输入旧密码', trigger: 'blur'}],
+					password: [{required: true, validator: validatePass, trigger: 'blur'}],
+					rePassword: [{required: true, validator: validateRePass, trigger: 'blur'}],
+					mobile: [{validator: mobileCheck, trigger: 'blur'}],
+					email: [{validator: emailCheck, trigger: 'blur'}]
+				},
+				apps: [],
+				pwdVisible: false,
+				resetPwd: {},
+
+				user_form: null,
+				pwd_old: null,
+				pwd_form: null,
+			});
+
+			const loadBaseInfo = () => {
+				axios.get('user/current').then(res => {
+					data.user = res.data;
+					data.srcUser = SailTool.clone(res.data);
+					userVisitSts();
+				}).catch(error => {
+					SailTool.exception(error);
+				})
+			}
+
+			const loadAccApps = () => {
+				axios.get('user/self/clientAppBrief/ofCanVisit').then(res => {
+					data.apps = res.data;
+				}).catch(error => {
+					SailTool.exception(error);
+				})
+			}
+
+			const userEdit = () => {
+				data.user_form.validate((valid) => {
+					if (valid) {
+						axios.put('user/one', data.user).then(res => {
+							ElMessage.$success('操作成功！');
+							data.edit = false;
+						}).catch(error => {
+							SailTool.exception(error);
+						})
+					} else {
+						return false;
+					}
+				});
+			}
+
+			const concel = () => {
+				data.user = SailTool.clone(data.srcUser);
+				data.edit = false;
+			}
+
+			const passwordReset = type => {
+				if (type == 'oper') {
+					data.resetPwd = {
+						id: data.user.id,
+						username: data.user.username,
+						password: '',
+					};
+					data.pwdVisible = true;
+					setTimeout(() => {
+						data.pwd_old.focus();
+					})
+				} else {
+					data.pwd_form.validate((valid) => {
+						if (valid) {
+							encrypPwd([data.resetPwd.oldPassword, data.resetPwd.password], (codeId, encrypedPwds) => {
+								axios({
+									url: 'user/self/password/_reset',
+									method: 'post',
+									params: {
+										codeId: codeId,
+										username: data.resetPwd.username,
+										oldPassword: encodeURIComponent(encrypedPwds[0]),
+										password: encodeURIComponent(encrypedPwds[1]),
+									}
+								}).then(res => {
+									data.pwdVisible = false;
+									ElMessage.$success('修改成功!');
+								}).catch(error => {
+									SailTool.exception(error);
+								})
+							})
+						} else {
+							return false;
+						}
+					});
+				}
+			}
+
+			const encrypPwd = (pwds, callback) => {
+				axios.get('public/security/rsa-publickey').then(res => {
+					var key = new RSAUtils.getKeyPair(res.data.publicKeyExponent, '', res.data.publicKeyModulus);
+					var encrypedPwds = [];
+					for (var pwd of pwds) {
+						let revPwd = pwd.split("").reverse().join("");
+						encrypedPwds.push(RSAUtils.encryptedString(key, revPwd));
+					}
+					callback(res.data.codeId, encrypedPwds);
+				}).catch(error => {
+					SailTool.exception(error);
+				})
+			}
+
+			const userVisitSts = () => {
+				axios.get('sts/visitTimes/ofSelf/30d').then(({data}) => {
+					var aChart = echarts.init(document.getElementById('chart'));
+					var seriesItem = {type: 'line', connectNulls: true, showSymbol: false}, series = [];
+					for (var i = 0; i < data[0].length - 1; i++) {
+						series.push(seriesItem);
+					}
+
+					var option = {
+						color: ['#058DC7', '#FF9655', '#24CBE5', '#64E572', '#6AF9C4', '#ED561B', '#50B432', '#6e7074'],
+						tooltip: {
+							trigger: 'axis',
+							backgroundColor: "#ffffffe8",
+							borderWidth: 2,
+							borderColor: "#95b8e7e8",
+							textStyle: {color: "#000", fontSize: 13},
+							position: 'bottom',
+							formatter: function (params) {
+								var arr = params.map(p => {
+									return {
+										date: p.name,
+										name: p.seriesName,
+										color: p.color,
+										value: p.value[p.seriesIndex + 1]
+									}
+								}).sort((a, b) => {
+									return b.value - a.value
+								});
+								var htmls = [arr[0].date];
+								arr.forEach(item => {
+									htmls.push('<i class="fa fa-circle" style="color: ' + item.color + '"></i> ' + item.name + '：' + item.value);
+								})
+								return htmls.join('<br>');
+							}
+						},
+						grid: {
+							left: 10,
+							right: 20,
+							bottom: 40,
+							top: 40,
+							containLabel: true
+						},
+						legend: {
+							bottom: 0,
+							right: 10,
+							itemWidth: 14,
+							itemHeight: 10,
+							padding: [5, 5, 5, 120],
+							type: 'scroll'
+						},
+						dataset: {
+							source: data
+						},
+						xAxis: {type: 'category', splitLine: {show: false}},
+						yAxis: {type: 'value', boundaryGap: [0, '100%'], splitLine: {lineStyle: {type: 'dashed', color: '#d0d4df'}}},
+						series: series
+					}
+					aChart.setOption(option);
+				}).catch(error => {
+					SailTool.exception(error);
+				})
+			}
+			
+			loadAccApps();
+			loadBaseInfo();
+			
+			return {
+				...toRefs(data),
+				userEdit,
+				concel,
+				passwordReset
+			}
+		}
+	}
+</script>
+</th:block>
+</html>

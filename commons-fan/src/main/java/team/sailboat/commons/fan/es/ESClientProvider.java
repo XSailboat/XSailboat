@@ -10,7 +10,7 @@ import team.sailboat.commons.fan.text.XString;
 
 public class ESClientProvider implements Supplier<ESClient>
 {
-	String mUrl ;
+	String mUri ;
 	String mApiKey ;
 	
 	ESClient mClient ;
@@ -23,10 +23,10 @@ public class ESClientProvider implements Supplier<ESClient>
 	 * @param aApiKey
 	 * @throws MalformedURLException
 	 */
-	public ESClientProvider(String aUrl
+	public ESClientProvider(String aUri
 			, String aApiKey) throws MalformedURLException
 	{
-		mUrl = aUrl ;
+		mUri = aUri ;
 		mApiKey = aApiKey ;
 	}
 
@@ -38,10 +38,10 @@ public class ESClientProvider implements Supplier<ESClient>
 			try
 			{
 				if(XString.isEmpty(mApiKey))
-					mHttpClient = HttpClient.ofUrl(mUrl) ;
+					mHttpClient = HttpClient.ofURI(mUri) ;
 				else
 				{
-					mHttpClient = HttpClient.ofUrl(mUrl , mApiKey , null , new ApiKeySigner(), false) ;
+					mHttpClient = HttpClient.ofURI(mUri , mApiKey , null , new ApiKeySigner(), false) ;
 				}
 				mHttpClient.setFearure_encodeHeader(false) ;
 				mClient = new ESClient(mHttpClient) ;

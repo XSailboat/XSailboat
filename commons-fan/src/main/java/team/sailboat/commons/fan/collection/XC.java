@@ -19,6 +19,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
@@ -37,6 +38,8 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import team.sailboat.commons.fan.infc.EConsumer;
+import team.sailboat.commons.fan.infc.EFunction;
 import team.sailboat.commons.fan.json.JSONArray;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.JCommon;
@@ -44,8 +47,34 @@ import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.struct.Bits;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * 集合和数组相关的工具方法集
+ *
+ * @author yyl
+ * @since 2024年11月11日
+ */
 public class XC
 {
+	/**
+	 * 
+	 * 构建一个值是软引用持有的HashMap
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 * @return
+	 */
+	public static <K , V> SRHashMap<K , V> srHashMap()
+	{
+		return new SRHashMap<>() ;
+	}
+	
+	/**
+	 * 将一个可变参数整数数组转换为一个LinkedHashSet，如果数组为null，则返回一个空的LinkedHashSet。
+	 *
+	 * @param aArray 可变参数整数数组，可以为null。
+	 * @return 包含数组元素的LinkedHashSet，如果数组为null，则返回一个空的LinkedHashSet。
+	 */
 	public static LinkedHashSet<Integer> linkedHashSet(int...aArray)
 	{
 		if(aArray != null)
@@ -59,6 +88,15 @@ public class XC
 			return new LinkedHashSet<>() ;
 	}
 	
+	/**
+	 * 将一个数组转换为一个LinkedHashSet，同时根据提供的Predicate条件过滤元素。
+	 * 如果数组或Predicate为null，则进行相应的处理。
+	 *
+	 * @param <T> 数组元素的类型。
+	 * @param aArray 要转换的数组，可以为null。
+	 * @param aPred  用于过滤元素的Predicate条件，可以为null。如果为null，则不过滤元素。
+	 * @return 包含满足条件的数组元素的LinkedHashSet，如果数组为null，则返回一个空的LinkedHashSet。
+	 */
 	public static <T> LinkedHashSet<T> linkedHashSet(T[] aArray , Predicate<T> aPred)
 	{
 		if(aArray != null)
@@ -75,11 +113,27 @@ public class XC
 			return new LinkedHashSet<>() ;
 	}
 	
+	/**
+	 * 将数组的一个子范围转换为一个List。
+	 *
+	 * @param <T>    数组元素的类型。
+	 * @param aArray 要转换的数组。
+	 * @param aFrom  子范围的起始索引（包含）。
+	 * @param aTo    子范围的结束索引（不包含）。
+	 * @return 包含指定子范围元素的List。
+	 */
 	public static <T> List<T> asList(T[] aArray , int aFrom , int aTo)
 	{
 		return Arrays.asList(Arrays.copyOfRange(aArray, aFrom , aTo)) ;
 	}
 	
+	/**
+	 * 将一个可变参数数组转换为一个LinkedList，如果数组为null，则返回一个空的LinkedList。
+	 *
+	 * @param <T>    LinkedList元素的类型。
+	 * @param aArray 可变参数数组，可以为null。
+	 * @return 包含数组元素的LinkedList，如果数组为null，则返回一个空的LinkedList。
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T> LinkedList<T> linkedList(T...aArray)
 	{
@@ -92,6 +146,16 @@ public class XC
 		return list ;
 	}
 	
+	/**
+	 * 将一个可变参数数组通过提供的Function转换后，存储到一个LinkedList中。
+	 * 如果数组为null，则返回一个空的LinkedList。
+	 *
+	 * @param <T>    输入数组元素的类型。
+	 * @param <R>    转换后LinkedList元素的类型。
+	 * @param aFunc  用于转换元素的Function。
+	 * @param aArray 可变参数数组，可以为null。
+	 * @return 包含转换后元素的LinkedList，如果数组为null，则返回一个空的LinkedList。
+	 */
 	public static <T , R> LinkedList<R> linkedList(Function<T, R> aFunc , T...aArray)
 	{
 		LinkedList<R> list = new LinkedList<>() ;
@@ -104,9 +168,12 @@ public class XC
 	}
 	
 	/**
-	 * 
-	 * @param aArray		可以为null
-	 * @return
+	 * 将一个可变参数数组转换为一个HashSet，如果数组为null或为空，则返回一个空的HashSet。
+	 * 注意：这里假设XC.isNotEmpty(aArray)是一个有效的检查方法，用于判断数组是否非空且包含元素。
+	 *
+	 * @param <T>    HashSet元素的类型。
+	 * @param aArray 可变参数数组，可以为null。
+	 * @return 包含数组元素的HashSet，如果数组为null或为空，则返回一个空的HashSet。
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Set<T> hashSet(T...aArray)
@@ -120,6 +187,16 @@ public class XC
 		return set ;
 	}
 	
+	/**
+	 * 将一个数组通过提供的Function转换后，存储到一个HashSet中。
+	 * 如果数组为null，则返回一个空的HashSet。
+	 *
+	 * @param <T>    输入数组元素的类型。
+	 * @param <R>    转换后HashSet元素的类型。
+	 * @param aFunc  用于转换元素的Function。
+	 * @param aArray 要转换的数组，可以为null。
+	 * @return 包含转换后元素的HashSet，如果数组为null，则返回一个空的HashSet。
+	 */
 	public static <T , R> HashSet<R> hashSet(Function<T,R> aFunc , T...aArray)
 	{
 		HashSet<R> set = new HashSet<>() ;
@@ -135,6 +212,16 @@ public class XC
 		return set ;
 	}
 	
+	/**
+	 * 将一个Iterable集合通过提供的Function转换后，存储到一个HashSet中。
+	 * 如果Iterable为null，则返回一个空的HashSet。
+	 *
+	 * @param <T>    输入Iterable元素的类型。
+	 * @param <R>    转换后HashSet元素的类型。
+	 * @param aFunc  用于转换元素的Function。
+	 * @param aArray 要转换的Iterable集合，可以为null。
+	 * @return 包含转换后元素的HashSet，如果Iterable为null，则返回一个空的HashSet。
+	 */
 	public static <T , R> HashSet<R> hashSet(Function<T,R> aFunc , Iterable<T> aArray)
 	{
 		HashSet<R> set = new HashSet<>() ;
@@ -150,6 +237,14 @@ public class XC
 		return set ;
 	}
 	
+	/**
+	 * 将一个Iterable集合转换为一个HashSet。
+	 * 如果Iterable为null，则返回一个空的HashSet。
+	 *
+	 * @param <T>    HashSet元素的类型。
+	 * @param aCollection 要转换的Iterable集合，可以为null。
+	 * @return 包含集合元素的HashSet，如果Iterable为null，则返回一个空的HashSet。
+	 */
 	public static <T> HashSet<T> hashSet(Iterable<T> aCollection)
 	{
 		HashSet<T> set = new HashSet<>() ;
@@ -161,6 +256,14 @@ public class XC
 		return set ;
 	}
 	
+	/**
+	 * 将一个可变参数数组转换为一个TreeSet。
+	 * 如果数组为null或为空（这里使用isNotEmpty方法检查，但该方法未在代码中定义，可能是自定义的或遗漏了导入），则返回一个空的TreeSet。
+	 *
+	 * @param <T>    TreeSet元素的类型。
+	 * @param aArray 可变参数数组，可以为null。
+	 * @return 包含数组元素的TreeSet，如果数组为null或为空，则返回一个空的TreeSet。
+	 */
 	public static <T> TreeSet<T> treeSet(T... aArray)
 	{
 		TreeSet<T> set = new TreeSet<>() ;
@@ -232,6 +335,47 @@ public class XC
 		return map ;
 	}
 	
+	public static <K , V> HashMap<K , V> hashMapIf(BiPredicate<K , V> aPred , Object...aArray)
+	{
+		final int len = count(aArray) ;
+		Assert.isTrue(len%2 == 0 , "数组的长度必须是偶数，不能是%d" , len);
+		HashMap<K , V> map = new HashMap<>(len) ;
+		for(int i=0 ; i<len ;)
+		{
+			if(aPred.test((K)aArray[i++], (V)aArray[i++]))
+				map.put((K)aArray[i++], (V)aArray[i++]) ;
+		}
+		return map ;
+	}
+	
+	/**  
+	 * 从一个数组中创建一个HashMap，使用提供的函数从数组元素中提取键。  
+	 *  
+	 * @param <K> HashMap中键的类型。  
+	 * @param <V> HashMap中值的类型。  
+	 * @param aVals 包含要添加到HashMap中的值的数组。  
+	 * @param aKeyExtractor 一个函数，它接受一个V类型的元素并返回一个K类型的键。  
+	 * @param aIgnoreNullKey 是否忽略生成的键为null的键值对。如果为true，则忽略键为null的键值对；如果为false，则将它们包含在HashMap中。  
+	 * @return 一个HashMap，其键是通过aKeyExtractor函数从aVals数组的元素中提取的，值是数组中的元素。  
+	 *         如果aVals为空，则返回一个空的HashMap。  
+	 */  
+	public static <K , V> HashMap<K , V> hashMap(V[] aVals , Function<V, K> aKeyExtractor
+			, boolean aIgnoreNullKey)
+	{
+		return hashMap(Arrays.asList(aVals) , aKeyExtractor, aIgnoreNullKey) ;
+	}
+	
+	/**  
+	 * 从一个集合中创建一个HashMap，使用提供的函数从集合元素中提取键。  
+	 *  
+	 * @param <K> HashMap中键的类型。  
+	 * @param <V> HashMap中值的类型。  
+	 * @param aVals 包含要添加到HashMap中的值的集合。  
+	 * @param aKeyExtractor 一个函数，它接受一个V类型的元素并返回一个K类型的键。  
+	 * @param aIgnoreNullKey 是否忽略生成的键为null的键值对。如果为true，则忽略键为null的键值对；如果为false，则将它们包含在HashMap中。  
+	 * @return 一个HashMap，其键是通过aKeyExtractor函数从aVals集合的元素中提取的，值是集合中的元素。  
+	 *         如果aVals为空，则返回一个空的HashMap。  
+	 */ 
 	public static <K , V> HashMap<K , V> hashMap(Collection<V> aVals , Function<V, K> aKeyExtractor
 			, boolean aIgnoreNullKey)
 	{
@@ -268,16 +412,37 @@ public class XC
 		return map ;
 	}
 	
+	/**
+	 * 创建一个空的ArrayList实例。
+	 *
+	 * @param <E> 列表中元素的类型。
+	 * @return 一个空的ArrayList实例。
+	 */
 	public static <E> ArrayList<E> arrayList()
 	{
 		return new ArrayList<>() ;
 	}
 	
+	/**
+	 * 创建一个具有指定初始容量的ArrayList实例。
+	 *
+	 * @param <E> 列表中元素的类型。
+	 * @param aInitSize 初始容量。
+	 * @return 一个具有指定初始容量的ArrayList实例。
+	 */
 	public static <E> ArrayList<E> arrayList(int aInitSize)
 	{
 		return new ArrayList<>(aInitSize) ;
 	}
 	
+	/**
+	 * 创建一个包含指定元素的ArrayList实例。
+	 * 如果传入的数组为空，则返回一个空的ArrayList。
+	 *
+	 * @param <E> 列表中元素的类型。
+	 * @param aEles 要添加到列表中的元素数组。
+	 * @return 一个包含指定元素的ArrayList实例。
+	 */
 	@SafeVarargs
 	public static <E> ArrayList<E> arrayList(E... aEles)
 	{
@@ -290,6 +455,14 @@ public class XC
 		return list ;
 	}
 	
+	/**
+	 * 创建一个包含指定集合中所有元素的ArrayList实例。
+	 * 如果传入的集合为null，则返回一个空的ArrayList。
+	 *
+	 * @param <E> 列表中元素的类型。
+	 * @param aC 要添加到列表中的集合。
+	 * @return 一个包含指定集合中所有元素的ArrayList实例。
+	 */
 	public static <E> ArrayList<E> arrayList(Collection<? extends E> aC)
 	{
 		if(aC != null)
@@ -298,6 +471,14 @@ public class XC
 			return arrayList() ;
 	}
 	
+	/**
+	 * 创建一个包含指定迭代器中所有元素的ArrayList实例。
+	 * 如果传入的迭代器为null，则返回一个空的ArrayList。
+	 *
+	 * @param <E> 列表中元素的类型。
+	 * @param aC 要添加到列表中的迭代器。
+	 * @return 一个包含指定迭代器中所有元素的ArrayList实例。
+	 */
 	public static <E> ArrayList<E> arrayList(Iterator<?> aC)
 	{
 		ArrayList<E> list = arrayList() ;
@@ -311,34 +492,169 @@ public class XC
 		return list ;
 	}
 	
+	/**
+	 * 从给定的Iterable中提取指定范围内的元素，并将它们添加到一个新的ArrayList中。
+	 * 注意：此方法存在类型不安全的强制类型转换，因为Iterable的泛型被擦除且被替换为Object。
+	 * 在实际使用中，应确保Iterable中的元素可以安全地转换为E类型。
+	 *
+	 * @param <E> 目标ArrayList中元素的类型。
+	 * @param <S> 理论上Iterable中元素的类型（由于泛型擦除，此参数在运行时无效）。
+	 * @param aC 要从中提取元素的Iterable。
+	 * @param aFrom 起始索引（包含），从该索引开始提取元素。
+	 * @param aTo 结束索引（不包含），在该索引之前停止提取元素。
+	 * @return 包含指定范围内元素的ArrayList实例。注意，由于类型强制转换，可能会抛出ClassCastException。
+	 */
+	public static <E , S> ArrayList<E> arrayList(Iterable<?> aC , int aFrom , int aTo)
+	{
+		ArrayList<E> list = arrayList() ;
+		if(aC != null)
+		{
+			int i=0 ;
+			for(Object o : aC)
+			{
+				if(i >= aTo)
+					break ;
+				if(i >= aFrom)
+				{
+					list.add((E)o) ;
+				}
+				i++ ;
+			}
+		}
+		return list ;
+	}
+	
+	/**
+	 * 从给定的Iterable中提取指定范围内的元素，应用一个函数来转换这些元素，并将转换后的元素添加到一个新的ArrayList中。
+	 * 可以选择是否忽略null值。
+	 *
+	 * @param <E> 目标ArrayList中元素的类型，即函数转换后的类型。
+	 * @param <S> Iterable中元素的类型。
+	 * @param aC 要从中提取元素的Iterable。
+	 * @param aFrom 起始索引（包含），从该索引开始提取元素。
+	 * @param aTo 结束索引（不包含），在该索引之前停止提取元素。
+	 * @param aFunc 用于转换Iterable中元素的函数。该函数接受S类型的参数并返回E类型的结果。
+	 * @param aIgnoreNull 一个布尔值，指示是否应该忽略null值。如果为true，则忽略null值；如果为false，则包含null值。
+	 * @return 包含转换后的、指定范围内元素的ArrayList实例。
+	 */
+	public static <E , S> ArrayList<E> arrayList(Iterable<S> aC , int aFrom , int aTo
+			, Function<S, E> aFunc , boolean aIgnoreNull)
+	{
+		ArrayList<E> list = arrayList() ;
+		if(aC != null)
+		{
+			int i=0 ;
+			for(S s : aC)
+			{
+				if(i >= aTo)
+					break ;
+				if(i >= aFrom)
+				{
+					E e = aFunc.apply(s) ;
+					if(e != null || !aIgnoreNull)
+					{
+						list.add(e) ;
+					}
+				}
+				i++ ;
+			}
+		}
+		return list ;
+	}
+	
+	/**
+	 * 创建一个空的HashSet。
+	 * 
+	 * @param <E> HashSet中元素的类型
+	 * @return 一个空的HashSet实例
+	 */
 	public static <E> HashSet<E> hashSet()
 	{
 		return new HashSet<E>() ;
 	}
 	
+	/**
+	 * 创建一个具有指定初始容量的HashSet。
+	 * 
+	 * @param <E> HashSet中元素的类型
+	 * @param aInitSize HashSet的初始容量
+	 * @return 一个具有指定初始容量的HashSet实例
+	 */
 	public static <E> HashSet<E> hashSet(int aInitSize)
 	{
 		return new HashSet<E>(aInitSize) ;
 	}
 	
+	/**
+	 * 创建一个线程安全的HashSet。
+	 * 
+	 * @param <E> Set中元素的类型
+	 * @return 一个线程安全的HashSet实例（实际上是使用Collections.synchronizedSet包装的HashSet）
+	 */
 	public static <E> Set<E> syncHashSet()
 	{
 		return Collections.synchronizedSet(new HashSet<E>()) ;
 	}
 	
+	/**
+	 * 创建一个空的HashMap。
+	 * 
+	 * @param <K> HashMap中键的类型
+	 * @param <V> HashMap中值的类型
+	 * @return 一个空的HashMap实例
+	 */
 	public static <K , V> HashMap<K , V> hashMap()
 	{
 		return new HashMap<K, V>() ;
 	}
 	
+	/**
+	 * 创建一个具有指定初始容量的HashMap。
+	 * 
+	 * @param <K> HashMap中键的类型
+	 * @param <V> HashMap中值的类型
+	 * @param aInitSize HashMap的初始容量
+	 * @return 一个具有指定初始容量的HashMap实例
+	 */
 	public static <K , V> HashMap<K , V> hashMap(int aInitSize)
 	{
 		return new HashMap<K, V>(aInitSize) ;
 	}
 	
+	/**
+	 * 根据给定的Map创建一个新的HashMap。如果给定的Map为null，则创建一个空的HashMap。
+	 * 
+	 * @param <K> HashMap中键的类型
+	 * @param <V> HashMap中值的类型
+	 * @param aMap 要从中创建HashMap的Map，可以为null
+	 * @return 一个新的HashMap实例，包含给定Map中的所有键值对（如果给定Map不为null）
+	 */
 	public static <K , V> HashMap<K, V> hashMap(Map<? extends K, ? extends V> aMap)
 	{
 		return aMap == null?hashMap():new HashMap<K, V>(aMap) ;
+	}
+	
+	/**
+	 * 根据给定的Map和一组键创建一个新的HashMap。如果给定的Map为null或键数组为空，则创建一个空的HashMap。
+	 * 如果Map不为null且键数组不为空，则只将给定Map中这些键对应的键值对放入新的HashMap中。
+	 * 
+	 * @param <K> HashMap中键的类型
+	 * @param <V> HashMap中值的类型
+	 * @param aMap 要从中创建HashMap的Map，可以为null
+	 * @param aKeys 要包含在HashMap中的键数组，可以为空
+	 * @return 一个新的HashMap实例，包含给定Map中指定键的键值对（如果给定Map和键数组都不为空）
+	 */
+	public static <K , V> HashMap<K, V> hashMap(Map<? extends K, ? extends V> aMap , K... aKeys)
+	{
+		HashMap<K, V> map = hashMap() ;
+		if(aMap != null && isNotEmpty(aKeys))
+		{
+			for(K key : aKeys)
+			{
+				map.put(key, aMap.get(key)) ;
+			}
+		}
+		return map ;
 	}
 	
 	public static <K , V> IMultiMap<K, V> multiMap()
@@ -860,6 +1176,14 @@ public class XC
 		for(T ele : aArray)
 			aConsumer.accept(ele) ;
 	}
+	
+	public static <T , E extends Exception> void forEachE(Iterable<T> aIt , EConsumer<T , E> aConsumer) throws E
+	{
+		if(aIt == null)
+			return ;
+		for(T ele : aIt)
+			aConsumer.accept(ele) ;
+	}
 
 	/**
 	 * 
@@ -1310,6 +1634,15 @@ public class XC
 			return aIndex==0?aArray:null ;
 	}
 	
+	/**
+	 * 获取给定集合中的第一个元素。
+	 * 
+	 * <p>如果集合为空，则返回null。</p>
+	 * 
+	 * @param <T> 集合元素的类型。
+	 * @param aColl 要从中获取第一个元素的集合。
+	 * @return 集合中的第一个元素；如果集合为空，则返回null。
+	 */
 	public static <T> T getFirst(List<T> aColl)
 	{
 		if(isEmpty(aColl))
@@ -1317,16 +1650,31 @@ public class XC
 		return aColl.get(0) ;
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T> T getFirst(Collection<T> aColl)
+	/**
+	 * 获取给定数组中的第一个元素。
+	 * 
+	 * <p>如果数组为空（即长度为0），则返回null。</p>
+	 * 
+	 * @param <T> 数组元素的类型。
+	 * @param aArray 要从中获取第一个元素的数组。
+	 * @return 数组中的第一个元素；如果数组为空，则返回null。
+	 */
+	public static <T> T getFirst(T[] aArray)
 	{
-		if(isEmpty(aColl))
+		if(isEmpty(aArray))
 			return null ;
-		if(aColl instanceof List)
-			return (T) ((List)aColl).get(0) ;
-		return aColl.iterator().next() ;
+		return aArray[0] ;
 	}
 	
+	/**
+	 * 获取给定数组中的第一个元素。
+	 * 
+	 * <p>如果数组为空（即长度为0），则返回null。</p>
+	 * 
+	 * @param <T> 数组元素的类型。
+	 * @param aArray 要从中获取第一个元素的数组。
+	 * @return 数组中的第一个元素；如果数组为空，则返回null。
+	 */
 	public static <T> T getFirst(SizeIter<T> aColl)
 	{
 		if(isEmpty(aColl))
@@ -1334,19 +1682,49 @@ public class XC
 		return aColl.iterator().next() ;
 	}
 	
+	/**
+	 * 从给定的Iterable集合中获取第一个元素。
+	 * 
+	 * <p>如果传入的集合为null，或者集合中没有元素，则返回null。</p>
+	 * 
+	 * <p>如果集合是List的实例，则直接通过索引访问并返回第一个元素。</p>
+	 * 
+	 * <p>如果集合不是List的实例，则使用迭代器遍历集合，并返回第一个元素。</p>
+	 * 
+	 * @param <T> Iterable集合中元素的类型。
+	 * @param aColl 要从中获取第一个元素的Iterable集合。
+	 * @return Iterable集合中的第一个元素；如果集合为null或没有元素，则返回null。
+	 */
+	@SuppressWarnings("unchecked")
 	public static <T> T getFirst(Iterable<T> aColl)
 	{
 		if(aColl == null)
 			return null ;
-		return aColl.iterator().next() ;
+		if(aColl instanceof List)
+			return (T) ((List)aColl).get(0) ;
+		Iterator<T> it = aColl.iterator() ;
+		return it.hasNext()?it.next():null ;
 	}
 	
-	
+	/**
+	 * 获取数组中的最后一个元素。如果数组为null，则返回null。
+	 * 
+	 * @param <T>		数组元素的类型
+	 * @param aArray		输入的数组
+	 * @return			数组中的最后一个元素，如果数组为null则返回null
+	 */
 	public static <T> T getLast(T[] aArray)
 	{
 		return aArray == null?null:aArray[aArray.length-1] ;
 	}
 	
+	/**
+	 * 获取集合中的最后一个元素。如果集合为空，则返回null。
+	 * 
+	 * @param <T>		集合元素的类型
+	 * @param aColl		输入的集合
+	 * @return			集合中的最后一个元素，如果集合为空则返回null
+	 */
 	public static <T> T getLast(List<T> aColl)
 	{
 		if(isEmpty(aColl))
@@ -1354,26 +1732,108 @@ public class XC
 		return aColl.get(aColl.size()-1) ;
 	}
 	
+	/**
+	 * 从Map中获取指定key的值，如果key不存在，则使用提供的Supplier生成一个新的值，并将其放入Map中。
+	 * 
+	 * @param <K>		Map的键类型
+	 * @param <V>		Map的值类型
+	 * @param aMap		输入的Map
+	 * @param aKey		要获取的键
+	 * @param aSupplier	用于生成新值的Supplier
+	 * @return			指定键的值，如果键不存在则返回新生成的值
+	 */
+	public static <K , V> V getOrPut(Map<K , V> aMap , K aKey , Supplier<V> aSupplier)
+	{
+		V v = aMap.get(aKey) ;
+		if(v == null)
+		{
+			v = aSupplier.get() ;
+			aMap.put(aKey, v) ;
+		}
+		return v ;
+	}
+	
+	/**
+	 * 获取Map中按照值排序的前N个条目。
+	 *
+	 * @param <K> Map的键类型。
+	 * @param <V> Map的值类型。
+	 * @param aMap 要从中获取条目的Map。
+	 * @param aN 要返回的前N个条目数。
+	 * @param aComp 用于比较Map中值的Comparator。
+	 * @return 包含按照值排序的前N个Map.Entry<K, V>的List。
+	 *         如果Map中的条目少于N个，则返回所有条目。
+	 *         返回的List中的条目是按照值从大到小排序的（根据提供的Comparator）。
+	 */
+	public static <K , V> List<Map.Entry<K , V>> getTopNEntries(Map<K , V> aMap , int aN
+			, Comparator<V> aComp)
+	{
+		// 使用最小堆，因为我们想获取最大的N个元素，但堆顶是最小的
+		// 所以我们需要一个比较器来反转自然顺序
+		PriorityQueue<Map.Entry<K, V>> minHeap = new PriorityQueue<>(aN
+				, Map.Entry.comparingByValue(aComp));
+
+		// 遍历Map，将元素添加到堆中
+		for (Map.Entry<K, V> entry : aMap.entrySet())
+		{
+			if (minHeap.size() < aN)
+			{
+				minHeap.offer(entry);
+			}
+			else if (aComp.compare(entry.getValue() , minHeap.peek().getValue()) > 0)
+			{
+				// 如果当前元素的值大于堆顶元素的值，替换堆顶元素
+				minHeap.poll();
+				minHeap.offer(entry);
+			}
+		}
+
+		// 将堆中的元素转换为List并返回
+		List<Map.Entry<K, V>> topN = new ArrayList<>(minHeap);
+		Collections.sort(topN, Map.Entry.comparingByValue(aComp.reversed())) ; // 按值降序排序
+		return topN ;
+	}
+	
+	/**
+	 * 检查浮点数组是否不为空且长度大于0。
+	 * 
+	 * @param aArray		输入的浮点数组
+	 * @return			如果数组不为空且长度大于0则返回true，否则返回false
+	 */
 	public static boolean isNotEmpty(float[] aArray)
 	{
 		return aArray != null && aArray.length>0 ;
  	}
 	
+	/**
+	 * 检查整型数组是否不为空且长度大于0。
+	 * 
+	 * @param aArray		输入的整型数组
+	 * @return			如果数组不为空且长度大于0则返回true，否则返回false
+	 */
 	public static boolean isNotEmpty(int[] aArray)
 	{
 		return aArray != null && aArray.length>0 ;
 	}
 	
+	/**
+	 * 检查对象是否为数组。
+	 * 
+	 * @param aObj		要检查的对象
+	 * @return			如果对象是数组则返回true，否则返回false
+	 */
 	public static boolean isArray(Object aObj)
 	{
 		return aObj != null && aObj.getClass().isArray() ;
 	}
 	
 	/**
+	 * 检查字符数组是否以指定的字符数组结尾。
 	 * 
 	 * @param aChs0		被测试字符数组
-	 * @param aChs1		匹配字符
-	 * @return
+	 * @param aEndTo		被测试字符数组的结束索引（包含）
+	 * @param aChs1		匹配字符数组
+	 * @return			如果被测试字符数组以匹配字符数组结尾则返回true，否则返回false
 	 */
 	public static boolean endWith(char[] aChs0 , int aEndTo , char[] aChs1)
 	{
@@ -1387,12 +1847,30 @@ public class XC
 		return true ;
 	}
 	
+	/**
+	 * 获取一个空的不可变列表。
+	 * 
+	 * @param <E>		列表元素的类型
+	 * @return			一个空的不可变列表
+	 */
 	public static <E> List<E> emptyList()
 	{
 		return Collections.emptyList() ;
 	}
 	
-	public static <T , R> ArrayList<R> extractAsArrayList(T[] aArray , Function<T, R> aFunc)
+	/**  
+	 * 将数组中的元素通过指定的函数转换，并将非空结果收集到一个ArrayList中。  
+	 * 如果转换函数抛出异常，则该方法会抛出该异常。  
+	 *  
+	 * @param <T> 数组元素的类型  
+	 * @param <R> 转换后元素的类型  
+	 * @param <E> 转换函数可能抛出的异常类型  
+	 * @param aArray 要转换的数组  
+	 * @param aFunc 用于转换数组元素的函数，该函数接受一个T类型的参数，返回一个R类型的结果，并可能抛出E类型的异常  
+	 * @return 包含转换后非空结果的ArrayList  
+	 * @throws E 如果转换函数在执行过程中抛出异常  
+	 */ 
+	public static <T , R , E extends Throwable> ArrayList<R> extractAsArrayList(T[] aArray , EFunction<T, R , E> aFunc) throws E
 	{
 		ArrayList<R> list = new ArrayList<>() ;
 		if(aArray != null)
@@ -1407,7 +1885,19 @@ public class XC
 		return list ;
 	}
 	
-	public static <T , R> ArrayList<R> extractAsArrayList(Iterable<T> aIt , Function<T, R> aFunc)
+	/**  
+	 * 将Iterable中的元素通过指定的函数转换，并将非空结果收集到一个ArrayList中。  
+	 * 如果转换函数抛出异常，则该方法会抛出该异常。  
+	 *  
+	 * @param <T> Iterable中元素的类型  
+	 * @param <R> 转换后元素的类型  
+	 * @param <E> 转换函数可能抛出的异常类型  
+	 * @param aIt 要转换的Iterable  
+	 * @param aFunc 用于转换Iterable中元素的函数，该函数接受一个T类型的参数，返回一个R类型的结果  
+	 * @return 包含转换后非空结果的ArrayList  
+	 * @throws E 如果转换函数在执行过程中抛出异常  
+	 */ 
+	public static <T , R , E extends Throwable> ArrayList<R> extractAsArrayList(Iterable<T> aIt , EFunction<T, R , E> aFunc) throws E
 	{
 		ArrayList<R> list = new ArrayList<>() ;
 		if(aIt != null)
@@ -1423,10 +1913,15 @@ public class XC
 	}
 	
 	/**
-	 * 
-	 * @param aCollection
-	 * @param aFunc
-	 * @return			返回的数组必然不为null，数组长度和aCollection长度相同，它们之间存在一一对应关系	<br>
+	 * 从集合中提取元素，通过指定的函数转换类型，并返回结果数组。
+	 * 如果集合为空，则返回一个空数组。
+	 *
+	 * @param <T> 集合中元素的类型
+	 * @param <R> 转换后数组元素的类型
+	 * @param aCollection 要提取的集合
+	 * @param aFunc 应用于集合元素的函数，用于类型转换
+	 * @param aClass 返回数组的元素类型
+	 * @return 转换后的元素数组。返回的数组必然不为null，数组长度和aCollection长度相同，它们之间存在一一对应关系	<br>
 	 * 			<b>注意：</b>返回的数组中可能包含null
 	 */
 	@SuppressWarnings("unchecked")
@@ -1444,10 +1939,39 @@ public class XC
 	}
 	
 	/**
-	 * 
-	 * @param aArray
-	 * @param aFunc
-	 * @return
+	 * 从数组中提取元素，通过指定的函数获取键，并将元素与键存入映射中。
+	 * 如果数组为空或函数返回null键且忽略null键标志为true，则不执行任何操作。
+	 *
+	 * @param <K> 映射中键的类型
+	 * @param <V> 数组中元素的类型
+	 * @param aArray 要提取的数组
+	 * @param aKeyFunc 应用于数组元素的函数，用于获取键
+	 * @param aMap 存储结果的映射
+	 * @param aIgnoreNullKey 是否忽略null键
+	 */
+	public static <K , V> void extract(V[] aArray , Function<V, K> aKeyFunc , Map<K, V> aMap
+			, boolean aIgnoreNullKey)
+	{
+		if(isEmpty(aArray))
+			return ;
+		
+		for(V ele : aArray)
+		{
+			K key = aKeyFunc.apply(ele) ;
+			if(!aIgnoreNullKey || key != null)
+			aMap.put(key , ele) ;
+		}
+	}
+	
+	/**
+	 * 从数组中提取元素，通过指定的函数转换类型，并返回结果数组。
+	 *
+	 * @param <T> 数组中元素的类型
+	 * @param <R> 转换后数组元素的类型
+	 * @param aArray 要提取的数组
+	 * @param aFunc 应用于数组元素的函数，用于类型转换
+	 * @param aType 返回数组的元素类型
+	 * @return 转换后的元素数组
 	 */
 	public static <T , R> R[] extract(T[] aArray , Function<T, R> aFunc , Class<R> aType)
 	{
@@ -1459,6 +1983,18 @@ public class XC
 		return array ;
 	}
 	
+	/**
+	 * 从数组中提取元素，通过指定的函数转换类型，并将结果存入提供的集合中。
+	 * 如果数组为空或函数返回null，则不添加元素到集合中。
+	 *
+	 * @param <T> 数组中元素的类型
+	 * @param <R> 转换后元素的类型
+	 * @param <C> 存储结果的集合类型
+	 * @param aArray 要提取的数组
+	 * @param aFunc 应用于数组元素的函数，用于类型转换
+	 * @param aSupplier 提供用于存储结果的集合的供应者
+	 * @return 存有转换后元素的集合
+	 */
 	public static <T , R , C extends Collection<R>> C extract(T[] aArray , Function<T, R> aFunc , Supplier<C> aSupplier)
 	{
 		C c = aSupplier.get() ;
@@ -1474,6 +2010,16 @@ public class XC
 		return c ;
 	}
 	
+	/**
+	 * 从数组中提取元素，通过指定的函数获取整数值，并返回结果数组。
+	 * 如果函数返回null，则使用默认值填充数组。
+	 *
+	 * @param <T> 数组中元素的类型
+	 * @param aArray 要提取的数组
+	 * @param aFunc 应用于数组元素的函数，用于获取整数值
+	 * @param aDefaultVal 默认值，用于填充null值
+	 * @return 整数数组，包含转换后的元素或默认值
+	 */
 	public static <T> int[] extract(T[] aArray , Function<T, Integer> aFunc , int aDefaultVal)
 	{
 		int[] array = new int[aArray.length] ;
@@ -1486,6 +2032,15 @@ public class XC
 		return array ;
 	}
 	
+	/**
+	 * 从整数数组中提取元素，通过指定的函数转换类型，并返回结果数组。
+	 *
+	 * @param <R> 转换后数组元素的类型
+	 * @param aArray 要提取的整数数组
+	 * @param aFunc 应用于数组元素的函数，用于类型转换
+	 * @param aType 返回数组的元素类型
+	 * @return 转换后的元素数组
+	 */
 	public static <R> R[] extract(int[] aArray , Function<Integer, R> aFunc , Class<R> aType)
 	{
 		@SuppressWarnings("unchecked")
@@ -1496,6 +2051,14 @@ public class XC
 		return array ;
 	}
 	
+	/**
+	 * 从数组中移除所有null元素，并返回新数组。
+	 * 如果数组为空，则直接返回原数组。
+	 *
+	 * @param <T> 数组中元素的类型
+	 * @param aArray 要处理的数组
+	 * @return 不含null元素的新数组
+	 */
 	public static <T> T[] extractNotNull(T[] aArray)
 	{
 		if(isEmpty(aArray))
@@ -1523,6 +2086,15 @@ public class XC
 		return aArray ;
 	}
 	
+	/**
+	 * 从数组中提取元素，通过指定的函数转换类型，并将非null结果存入列表中。
+	 *
+	 * @param <T> 数组中元素的类型
+	 * @param <R> 转换后元素的类型
+	 * @param aArray 要提取的数组
+	 * @param aFunc 应用于数组元素的函数，用于类型转换
+	 * @return 存有非null转换结果的列表
+	 */
 	public static <T , R> List<R> extractNotNull(T[] aArray , Function<T, R> aFunc)
 	{
 		List<R> list = new ArrayList<>() ;
@@ -1535,6 +2107,15 @@ public class XC
 		return list ;
 	}
 	
+	/**
+	 * 从数组中提取元素，通过指定的函数转换类型，并将非null结果添加到目标集合中。
+	 *
+	 * @param <T> 数组中元素的类型
+	 * @param <R> 转换后元素的类型
+	 * @param aArray 要提取的数组
+	 * @param aFunc 应用于数组元素的函数，用于类型转换
+	 * @param aTargetList 存储非null转换结果的目标集合
+	 */
 	public static <T , R> void extractNotNull(T[] aArray , Function<T, R> aFunc , Collection<R> aTargetList)
 	{
 		for(T ele : aArray)
@@ -1545,6 +2126,14 @@ public class XC
 		}
 	}
 	
+	/**
+	 * 从数组中提取满足指定条件的元素，并添加到目标集合中。
+	 *
+	 * @param <T> 数组中元素的类型
+	 * @param aArray 要提取的数组
+	 * @param aPredicate 应用于数组元素的条件判断函数
+	 * @param aTargetList 存储满足条件元素的目标集合
+	 */
 	public static <T> void extract(T[] aArray , Predicate<T> aPredicate , Collection<T> aTargetList)
 	{
 		for(T ele : aArray)
@@ -1554,15 +2143,46 @@ public class XC
 		}
 	}
 	
+	/**
+	 * 从给定的数组中提取满足特定条件的元素，并将这些元素应用一个函数转换后，
+	 * 存储到一个新的ArrayList中返回。此版本的方法不忽略转换结果为null的元素。
+	 *
+	 * @param <T> 输入数组的元素类型
+	 * @param <R> 转换后元素的类型
+	 * @param aArray 输入数组，从中提取元素
+	 * @param aPredicate 用于测试数组元素的谓词（条件），返回true表示该元素满足条件
+	 * @param aFunc 用于将满足条件的元素进行转换的函数
+	 * @return 包含转换后元素的新ArrayList（不忽略null值）
+	 */
 	public static <T , R> ArrayList<R> extractAsArrayList(T[] aArray , Predicate<T> aPredicate
 			 , Function<T, R> aFunc)
+	{
+		return extractAsArrayList(aArray, aPredicate, aFunc, false) ;
+	}
+	
+	/**
+	 * 从给定的数组中提取满足特定条件的元素，并将这些元素应用一个函数转换后，
+	 * 存储到一个新的ArrayList中返回。根据aIgnoreNull参数的值，可以选择是否忽略转换结果为null的元素。
+	 *
+	 * @param <T> 输入数组的元素类型
+	 * @param <R> 转换后元素的类型
+	 * @param aArray 输入数组，从中提取元素
+	 * @param aPredicate 用于测试数组元素的谓词（条件），返回true表示该元素满足条件
+	 * @param aFunc 用于将满足条件的元素进行转换的函数
+	 * @param aIgnoreNull 是否忽略转换结果为null的元素，true表示忽略，false表示不忽略
+	 * @return 包含转换后元素的新ArrayList（根据aIgnoreNull参数决定是否忽略null值）
+	 */
+	public static <T , R> ArrayList<R> extractAsArrayList(T[] aArray , Predicate<T> aPredicate
+			 , Function<T, R> aFunc , boolean aIgnoreNull)
 	{
 		ArrayList<R> list = arrayList() ;
 		for(T ele : aArray)
 		{
 			if(aPredicate.test(ele))
 			{
-				list.add(aFunc.apply(ele)) ;
+				R r = aFunc.apply(ele) ;
+				if(!aIgnoreNull || r != null)
+					list.add(r) ;
 			}
 		}
 		return list ;
@@ -1585,6 +2205,56 @@ public class XC
 			for(T ele : aCollection)
 				aTarget.add(aFunc.apply(ele)) ;
 		}
+	}
+	
+	/**  
+	 * 从给定的数组中提取元素，并通过指定的函数转换后，添加到目标集合中。  
+	 *   
+	 * @param <T>  数组元素的类型。  
+	 * @param <R>  函数转换后的目标类型。  
+	 * @param aArray  源数组，从中提取元素。  
+	 * @param aFunc   转换函数，将数组元素从类型T转换为类型R。  
+	 * @param aTarget 目标集合，用于存储转换后的元素。  
+	 */  
+	public static <T , R> void extract(T[] aArray , Function<T, R> aFunc , Collection<R> aTarget)
+	{
+		if(isNotEmpty(aArray))
+		{
+			for(T ele : aArray)
+				aTarget.add(aFunc.apply(ele)) ;
+		}
+	}
+	
+	/**  
+	 * 从给定的数组中提取元素，并通过指定的函数转换后，添加到HashSet中。  
+	 *   
+	 * @param <T>  数组元素的类型。  
+	 * @param <R>  函数转换后的目标类型。  
+	 * @param aArray  源数组，从中提取元素。  
+	 * @param aFunc   转换函数，将数组元素从类型T转换为类型R。  
+	 * @return
+	 */
+	public static <T , R> HashSet<R> extractAsHashSet(T[] aArray , Function<T, R> aFunc)
+	{
+		HashSet<R> r = XC.hashSet() ;
+		extract(aArray, aFunc, r);
+		return r ;
+	}
+	
+	/**  
+	 * 从给定的集合中提取元素，并通过指定的函数转换后，添加到HashSet中。  
+	 *   
+	 * @param <T>  数组元素的类型。  
+	 * @param <R>  函数转换后的目标类型。  
+	 * @param aArray  源集合，从中提取元素。  
+	 * @param aFunc   转换函数，将数组元素从类型T转换为类型R。  
+	 * @return
+	 */
+	public static <T , R> HashSet<R> extractAsHashSet(Collection<T> aArray , Function<T, R> aFunc)
+	{
+		HashSet<R> r = XC.hashSet() ;
+		extract(aArray, aFunc, r);
+		return r ;
 	}
 	
 	public static <T> Collection<T> extract(T[] aArray , Predicate<T> aPredicate)
@@ -2176,16 +2846,75 @@ public class XC
 	}
 	
 	/**
-	 * 
-	 * @param <T>
-	 * @param aSource
-	 * @param aFrom
-	 * @param aTo			不包含
-	 * @return
+	 * 复制源数组中指定范围内的元素到一个新数组中。
+	 *
+	 * @param <T>            数组元素的类型。
+	 * @param aSource        源数组，从中复制元素。
+	 * @param aFrom          复制开始的索引（包含）。
+	 * @param aTo            复制结束的索引（不包含）。
+	 * @return               一个新的数组，包含从源数组中指定范围内的元素；如果源数组为null，则返回null（通过subArray方法间接处理）。
 	 */
 	public static <T> T[] copyRange(T[] aSource , int aFrom , int aTo)
 	{
 		return subArray(aSource, aFrom, aTo-aFrom) ;
+	}
+	
+	/**
+	 * 将指定的元素追加到列表中指定的次数。
+	 *
+	 * @param <T>            列表元素的类型。
+	 * @param aList          要追加元素的列表。
+	 * @param aEle           要追加到列表中的元素。
+	 * @param aRepeatTimes   元素需要被追加到列表中的次数。
+	 */
+	public static <T> void append(List<T> aList , T aEle , int aRepeatTimes)
+	{
+		int i=0 ;
+		while(i++ < aRepeatTimes)
+			aList.add(aEle) ;
+	}
+	
+	/**
+	 * 将一个Map的键值对进行反转，并将结果存储到另一个Map中。
+	 *
+	 * @param <K> 原始Map的键的类型。
+	 * @param <V> 原始Map的值（反转后Map的键）的类型。
+	 * @param aMap 需要被反转的原始Map，不能为null。
+	 * @param aTargetMap 存储反转结果的Map，如果为null则会抛出异常。
+	 * @return 存储了反转键值对的aTargetMap。
+	 * @throws IllegalArgumentException 如果aTargetMap为null，则抛出异常，提示"目标Map不能为null!"。
+	 */
+	public static <K , V> Map<V, K> inverse(Map<K, V> aMap , Map<V, K> aTargetMap)
+	{
+		if(aMap != null)
+		{
+			Assert.notNull(aTargetMap , "目标Map不能为null!") ;
+			for(Entry<K, V> entry : aMap.entrySet())
+			{
+				aTargetMap.put(entry.getValue() , entry.getKey()) ;
+			}
+		}
+		return aTargetMap ;
+	}
+	
+	/**
+	 * 对给定的列表进行排序。
+	 *
+	 * <p>此方法接受一个泛型列表（该列表的元素也是泛型的）和一个比较器，使用提供的比较器对列表中的元素进行排序。</p>
+	 *
+	 * <p>注意：此方法会直接修改传入的列表，并返回排序后的相同列表。</p>
+	 *
+	 * @param <T> 列表的类型，它必须是{@link List}的一个子类型，并且其元素类型为E。
+	 * @param <E> 列表中元素的类型。
+	 * @param aList 要排序的列表。这个列表必须支持排序操作（即实现了{@link List}接口）。
+	 * @param aComp 用于比较列表中元素的比较器。这个比较器定义了列表中元素的排序顺序。
+	 * @return 排序后的列表（与传入的列表是同一个对象）。
+	 * 
+	 */
+	public static <T extends List<E> , E> T sort(T aList , Comparator<E> aComp)
+	{
+		aList.sort(aComp) ;
+		return aList ;
 	}
 	
 	static class SyncCircularBoundedQueue<E> extends SyncBoundedCollection<E> implements ICircularBoundedQueue<E>

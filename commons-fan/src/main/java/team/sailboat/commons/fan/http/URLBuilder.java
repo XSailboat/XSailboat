@@ -1,10 +1,13 @@
 package team.sailboat.commons.fan.http;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.Set;
 
 import team.sailboat.commons.fan.collection.HashMultiMap;
 import team.sailboat.commons.fan.collection.IMultiMap;
+import team.sailboat.commons.fan.excep.WrapException;
 import team.sailboat.commons.fan.file.FileUtils;
 import team.sailboat.commons.fan.infc.IterateOpCode;
 import team.sailboat.commons.fan.lang.Assert;
@@ -13,7 +16,14 @@ import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.text.RegexUtils;
 import team.sailboat.commons.fan.text.XString;
 
-public class URLBuilder implements IURLBuilder
+/**
+ * 
+ * URL构造器
+ *
+ * @author yyl
+ * @since 2024年12月7日
+ */
+public class URLBuilder
 {
 	final URLCoder mURLCoder = URLCoder.getDefault() ;
 	
@@ -23,11 +33,11 @@ public class URLBuilder implements IURLBuilder
 	String mPath ;
 	IMultiMap<String , String> mParamsMap = new HashMultiMap<>() ;
 	
-	public URLBuilder()
+	protected URLBuilder()
 	{
 	}
 	
-	public URLBuilder(URI aUri)
+	protected URLBuilder(URI aUri)
 	{
 		mProtocol = aUri.getScheme() ;
 		mHost = aUri.getHost() ;
@@ -48,11 +58,6 @@ public class URLBuilder implements IURLBuilder
 		}
 		Assert.notEmpty(mHost, "主机地址为空") ;
 		appendRawQuery(aUri.getQuery()) ;
-	}
-	
-	public URLBuilder(String aURL)
-	{
-		this(URI.create(aURL)) ;
 	}
 	
 	public URLBuilder appendRawQuery(String aRawQuery)
@@ -82,7 +87,13 @@ public class URLBuilder implements IURLBuilder
 		return this ;
 	}
 	
-	@Override
+	/**
+	 * 
+	 * 设置协议
+	 * 
+	 * @param aProtocol
+	 * @return
+	 */
 	public URLBuilder protocol(String aProtocol)
 	{
 		Assert.notBlank(aProtocol , "协议[%s]不能为空或空白字符串" , aProtocol) ;
@@ -90,7 +101,13 @@ public class URLBuilder implements IURLBuilder
 		return this ;
 	}
 	
-	@Override
+	/**
+	 * 
+	 * 设置主机
+	 * 
+	 * @param aHost
+	 * @return
+	 */
 	public URLBuilder host(String aHost)
 	{
 		Assert.notBlank(aHost , "主机[%s]不能为空或空白字符串" , aHost) ;
@@ -98,7 +115,11 @@ public class URLBuilder implements IURLBuilder
 		return this ;
 	}
 	
-	@Override
+	/**
+	 * 设置端口
+	 * @param aPort		端口号为-1时，表示使用指定协议缺省的端口。端口将不会出现在URL串中
+	 * @return
+	 */
 	public URLBuilder port(int aPort)
 	{
 		Assert.isTrue(aPort>0 || aPort == -1 , "端口号不能为"+aPort) ;
@@ -106,7 +127,11 @@ public class URLBuilder implements IURLBuilder
 		return this ;
 	}
 	
-	@Override
+	/**
+	 * 设置API路径
+	 * @param aPath
+	 * @return
+	 */
 	public URLBuilder path(String aPath)
 	{
 		mPath = aPath!=null?FileUtils.toCommonPath(aPath.trim()):null ;
@@ -115,21 +140,37 @@ public class URLBuilder implements IURLBuilder
 		return this ;
 	}
 	
-	@Override
+	/**
+	 * URL中附带的参数
+	 * 
+	 * @param aKey
+	 * @param aVals
+	 * @return
+	 */
 	public URLBuilder queryParams(String aKey , Object...aVals)
 	{
 		mParamsMap.putAll(aKey, JCommon.toStringsIgnoreNull(aVals)) ;
 		return this ;
 	}
 	
-	@Override
-	public URLBuilder replaceQueryParams(String aKey , Object...aVals)
+	/**
+	 * 
+	 * 设置查询参数。如果已经存在会替换掉原来的，不是追加
+	 *	
+	 * @param aKey
+	 * @param aVals
+	 * @return
+	 */
+	public URLBuilder setQueryParams(String aKey , Object...aVals)
 	{
 		mParamsMap.set(aKey, JCommon.toStringsIgnoreNull(aVals)) ;
 		return this ;
 	}
 	
-	@Override
+	/**
+	 * 清除URL附带的查询参数
+	 * @return
+	 */
 	public URLBuilder clearAllQueryParams()
 	{
 		mParamsMap.clear();
@@ -166,35 +207,123 @@ public class URLBuilder implements IURLBuilder
 		return strBld.toString();
 	}
 	
-	@Override
 	public String getHost()
 	{
 		return mHost ;
 	}
 	
-	@Override
 	public String getProtocol()
 	{
 		return mProtocol ;
 	}
 	
-	@Override
 	public int getPort()
 	{
 		return mPort ;
 	}
 	
-	@Override
 	public String getPath()
 	{
 		return mPath;
 	}
 	
-	@Override
 	public IMultiMap<String, String> getQueryParamsMap()
 	{
 		return mParamsMap ;
 	}
 	
+	public static IMultiMap<String, String> parseQueryStr(String aQueryStr)
+	{
+		IMultiMap<String, String> map = new HashMultiMap<>() ;
+		if(XString.isNotEmpty(aQueryStr))
+			parseQueryStr(aQueryStr, map) ;
+		return map ;
+	}
+	
+	public static void parseQueryStr(String aQueryStr , IMultiMap<String , String> aMap)
+	{
+		synchronized (aMap)
+		{
+			String key = null;
+			String value = null;
+			int mark = -1;
+			for (int i = 0; i < aQueryStr.length(); i++)
+			{
+				char c = aQueryStr.charAt(i);
+				switch (c)
+				{
+				case '&':
+					int l = i - mark - 1;
+					value = l == 0 ? "": decodeParamValue(aQueryStr.substring(mark + 1, i)) ;
+					mark = i;
+					if (key != null)
+					{
+						aMap.put(key, value);
+					}
+					else if (value != null && value.length() > 0)
+					{
+						aMap.put(value, "");
+					}
+					key = null;
+					value = null;
+					break;
+				case '=':
+					if (key != null)
+						break;
+					key = aQueryStr.substring(mark + 1, i);
+					mark = i;
+					break;
+				}
+			}
 
+			if (key != null)
+			{
+				int l = aQueryStr.length() - mark - 1;
+				value = l == 0 ? "": decodeParamValue(aQueryStr.substring(mark + 1)) ;
+				aMap.put(key, value);
+			}
+			else if (mark < aQueryStr.length())
+			{
+				key = aQueryStr.substring(mark + 1);
+				if (key != null && key.length() > 0)
+				{
+					aMap.put(key, "");
+				}
+			}
+		}
+	}
+	
+	static String decodeParamValue(String aParamValue)
+	{
+		try
+		{
+			return URLDecoder.decode(aParamValue, "UTF-8") ;
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			WrapException.wrapThrow(e) ;
+			return null ;		// dead code
+		}
+	}
+	
+	/**
+	 * 
+	 * 创建一个新的URL构建器
+	 * 
+	 * @return
+	 */
+	public static URLBuilder create()
+	{
+		return new URLBuilder() ;
+	}
+	
+	public static URLBuilder create(URI aUri)
+	{
+		return new URLBuilder(aUri) ;
+	}
+	
+	public static URLBuilder create(String aUri)
+	{
+		return new URLBuilder(URI.create(aUri)) ;
+	}
 }

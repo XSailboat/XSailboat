@@ -5,31 +5,31 @@
 	<parent>
 		<groupId>team.sailboat</groupId>
 		<artifactId>sailboat</artifactId>
-		<version>0.0.1</version>
+		<version>0.0.2-beta</version>
 	</parent>
 	<artifactId>commons-ms</artifactId>
 	<name>Sail Commons MS</name>
 	<description>在微服务环境下提供的公共库</description>
 	<url>https://github.com/XSailboat/XSailboat</url>
-	
+
 	<licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-    
-    <developers>
-        <developer>
-            <name>okgogogooo</name>
-        	<email>okgogogooo@qq.com</email>
-        </developer>
-    </developers>
-    
-    <scm>
-	    <connection>https://github.com/XSailboat/XSailboat.git</connection>
-	    <developerConnection>https://blog.csdn.net/OkGogooXSailboat?type=blog</developerConnection>
-	    <url>https://github.com/XSailboat/XSailboat</url>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>okgogogooo</name>
+			<email>okgogogooo@qq.com</email>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>https://github.com/XSailboat/XSailboat.git</connection>
+		<developerConnection>https://blog.csdn.net/OkGogooXSailboat?type=blog</developerConnection>
+		<url>https://github.com/XSailboat/XSailboat</url>
 	</scm>
 
 	<dependencies>
@@ -69,8 +69,20 @@
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-ui</artifactId>
+		    <groupId>io.swagger.core.v3</groupId>
+		    <artifactId>swagger-annotations-jakarta</artifactId>
+		</dependency>
+		<dependency>
+		    <groupId>io.swagger.core.v3</groupId>
+		    <artifactId>swagger-models-jakarta</artifactId>
+		</dependency>
+		<dependency>
+		    <groupId>jakarta.validation</groupId>
+		    <artifactId>jakarta.validation-api</artifactId>
+		</dependency>
+		<dependency>
+		    <groupId>com.fasterxml.jackson.dataformat</groupId>
+		    <artifactId>jackson-dataformat-yaml</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.nimbusds</groupId>
@@ -83,10 +95,10 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<scope>provided</scope>	<!-- 指定为 provided 作用域，表示编译时可用，运行时不需要 -->
+			<scope>provided</scope>	<!-- 指定为 provided 作用域，表示编译时可用，运行时不需要 -->  
 		</dependency>
 	</dependencies>
-	
+
 	<build>
 		<plugins>
 			<plugin>
@@ -97,22 +109,22 @@
 				</configuration>
 				<version>${maven.plugin.compiler.version}</version>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>${maven.plugin.source.version}</version>
-				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+			<plugin>  
+	            <groupId>org.apache.maven.plugins</groupId>  
+	            <artifactId>maven-source-plugin</artifactId>  
+	            <version>${maven.plugin.source.version}</version>
+	            <executions>  
+	                <execution>  
+	                    <id>attach-sources</id>  
+	                    <goals>  
+	                        <goal>jar</goal>  
+	                    </goals>  
+	                </execution>  
+	            </executions>  
+	        </plugin>  
 		</plugins>
 	</build>
-
+	
 	<profiles>
 		<profile>
 			<id>to-publish</id>

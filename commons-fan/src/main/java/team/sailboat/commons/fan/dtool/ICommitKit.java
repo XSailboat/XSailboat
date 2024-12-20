@@ -1,6 +1,7 @@
 package team.sailboat.commons.fan.dtool;
 
 import java.io.ByteArrayInputStream;
+import java.sql.Connection;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -16,6 +17,8 @@ public interface ICommitKit
 	String getSql() ;
 	
 	void setAutoCommitSize(int aAutoCommitSize) ;
+	
+	void prepare(Connection aConn) throws SQLException ;
 	
 	default void add(Object...aColVals) throws SQLException
 	{

@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class UserCredentials(BaseModel):
     username: str
     password: str
+    codeId: str = ""
 
 
 class HostProfile(BaseModel):
@@ -29,8 +30,9 @@ class IptablesConfig(BaseModel):
 
 
 class CreateUserInfo(BaseModel):
-    username:str
-    password:str
+    username: str
+    password: str
+
 
 class PathList(BaseModel):
-    paths:List
+    paths: List

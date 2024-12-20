@@ -53,7 +53,7 @@ public class HttpRequestProxy
 	        Map<String, String[]> paramMap = mRequest.getParameterMap() ;
 	        if(XC.isNotEmpty(paramMap))
 	        {
-	        	URLBuilder urlBld = new URLBuilder(newURLStr) ;
+	        	URLBuilder urlBld = URLBuilder.create(newURLStr) ;
 		        for(Entry<String, String[]> entry : paramMap.entrySet())
 		        {
 		        	if(entry.getValue() != null)
@@ -152,7 +152,7 @@ public class HttpRequestProxy
 	
 	String getAddr(String aModuleName , String aTargetPath) throws Exception
 	{
-		JSONObject jo = ZKSysProxy.getSysDefault().getRegisteredWebModule(aModuleName) ;
+		JSONObject jo = ZKSysProxy.getSysDefault().getRegisteredSailboatWebModule(aModuleName) ;
 		return jo.optString("serviceAddr")+aTargetPath ;
 	}
 	

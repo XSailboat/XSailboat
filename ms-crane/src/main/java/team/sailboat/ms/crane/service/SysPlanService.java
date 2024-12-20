@@ -27,19 +27,25 @@ import team.sailboat.commons.fan.event.XEvent;
 import team.sailboat.commons.fan.event.XListenerAssist;
 import team.sailboat.commons.fan.excep.ExceptionAssist;
 import team.sailboat.commons.fan.excep.WrapException;
+import team.sailboat.commons.fan.gadget.RSAUtils;
 import team.sailboat.commons.fan.http.HttpClient;
 import team.sailboat.commons.fan.http.Request;
 import team.sailboat.commons.fan.json.JSONObject;
 import team.sailboat.commons.fan.lang.Assert;
 import team.sailboat.commons.fan.lang.JCommon;
+import team.sailboat.commons.fan.statestore.IRunData;
 import team.sailboat.commons.fan.struct.Tuples;
 import team.sailboat.commons.fan.text.XString;
 import team.sailboat.commons.ms.jackson.JacksonUtils;
 import team.sailboat.commons.ms.jackson.TLCustmFilter;
+import team.sailboat.commons.ms.valid.ValidateUtils;
 import team.sailboat.ms.crane.AppConfig;
+import team.sailboat.ms.crane.AppConsts;
+import team.sailboat.ms.crane.IApis_PyInstaller;
 import team.sailboat.ms.crane.bean.HostProfile;
-import team.sailboat.ms.crane.bean.HostValidResult;
 import team.sailboat.ms.crane.bean.SysProperty;
+import team.sailboat.ms.crane.bean.ValidResult;
+import team.sailboat.ms.crane.cmd.LocalCmds;
 
 /**
  * 
@@ -58,6 +64,9 @@ public class SysPlanService
 	
 	@Autowired
     Validator mValidator;
+	
+	@Autowired
+	IRunData mRunData ;
 	
 	PropertiesEx mSysProperties ;
 	
@@ -81,7 +90,8 @@ public class SysPlanService
 		loadCustomSysProperties(mSysProperties) ;
 		XC.forEach(mSysProperties.propertyNames() , key->{
 			String pn = (String)key ;
-			if(!pn.endsWith(".description"))
+			if(!pn.endsWith(".description")
+					|| (pn.startsWith("modules") && XString.count(pn , '.', 0) == 2))		// 模块的说明
 			{
 				mSysPropMap.put(pn , new SysProperty(pn , mSysProperties.getProperty(pn)
 						, mSysProperties.getProperty(pn+".description"))) ;
@@ -99,6 +109,9 @@ public class SysPlanService
 				mHostProfiles.put(hostName, hostProfile) ;
 			});
 		}
+		
+		LocalCmds.getEnv().setAllHostSupplier(this::getAllHostProfiles) ;
+		LocalCmds.getEnv().setAllModuleSupplier(this::getAllModules);
 	}
 	
 	/**
@@ -150,7 +163,7 @@ public class SysPlanService
 	 */
 	public void createHostProfile(HostProfile aHostProfile) throws Exception
 	{
-		mValidator.validate(aHostProfile) ;
+		ValidateUtils.validateAndThrow(mValidator ,aHostProfile) ;
 		Assert.isNull(mHostProfiles.get(aHostProfile.getName()) , "已经存在名为 %s 的主机配置！" , aHostProfile.getName()) ;
 		mHostProfiles.put(aHostProfile.getName()  , aHostProfile) ;
 		storeHostProfiles();
@@ -164,7 +177,7 @@ public class SysPlanService
 	 */
 	public void updateHostProfile(HostProfile aHostProfile , String aOldHostName) throws Exception
 	{
-		mValidator.validate(aHostProfile) ;
+		ValidateUtils.validateAndThrow(mValidator , aHostProfile) ;
 		if(XString.isEmpty(aOldHostName) || JCommon.equals(aHostProfile.getName() , aOldHostName))
 		{
 			// 没有修改主机名
@@ -176,6 +189,7 @@ public class SysPlanService
 			Assert.notNull(mHostProfiles.remove(aOldHostName) , "不存在名为 %s 的主机配置！" , aOldHostName) ;
 		}
 		mHostProfiles.put(aHostProfile.getName()  , aHostProfile) ;
+		mRunData.put(aHostProfile.getIp() , AppConsts.sHostProfile_SyncStatus_changed) ;
 		storeHostProfiles();
 	}
 	
@@ -201,7 +215,10 @@ public class SysPlanService
 		HostProfile hostProfile = mHostProfiles.get(aHostName) ;
 		Assert.notNull(hostProfile , "不存在名为 %s 的主机！" , aHostName) ;
 		if(hostProfile.removeDeployModuleName(aModuleName))
+		{
+			mRunData.put(hostProfile.getIp() , AppConsts.sHostProfile_SyncStatus_changed) ;
 			storeHostProfiles() ;
+		}
 	}
 	
 	/**
@@ -311,7 +328,9 @@ public class SysPlanService
 				team.sailboat.ms.crane.bean.Module module = moduleMap.get(moduleName)  ;
 				if(module == null)
 				{
-					module = new team.sailboat.ms.crane.bean.Module(moduleName , value.getDescription()) ;
+					String descKey = value.getName()+".description" ;
+					String desc = mSysProperties.getString(descKey) ;
+					module = new team.sailboat.ms.crane.bean.Module(moduleName , desc) ;
 					String portsKey = value.getName()+".ports" ;
 					String[] ports = mSysProperties.getStringArray(portsKey) ;
 					if(XC.isNotEmpty(ports))
@@ -332,32 +351,57 @@ public class SysPlanService
 	 * 
 	 * @param aHostName
 	 */
-	public HostValidResult validateHostInfo(String aHostName)
+	public ValidResult validateHostInfo(String aHostName)
 	{
 		HostProfile host = mHostProfiles.get(aHostName) ;
 		if(host == null)
-			return new HostValidResult(false, "不存在名为%s的主机！".formatted(aHostName)) ;
-		HttpClient client = HttpClient.of(host.getIp() , host.getSailPyInstallerPort()) ;
+			return new ValidResult(false, "不存在名为%s的主机！".formatted(aHostName)) ;
+		return validateHostUserPswd(host.getName() , host.getIp() , host.getSailPyInstallerPort()
+				, host.getAdminUser() , host.getAdminPswd()) ;
+	}
+	
+	/**
+	 * 
+	 * 验证指定的用户名密码，在指定的主机上是否正确
+	 * 
+	 * @param aHostName			主机名，只起提示作用，可以不设置
+	 * @param aIp
+	 * @param aPort				SailPyInstaller的端口
+	 * @param aUsername
+	 * @param aPassword
+	 * @return
+	 */
+	public ValidResult validateHostUserPswd(String aHostName , String aIp , int aPort
+			, String aUsername
+			, String aPassword)
+	{
+		HttpClient client = HttpClient.of(aIp , aPort) ;
 		try
 		{
-			String result = client.askForString(Request.POST().path("/core/validation/user")
-					.setJsonEntity(new JSONObject().put("username" , host.getAdminUser())
-							.put("password" , host.getAdminPswd()))) ;
+			JSONObject jo = client.askJo(Request.GET().path(IApis_PyInstaller.sGET_RSAPublicKey)) ;
+			String encodedPswd = RSAUtils.encrypt(RSAUtils.sAlgorithm_PKCS1
+					, RSAUtils.getPublicKey(jo.optString("publicKeyModulus"), jo.optString("publicKeyExponent"))
+					, aPassword) ;
+			
+			String result = client.askForString(Request.POST().path(IApis_PyInstaller.sPOST_ValidateUserAndPswd)
+					.setJsonEntity(new JSONObject().put("username" , aUsername)
+							.put("password" , encodedPswd)
+							.put("codeId" , jo.optString("codeId")))) ;
 			if(XString.isEmpty(result))
-				return new HostValidResult(true, "管理员用户和密码正确。") ;
+				return new ValidResult(true, "管理员用户和密码正确。") ;
 			else
-				return new HostValidResult(false, "管理员用户或密码不正确！") ;
+				return new ValidResult(false, "管理员用户或密码不正确！") ;
 		}
 		catch(SocketException e)
 		{
 			mLogger.info(ExceptionAssist.getClearMessage(getClass(), e)) ;
-			return new HostValidResult(false, "主机 %s[%s:%s] 的服务无法连通！".formatted(
-					aHostName , host.getIp() , host.getSailPyInstallerPort())) ;
+			return new ValidResult(false, "主机 %s[%s:%s] 的服务无法连通！".formatted(
+					JCommon.defaultIfEmpty(aHostName , "") , aIp , aPort)) ;
 		}
 		catch (Exception e)
 		{
 			mLogger.error(ExceptionAssist.getStackTrace(e)) ;
-			return new HostValidResult(false , "验证失败！") ;
+			return new ValidResult(false , "验证失败！") ;
 		}
 	}
 }

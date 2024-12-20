@@ -18,7 +18,7 @@ import team.sailboat.ms.crane.bean.HostProfile;
  * @author yyl
  * @since 2024年9月14日
  */
-public abstract class Operator_RemoteHost implements IOperator
+public abstract class Operator_RemoteHost implements IOperator , ICmdExecLogger
 {
 	protected final Logger mLogger = LoggerFactory.getLogger(getClass()) ;
 	
@@ -45,12 +45,14 @@ public abstract class Operator_RemoteHost implements IOperator
 		mFinishLsnAssist.addLastListener(aLsn) ;
 	}
 	
-	protected void logInfo(String aMsg , Object...aArgs)
+	@Override
+	public void logInfo(String aMsg , Object...aArgs)
 	{
 		IOperator.logInfo(mLogPool, mHostProfile.getName(), aMsg, aArgs) ;
 	}
 	
-	protected void logError(String aMsg , Object...aArgs)
+	@Override
+	public void logError(String aMsg , Object...aArgs)
 	{
 		IOperator.logError(mLogPool, mHostProfile.getName(), aMsg, aArgs) ;
 	}

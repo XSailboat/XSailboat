@@ -1,0 +1,270 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  >
+<th:block th:fragment="accUser">
+	<template id="accUser">
+		<div style="display:flex; flex-direction: column;flex: 1;">
+			<div class="container-title">
+				<span class="container-text">应用管理 <el-icon color="#fff"><arrow-right-bold/></el-icon> 可访问用户</span>
+			</div>
+			<div class="el-card is-never-shadow" style="padding: 20px;display: flex;align-items: center; border-bottom: none;">
+		      	<span>应用：</span>
+		      	<el-select v-model="activedApp" placeholder="请选择" @change="appChange" style="width: 220px;">
+				    <el-option v-for="app in apps" :key="app.id" :label="app.name" :value="app.id">
+				    </el-option>
+				</el-select>
+				<span style="margin-left: 18px;">资源空间：</span>
+		      	<el-select v-model="activeResId" placeholder="请选择" @change="resSpaceChange" clearable style="width: 220px;">
+		      		<el-option v-for="item in resSpaces" :key="item.id" :value="item.id" :label="'[' + item.type + ']' + (item.resName || '')"></el-option>
+				</el-select>
+				<div style="display: inline-flex;flex: 1;justify-content: flex-end;">
+	    			<i class="icon icon-yingyong" style="font-size: 2.2em;color: #409EFF;"></i>							
+					<span style="font-size: 1.8em;margin: 0 8px;">{{appName}}</span>
+	    		</div>
+		    </div>
+		    <div class="el-card is-never-shadow" style="flex: 1;height: 0;display: flex;flex-direction:column; border-top: none;">
+				<el-table ref="user_table" :data="accUsers" height="100%" trip border current-row-key="id" style="width: 100%">
+    				<el-table-column type="index" label="#" width="50" align="center"> </el-table-column>
+					<el-table-column prop="realName" label="用户名" min-width="150" sortable>
+						<template #default="scope">
+							<i v-if="scope.row.realName == '超级管理员'" class="icon icon-chaojiguanliyuan" style="font-size: 14px;color: #f5c607;"></i>
+							<i v-else class="icon icon-putongyonghu" style="font-size: 14px;color: #409EFF;"></i>
+							<span style="margin-left: 4px;">{{scope.row.realName}}</span>
+						</template>
+					</el-table-column>
+					<el-table-column prop="department" label="部门" min-width="120" sortable> </el-table-column>
+					<el-table-column label="角色" min-width="200">
+						<template #default="scope">
+							 <el-tag sec:authorize="hasAuthority('CDU_ClientAppData')" type="primary" v-for="role of scope.row.roleResSpaces" closable @close="deleteRole(role, scope.row.id)" style="margin-right:4px;">{{role.roleFullName}}</el-tag>
+							 <el-tag sec:authorize="!hasAuthority('CDU_ClientAppData')" type="primary" v-for="role of scope.row.roleResSpaces" style="margin-right:4px;">{{role.roleFullName}}</el-tag>
+						</template>
+					</el-table-column>
+					<el-table-column sec:authorize="hasAuthority('CDU_ClientAppData')" label="操作" width="140" align="center">
+						<template #default="scope">
+							<el-link type="danger" @click="deleteUser(scope.row.id)" style="line-height: 18px;font-size:13;"><i class="icon icon-yichu" style="font-size: 14px;"></i>移除用户</el-link>
+						</template>
+					</el-table-column>
+ 				</el-table>
+			</div>
+			
+		</div>
+	</template>
+<script>
+	const AccUser = {
+		template: "#accUser",
+		props: {
+			apps: {
+				type: Array,
+				default: () => []
+			}
+		},
+		setup(props, context) {
+			const data = reactive({
+				appName: '',
+				activedApp: '',
+				accUsers: [],
+				userVisible: false,
+				users: [],
+				initialUsers: [],
+				newAccUsers: [],
+
+				resSpaces: [],
+
+				activeResId: ''
+			})
+			
+			const {proxy} = getCurrentInstance();
+			
+			const appChange = val =>{
+				proxy.$parent.activeAppId = val || data.activedApp; 
+				data.activeResId = '';
+				loadAccUsers();
+				loadClientAppResSpace();
+			}
+			
+			//资源空间发生了改变
+			const resSpaceChange = () => {
+				if(data.activeResId){
+					loadAllUserByResSpaceId();
+				}else if(data.activedApp){
+					loadAccUsers();
+				}
+			}
+			
+			// 取得用户在指定应用下所拥有的资源空间
+			const loadClientAppResSpace = () => {
+				axios.get('clientApp/resSpace/all/ofClientApp', {
+					params: {
+						clientAppId: data.activedApp
+					}
+				}).then(res => {
+					var defautRes, others = [];
+					res.data.forEach(item => {
+						if (!item.resName) {
+							defautRes = item;
+						} else {
+							others.push(item);
+						}
+					})
+					others.multiKeySort(['type', 'resName']);
+					data.resSpaces = defautRes ? [defautRes, ...others] : others;
+				}).catch(error => {
+					SailTool.exception(error);
+				});
+			}
+			
+			// 取得可以访问指定资源空间的用户简要信息和角色
+			const loadAllUserByResSpaceId = () => {
+				axios.get('clientApp/resSpace/user/all/ofCanVisit', {
+					params: {
+						resSpaceId: data.activeResId
+					}
+				}).then(res => {
+					data.accUsers = res.data;
+				}).catch(error => {
+					SailTool.exception(error);
+				});
+			}
+			
+			const loadAccUsers = () => {
+				axios.get('clientApp/user/all/ofCanVisit', {
+					params: {
+						clientAppId: data.activedApp
+					}
+				}).then(res=>{
+					data.accUsers = res.data;
+				}).catch(error=>{
+					SailTool.exception(error);
+				})
+				props.apps.forEach(app => {
+					if(app.id == data.activedApp){
+						data.appName = app.name
+					}
+				})
+				SailTool.urlPush('appId', encodeURIComponent(data.activedApp));
+			}
+			
+			const loadAllUsers = callback => {
+				axios.get('user/all').then(res=>{
+					callback(res.data);
+				}).catch(error=>{
+					SailTool.exception(error);
+				})
+			}
+			
+			const roleChange = (val, row) => {
+				let type, roleId;
+				if(val.length > row.srcRoles.length){
+					type = 'bind';
+					roleId = val[val.length - 1];
+				}else{
+					type = 'unbind';
+					roleId = row.srcRoles[val.length];
+				}
+				axios.post('api/user/role/' + type, {
+					roleId: roleId,
+					userId: row.id
+				}).then(res=>{
+					ElMessage.$success('操作成功！');
+					row.srcRoles = val;
+				}).catch(error=>{
+					SailTool.exception(error);
+				})
+			}
+			
+			const addAccUser = type => {
+				if(type == 'oper'){
+					data.newAccUsers = [];
+					loadAllUsers(users => {
+						data.users = users;
+						data.accUsers.forEach(user => {
+							data.newAccUsers.push(user.id);
+						});
+						data.initialUsers = SailTool.clone(data.newAccUsers);
+						data.userVisible = true;
+					})
+				}else{
+					let bind = data.newAccUsers.filter(id => {
+						return data.initialUsers.indexOf(id) == -1;
+					}); 
+					let unbind = data.initialUsers.filter(id => {
+						return data.newAccUsers.indexOf(id) == -1;
+					})
+					accUserOper(bind, unbind)
+				}
+			}
+			
+			const accUserOper = (bind, unbind) => {
+				axios.post('api/app/user/oper', {
+					appId: data.activedApp,
+					bind: bind.toString(),
+					unbind: unbind.toString()
+				}).then(res=>{
+					ElMessage.$success('操作成功');
+					data.userVisible = false;
+					loadAccUsers();
+				}).catch(error=>{
+					SailTool.exception(error);
+				})
+			}
+			
+			const deleteUser = userId => {
+				axios.delete('clientApp/user/many/ofCanVisit', {
+					params: {
+						clientAppId: data.activedApp,
+						userIds: userId
+					}
+				}).then(res => {
+					ElMessage.$success('操作成功');
+					resSpaceChange();
+				}).catch(error => {
+					SailTool.exception(error);
+				})
+			}
+			
+			const deleteRole = (role, userId) => {
+				axios.delete('clientApp/resSpace/role/user', {
+					params: {
+						resSpaceId: role.resSpaceId,
+						roleId: role.roleId,
+						userId: userId
+					}
+				}).then(res => {
+					ElMessage.$success('操作成功');
+					resSpaceChange();
+				}).catch(error => {
+					SailTool.exception(error);
+				})
+			}
+			
+	      	const filterMethod = (query, item) => {
+	            return item.displayName.indexOf(query) > -1;
+	      	}
+			
+			proxy.$parent.loadApps(false, apps => {
+				if(proxy.$parent.activeAppId){
+					data.activedApp = proxy.$parent.activeAppId;
+					loadClientAppResSpace();
+				}else if(apps.length > 0){
+					data.activedApp = apps[0]['id'];
+					loadClientAppResSpace();
+				}
+				apps.forEach( app => {
+					if(app.id == data.activedApp){
+						data.appName = app.name
+					}
+				});
+				loadAccUsers();
+			});
+			
+			return {
+				...toRefs(data),
+				appChange,
+				resSpaceChange,
+				deleteUser,
+				deleteRole
+			}
+		}
+	}
+</script>
+</th:block>
+</html>

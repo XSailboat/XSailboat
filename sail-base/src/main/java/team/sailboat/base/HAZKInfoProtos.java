@@ -1,5 +1,12 @@
 package team.sailboat.base;
 
+/**
+ * 
+ * Hadoop在zookeeper中注册的高可用性信息解析
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 public final class HAZKInfoProtos
 {
 	private HAZKInfoProtos()

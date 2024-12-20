@@ -18,7 +18,7 @@ def restart(pid, adminUser, adminPswd):
         if result.returncode != 0:
             return
     # 判断是否设置了自启动服务
-    result = AppSysCmd.cmd_run_root("test -f /etc/systemd/system/SailInstaller.service && echo 'exists'")
+    result = AppSysCmd.cmd_run_root("test -f /usr/lib/systemd/system/SailInstaller.service && echo 'exists'")
     if result.stdout:
         # 直接restart服务
         result = AppSysCmd.cmd_run_root("systemctl restart SailInstaller")

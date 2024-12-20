@@ -1,0 +1,444 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="sailTree">
+    <template id="sailTree">
+        <div style="padding:0 8px 8px;" v-if="supportSearch">
+            <el-input
+                    v-model="searchText"
+                    placeholder="请输入内容"
+                    suffix-icon="Search"
+                    clearable
+                    @clear="querySearch"
+                    @keyup.enter.native="querySearch"
+                    style="width: 100%;"></el-input>
+        </div>
+
+        <el-scrollbar :height="height" :max-height="maxHeight">
+            <el-tree ref="elTree" class="sail-tree" :class="className"
+                     :data="treeData" :node-key="nodeKey" :props="props" :lazy="lazy"
+                     :load="loadFuction" :highlight-current="highlightCurrent"
+                     :default-expanded-keys="defaultExpandedKeys"
+                     :draggable="draggable"
+                     @node-drop="nodeDrop"
+                     :allow-drop="allowDrop"
+                     :expand-on-click-node="expandOnClickNode" @node-click="nodeClick"
+                     @node-contextmenu="nodeContextmenu" @current-change="currentChange"
+                     @node-expand="nodeExpand" @node-collapse="nodeCollapse">
+                <template #default="{ node, data }">
+                    <div style="display: flex; flex: 1; align-items: center;">
+                        <slot name="icon" :data="data" :node="node">
+                            <template v-if="node.expanded">
+                                <el-icon>
+                                    <Folder-Opened/>
+                                </el-icon>
+                            </template>
+                            <template v-else>
+                                <el-icon>
+                                    <Folder/>
+                                </el-icon>
+                            </template>
+                        </slot>
+
+                        <span style="flex: 1;padding-left: 2px;">
+						    <slot name="label" :data="data" :node="node">
+                                <span v-html="labelText(data[props.label || 'name'])"></span>
+                            </slot>
+					    </span>
+
+                        <slot name="append" :data="data" :node="node">
+
+                        </slot>
+                        <template v-if="menu && menu.show && menu.type=='line'">
+                            <el-dropdown :placement="menu.placement || 'bottom'" @command="nodeContextmenuClick"
+                                         :popper-class="popperClass">
+                                <el-button class="menu-btn">
+                                    <el-icon>
+                                        <More-Filled/>
+                                    </el-icon>
+                                </el-button>
+                                <template #dropdown>
+                                    <el-dropdown-menu class="sail-linemenu" :class="className">
+                                        <template v-for="item in menu.data">
+                                            <el-dropdown-item v-if="item.type == 'divided'" divided></el-dropdown-item>
+                                            <el-dropdown-item v-else :command="item.key" :disabled="item.disabled">
+                                                <span class="menu-icon"><i :class="item.icon"></i></span>
+                                                <span class="menu-text">{{item.name}}</span>
+                                            </el-dropdown-item>
+                                        </template>
+                                    </el-dropdown-menu>
+                                </template>
+                            </el-dropdown>
+                        </template>
+                    </div>
+                </template>
+            </el-tree>
+        </el-scrollbar>
+
+        <template v-if="isContextMenu">
+            <div v-show="menuVisible" :id="menuId" class="sail-contextmenu" :class="className">
+                <template v-for="item in menu.data">
+                    <div v-if="item.type == 'divided'" class="sail-menu-split"></div>
+                    <div v-else-if="item.disabled" class="sail-menu-item disabled" disabled>
+                        <span class="menu-icon"><i :class="item.icon"></i></span>
+                        <span class="menu-text">{{item.name}}</span>
+                    </div>
+                    <div v-else class="sail-menu-item" @click="nodeContextmenuClick(item.key)">
+                        <span class="menu-icon"><i :class="item.icon"></i></span>
+                        <span class="menu-text">{{item.name}}</span>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </template>
+    <script>
+        var SailTree = {
+            template: "#sailTree",
+            emits: ['nodeClick', 'nodeExpand', 'nodeContextmenuClick', 'nodeDrop', 'querySearch'],
+            props: {
+                refId: {
+                    type: String,
+                    default: 'elTree'
+                },
+                size: {
+                    type: String
+                },
+                data: {
+                    type: Array,
+                    default: () => []
+                },
+                nodeKey: {
+                    type: String,
+                },
+                props: {
+                    type: Object,
+                    default: {
+                        label: 'label',
+                        children: 'children',
+                        menu: {}
+                    }
+                },
+                lazy: {
+                    type: Boolean,
+                    default: false
+                },
+                load: {
+                    type: Function
+                },
+                highlightCurrent: {
+                    type: Boolean,
+                    default: false
+                },
+                defaultExpandedKeys: {
+                    type: Array,
+                    default: () => []
+                },
+                expandOnClickNode: {
+                    type: Boolean,
+                    default: true
+                },
+                dark: {
+                    type: Boolean,
+                    default: false
+                },
+                draggable: {
+                    type: Boolean,
+                    default: false
+                },
+                supportSearch: {
+                    type: Boolean,
+                    default: false
+                },
+                height: {
+                    type: String,
+                    default: '100%'
+                },
+                maxHeight: {
+                    type: String,
+                    default: '100%'
+                }
+            },
+
+            setup(props, context) {
+
+                const UUID = () => {
+                    var d = new Date().getTime();
+                    if (window.performance && typeof window.performance.now === "function") {
+                        d += performance.now();
+                    }
+                    var uuid = 'xxxxxxxxxxxxxxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                        var r = (d + Math.random() * 16) % 16 | 0;
+                        d = Math.floor(d / 16);
+                        return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+                    });
+                    return uuid.toUpperCase();
+                }
+
+                const rdata = reactive({
+                    menu: props.props ? props.props.menu || {} : {},
+                    menuId: UUID(),
+                    menuVisible: false,
+                    activeNode: null,
+                    activrNodeData: {},
+                    // 搜索内容
+                    searchText: null,
+
+                    treeData: [...props.data],
+					
+					rootNode: {},
+					rootResolve: null,
+
+                    elTree: null
+                });
+
+                rdata.className = computed(() => {
+                    let classNames = [];
+                    if (props.size == 'mini') {
+                        classNames.push('sail-tree__mini');
+                    }
+                    if (props.dark) {
+                        classNames.push('is-dark');
+                    }
+                    return classNames.join(' ');
+                });
+
+                rdata.popperClass = computed(() => {
+                    if (props.dark) {
+                        return "sail-popper is-dark";
+                    }
+                    return "sail-popper";
+                });
+
+                rdata.isContextMenu = computed(() =>  rdata.menu.show && rdata.menu.type == 'context');
+
+                watch(()=> props.data,newValue =>{
+                    rdata.treeData = [...newValue];
+                },{immediate:false})
+
+
+                const loadFuction = (node, resolve) => {
+					if(node.level == 0){
+						rdata.rootNode = node;
+						rdata.rootResolve = resolve;
+					}
+                    if (props.lazy && typeof props.load == 'function') {
+                        props.load(node, resolve);
+                    }
+                }
+
+                const nodeClick = (node, data, treeNode, event) => {
+                    menuClose();
+                    context.emit('nodeClick', node, data, treeNode, event);
+                }
+
+               const nodeContextmenu = (event, data, node, treeNode) => {
+                    if (rdata.menu) {
+                        if (rdata.menu.type && rdata.menu.type == 'context') {
+                            event.preventDefault();
+                            rdata.activeNode = node;
+                            rdata.activeNodeData = data;
+
+                            var menu = document.getElementById(rdata.menuId);
+
+                            var _h = rdata.menu.data.filter(item => item.type != 'divided').length * 30;
+                            let pos = contextmenuPos(event, _h, 140);
+                            menu.style.left = pos.x + "px";
+                            menu.style.top = pos.y + "px";
+                            document.addEventListener("click", menuClose);
+                            rdata.menuVisible = true;
+                        } else {
+                            context.emit('nodeContextmenu', event, data, node, treeNode);
+                        }
+                    }
+                }
+
+                const nodeContextmenuClick = type =>  {
+                    context.emit('nodeContextmenuClick', type, rdata.activeNodeData, rdata.activeNode);
+                }
+
+                const currentChange = (data, node) => {
+                    context.emit('currentChange', data, node);
+                }
+
+                const nodeExpand = (data, node, ref) => {
+                    menuClose();
+                    context.emit('nodeExpand', data, node, ref);
+                }
+
+                const nodeCollapse = (data, node, ref) => {
+                    menuClose();
+                    context.emit('nodeCollapse', data, node, ref);
+                }
+
+                const contextmenuPos = (MouseEvent, H, W) =>  {
+                    let X = MouseEvent.clientX, Y = MouseEvent.clientY - 6;
+                    if (MouseEvent.clientX > document.body.clientWidth - W)
+                        X = X - W + 10;
+                    else
+                        X = X + 4;
+                    if (MouseEvent.clientY > document.body.clientHeight - H)
+                        Y = Y - H + 30;
+                    else
+                        Y = Y + 10;
+                    return {x: X, y: Y};
+                }
+
+                const menuClose = () => {
+                    rdata.menuVisible = false;
+                    document.removeEventListener("click", menuClose);
+                }
+
+                const querySearch = () => {
+                    context.emit('querySearch', rdata.searchText, data => {
+                        if (rdata.searchText) {
+                            rdata.elTree.store.lazy = false;
+                            rdata.elTree.store.defaultExpandAll = true;
+                        } else {
+                            rdata.elTree.store.lazy = true;
+                            rdata.elTree.store.defaultExpandAll = false;
+                        }
+                        rdata.treeData = data;
+                    });
+                }
+
+                const setCurrentNode = (node, shouldAutoExpandParent=true) => {
+					rdata.elTree.setCurrentNode(node, shouldAutoExpandParent)
+                }
+
+                /**
+                 * 高亮显示匹配的内容
+                 */
+                const labelText = (text) => {
+                    return text.replace(new RegExp(rdata.searchText, 'g'), "<span style='color:#fe6c6f;' class='highlight-color'>" + rdata.searchText + "</span>");
+                }
+
+                /**
+                 * 为 Tree 中的一个节点追加一个子节点
+                 */
+                const append = (data, parentNodeId) => {
+                    if (parentNodeId) {
+                        const parentNode = rdata.elTree.getNode(parentNodeId);
+
+                        parentNode.isLeaf = false;
+                        if (props.props.isLeaf) {
+                            parentNode.data[props.props.isLeaf] = false
+                        }
+                        rdata.elTree.append(data, parentNodeId);
+
+                        parentNode.expand();
+                    } else { // 该节点是顶级节点
+                        const rootNodes = rdata.elTree.store._getAllNodes();
+
+                        if (rootNodes.length === 0) {
+                            rdata.treeData = [data];
+                        } else {
+                            insertAfter(data, rootNodes[rootNodes.length - 1].data[props.nodeKey]);
+                        }
+                    }
+                }
+
+                const nodeDrop = (curNode, endNode, pos, event) => {
+                    context.emit('nodeDrop', curNode, endNode, pos, event, () => {
+                        if (pos === 'inner') {
+                            endNode.isLeaf = false;
+                            if (props.props.isLeaf) {
+                                endNode.data[props.props.isLeaf] = false;
+                            }
+
+                            endNode.loaded = !props.lazy;
+                            endNode.expand();
+                        } else {
+
+                        }
+                    });
+                }
+
+                const allowDrop = (draggingNode, dropNode, type) => {
+                    return true;
+                }
+
+                /**
+                 * 在 Tree 中给定节点后插入一个节点
+                 */
+                const insertAfter = (data, refNodeId) => {
+                    rdata.elTree.insertAfter(data, refNodeId);
+                }
+
+                /**
+                 * 删除 Tree 中的一个节点，使用此方法必须设置 node-key 属性
+                 */
+                const remove = (key) => {
+                    const curNode = getNode(key);
+
+                    const parentNode = curNode.parent;
+                    if (parentNode) {
+                        if (parentNode.childNodes.length === 1) {
+                            parentNode.isLeaf = true;
+                            if (props.props.isLeaf) {
+                                parentNode.data[props.props.isLeaf] = true;
+                            }
+                        }
+                    }
+                    rdata.elTree.remove(key);
+                }
+
+                const getNode = (key) => {
+                    return rdata.elTree.getNode(key);
+                }
+
+                const updateKeyChildren = (key, data) => {
+
+                    data = data.filter(item => !rdata.searchText || rdata.searchText.indexOf(item[props.props.label]) > -1);
+
+                    if (key) {
+						const parentNode = getNode(key);
+						if(!parentNode.expanded){
+							parentNode.expand();
+						}else{
+							rdata.elTree.updateKeyChildren(key, data);
+						}
+                    } else {
+						rdata.rootNode.childNodes = [];
+						rdata.rootResolve(data);
+                    }
+                }
+
+                return {
+                    ...toRefs(rdata),
+                    loadFuction,
+                    nodeClick,
+                    nodeContextmenu,
+                    nodeContextmenuClick,
+                    currentChange,
+                    nodeExpand,
+                    nodeCollapse,
+                    UUID,
+                    contextmenuPos,
+                    menuClose,
+                    querySearch,
+                    labelText,
+                    append,
+                    nodeDrop,
+                    allowDrop,
+                    insertAfter,
+                    remove,
+                    getNode,
+                    updateKeyChildren,
+                    setCurrentNode
+                }
+            },
+
+            methods: {
+
+
+
+
+            },
+            mounted() {
+            },
+            created() {
+            }
+        }
+    </script>
+</th:block>
+</html>

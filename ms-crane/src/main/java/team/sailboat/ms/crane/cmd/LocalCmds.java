@@ -19,7 +19,9 @@ public class LocalCmds
 	
 	static final Map<String , Class<? extends ICmd>> sCmdMap = XC.hashMap(
 			"xc_upload" , Xc_upload.class
-			, "xc1_to_zk" , Xc1_to_zk.class) ;
+			, "xc_conf_iptable" , Xc_conf_iptable.class
+			, "xc1_to_zk" , Xc1_to_zk.class
+			) ;
 	
 	/**
 	 * 取得命令执行环境

@@ -1,0 +1,264 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="resSapce">
+	<template id="resSapce">
+		<div style="display:flex; flex-direction: column;flex: 1;">
+			<div class="container-title">
+				<span class="container-text">应用管理 <el-icon color="#fff"><arrow-right-bold /></el-icon> 用户授权</span>
+			</div>
+			<div class="el-card is-never-shadow" style="padding: 20px;display: flex;align-items: center; border-bottom: none;">
+				<span>选择应用：</span>
+				<el-select v-model="activedApp" placeholder="请选择" @change="appChange" style="width: 200px;">
+					<el-option v-for="app in apps" :key="app.id" :label="app.name" :value="app.id"></el-option>
+				</el-select>
+				<el-divider direction="vertical"></el-divider>
+				<span>资源空间：</span>
+				<el-select v-model="resSpaceId" placeholder="资源空间" @change="handleResSpaceChange" style="width: 200px;">
+					<el-option v-for="resspace in resSpaces" :key="resspace.id" :value="resspace.id" :label="'[' + resspace.type + ']' + (resspace.resName || '')"></el-option>
+				</el-select>
+				<el-divider direction="vertical"></el-divider>
+				<span>用户：</span>
+				<el-select v-model="activedUser" filterable remote reserve-keyword placeholder="输入关键字搜索" :remote-method="loadUsers" :disabled="!resSpaceId" clearable
+					@clear="loadUserRoles" @change="loadUserRoles" style="width: 200px;">
+					<el-option v-for="user in users" :key="user.id" :label="user.realName" :value="user.id"></el-option>
+				</el-select>
+				<el-button type="primary" icon="search" style="margin-left: 8px;z-index: 1;" @click="loadUserRoles">查询</el-button>
+				<div style="position:absolute;right:20px; white-space: nowrap;display: flex;align-items: center;">
+					<i class="icon icon-yingyong" style="font-size: 2.2em;color: #409EFF;"></i>
+					<span style="font-size: 1.8em;margin: 0 8px;">{{appName}}</span>
+				</div>
+			</div>
+			<div class="el-card is-never-shadow" style="flex: 1;height: 0;display: flex;flex-direction:column; border-top: none;">
+				<el-table ref="grand_table" :data="authes" height="100%" trip border :span-method="arraySpanMethod" current-row-key="id" style="width: 100%">
+					<el-table-column prop="roleName" label="角色名称" min-width="200">
+						<template #default="scope">
+							<div style="display: flex;align-items: center;">
+								<el-checkbox sec:authorize="hasAnyAuthority('CDU_ClientAppData', 'Update_Special_ClientAppData:' + #resId)" :model-value="selectable(scope.row)"
+									:disabled="!activedUser" size="large" @change="val=>handleRoleCheck(val, scope.row)"></el-checkbox>
+								<el-checkbox sec:authorize="!hasAnyAuthority('CDU_ClientAppData', 'Update_Special_ClientAppData:' + #resId)" :model-value="selectable(scope.row)" :disabled="true"
+									size="large"></el-checkbox>
+								<span style="padding-left: 4px;">{{scope.row.roleName}}</span>
+							</div>
+						</template>
+					</el-table-column>
+					<el-table-column prop="code" label="权限名称" min-width="160"> </el-table-column>
+					<el-table-column prop="resSpaceType" label="资源空间" min-width="120"> </el-table-column>
+					<el-table-column prop="groupName" label="分组" min-width="120"> </el-table-column>
+					<el-table-column prop="description" label="描述" min-width="180"> </el-table-column>
+				</el-table>
+			</div>
+		</div>
+	</template>
+	<script>
+		const ResSapce = {
+			template: "#resSapce",
+			props: {
+				apps: {
+					type: Array,
+					default: () => []
+				}
+			},
+			setup(props, context) {
+				const data = reactive({
+					appName: '',
+					activedApp: '',
+					resSpaces: [],
+					resSpaceType: '',
+					resSpaceId: '',
+					users: [],
+					activedUser: '',
+					authes: [],
+					mergeSize: [],
+					mergeIndex: [],
+					userRoleIds: []
+				});
+
+				const selectable = computed(() => row => {
+					return data.userRoleIds.includes(row.roleId);
+				});
+
+				const {proxy} = getCurrentInstance();
+
+				const appChange = val => {
+					data.resSpaceType = '';
+					data.resSpaceId = '';
+					loadAppResSpace(() => {
+						loadRoleAuthority();
+					});
+					props.apps.forEach(app => {
+						if (app.id == data.activedApp) {
+							data.appName = app.name
+						}
+					})
+					proxy.$parent.activeAppId = val || data.activedApp;
+				};
+
+				const loadAppResSpace = callback => {
+					axios.get('clientApp/resSpace/all/ofClientApp', {
+						params: {
+							clientAppId: data.activedApp
+						}
+					}).then(res => {
+						var defautRes, others = [];
+						res.data.forEach(item => {
+							if (!item.resName) {
+								defautRes = item;
+							} else {
+								others.push(item);
+							}
+						})
+						others.multiKeySort(['type', 'resName']);
+						data.resSpaces = defautRes ? [defautRes, ...others] : others;
+						if (res.data.length > 0) {
+							data.resSpaceType = res.data[0].type;
+							data.resSpaceId = res.data[0].id;
+							loadRoleAuthority();
+						}
+						callback && callback()
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				const handleResSpaceChange = id => {
+					data.resSpaces.forEach(space => {
+						if (space.id == id) {
+							data.resSpaceType = space.type;
+						}
+					})
+					loadUserRoles();
+					loadRoleAuthority();
+				};
+				const loadUsers = text => {
+					axios.get('user/_search', {
+						params: {
+							searchText: text,
+							clientAppId: data.activedApp
+						}
+					}).then(res => {
+						data.users = res.data;
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				}
+				const loadRoleAuthority = () => {
+					axios.get('clientApp/resSpace/authority_Role/all', {
+						params: {
+							clientAppId: data.activedApp,
+							resSpaceType: data.resSpaceType,
+						}
+					}).then(res => {
+						var groupMap = {};
+						res.data.forEach(item => {
+							if (!groupMap[item.roleName])
+								groupMap[item.roleName] = [item];
+							else
+								groupMap[item.roleName].push(item)
+						})
+
+						var rows = [], size = [], index = [];
+						for (var group in groupMap) {
+							var arr = groupMap[group];
+							rows = rows.concat(arr);
+							index.push(index.length == 0 ? 0 : (index[index.length - 1] + size[size.length - 1]));
+							size.push(arr.length);
+						}
+
+						data.authes = rows;
+						data.mergeSize = size;
+						data.mergeIndex = index;
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+
+					props.apps.forEach(app => {
+						if (app.id == data.activedApp) {
+							data.appName = app.name
+						}
+					})
+				};
+				const loadUserRoles = () => {
+					data.userRoleIds = [];
+					if (!data.activedUser) {
+						return;
+					}
+					axios.get('user/clientApp/resSapce/role', {
+						params: {
+							userId: data.activedUser,
+							resSpaceId: data.resSpaceId,
+						}
+					}).then(res => {
+						data.userRoleIds = res.data.map(item => item.id);
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				const handleRoleCheck = (val, {roleId}) => {
+					if (val) {
+						userRoleOper(roleId, '');
+					} else {
+						userRoleOper('', roleId);
+					}
+				};
+				const userRoleOper = (addRoleIds, delRoleIds) => {
+					axios({
+						url: 'user/clientApp/resSpace/role/_addOrDelete',
+						method: 'post',
+						params: {
+							userId: data.activedUser,
+							resSpaceId: data.resSpaceId,
+							addRoleIds: addRoleIds,
+							delRoleIds: delRoleIds
+						}
+					}).then(res => {
+						ElMessage.$success('设置成功！')
+						loadUserRoles();
+					}).catch(error => {
+						SailTool.exception(error);
+					})
+				};
+				const arraySpanMethod = ({row, column, rowIndex, columnIndex}) => {
+					if (columnIndex === 0) {
+						let mergeIndex = data.mergeIndex.indexOf(rowIndex);
+						if (mergeIndex != -1) {
+							return {
+								rowspan: data.mergeSize[mergeIndex],
+								colspan: 1
+							};
+						} else {
+							return {
+								rowspan: 0,
+								colspan: 0
+							};
+						}
+					}
+				};
+				proxy.$parent.loadApps(false, apps => {
+					if (proxy.$parent.activeAppId) {
+						data.activedApp = proxy.$parent.activeAppId;
+					} else if (apps.length > 0) {
+						data.activedApp = apps[0]['id'];
+					}
+					apps.forEach(app => {
+						if (app.id == data.activedApp) {
+							data.appName = app.name;
+						}
+					});
+					loadAppResSpace();
+				});
+
+				return {
+					...toRefs(data),
+					appChange,
+					handleResSpaceChange,
+					loadUserRoles,
+					arraySpanMethod,
+					selectable,
+					handleRoleCheck,
+					loadUsers
+				}
+			}
+		}
+	</script>
+</th:block>
+
+</html>

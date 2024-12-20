@@ -8,7 +8,7 @@ import team.sailboat.commons.fan.http.HttpClient;
  * @author yyl
  * @since 2024年10月19日
  */
-public abstract class RestCmd implements ICmd
+public abstract class RestCmd extends Cmd
 {
 	protected HttpClient mClient ; 
 	

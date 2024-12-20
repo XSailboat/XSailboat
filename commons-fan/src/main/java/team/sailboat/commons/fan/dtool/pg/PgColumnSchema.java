@@ -11,9 +11,20 @@ import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.lang.XClassUtil;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * Pg库的列定义
+ *
+ * @author yyl
+ * @since 2024年10月30日
+ */
 public class PgColumnSchema extends ColumnSchema implements PgConst
 {	
 	String mColumnKey ;
+	
+	/**
+	 * 是否自动更新时间。前提是这个字段是timestamp类型的
+	 */
+	boolean mAutoUpdateTimestamp = false ;
 	
 	public PgColumnSchema()
 	{
@@ -63,8 +74,19 @@ public class PgColumnSchema extends ColumnSchema implements PgConst
 	
 	public void setOnUpdate(String aTimeStamp)
 	{
-//		putOtherProperty(COLUMN__ON_UPDATE , aTimeStamp) ;
-		throw new IllegalStateException("未实现!") ;
+		if(sCOL_FEATURE__ON_UPDATE__VAL__CURRENT_TIMESTAMP.equals(aTimeStamp))
+		{
+			mAutoUpdateTimestamp = true ;
+		}
+		else
+		{
+			throw new IllegalStateException("未实现!") ;
+		}
+	}
+	
+	public boolean isAutoUpdateTimestamp()
+	{
+		return mAutoUpdateTimestamp;
 	}
 	
 	public String getColumnKey()
@@ -188,6 +210,7 @@ public class PgColumnSchema extends ColumnSchema implements PgConst
 	{
 		super.initClone(aClone);
 		((PgColumnSchema)aClone).mColumnKey = mColumnKey ;
+		((PgColumnSchema)aClone).mAutoUpdateTimestamp = mAutoUpdateTimestamp ;
 	}
 	
 	@Override

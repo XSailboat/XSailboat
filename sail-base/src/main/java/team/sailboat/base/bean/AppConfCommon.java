@@ -6,6 +6,13 @@ import lombok.Data;
 import team.sailboat.commons.fan.app.AppContext;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * 平台应用的公共配置
+ *
+ * @author yyl
+ * @since 2024年12月19日
+ */
 @Data
 public class AppConfCommon
 {

@@ -217,6 +217,7 @@ public class UpdateOrInsertKit implements ICommitKit
 		
 	}
 	
+	@Override
 	public void prepare(Connection aConn) throws SQLException
 	{
 		disposeResource();

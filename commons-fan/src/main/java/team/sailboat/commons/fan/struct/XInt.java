@@ -1,6 +1,13 @@
 package team.sailboat.commons.fan.struct;
 
-public class XInt
+/**
+ * 
+ * 可修改的int类型数据包装器
+ *
+ * @author yyl
+ * @since 2024年11月26日
+ */
+public class XInt implements Cloneable
 {
 	public int i ;
 	
@@ -20,9 +27,22 @@ public class XInt
 			i+= aVal.intValue() ;
 	}
 	
+	/**
+	 * 加上
+	 * @param aVal
+	 */
 	public void plus(int aVal)
 	{
-		i+= aVal ;
+		i += aVal ;
+	}
+	
+	/**
+	 * 减去
+	 * @param aVal
+	 */
+	public void substract(int aVal)
+	{
+		i -= aVal ;
 	}
 	
 	public int plusAndGet(Integer aVal)
@@ -95,6 +115,15 @@ public class XInt
 			return false ;
 		i = aV ;
 		return true ;
+	}
+	
+	/**
+	 * 克隆
+	 */
+	@Override
+	public XInt clone()
+	{
+		return new XInt(i) ;
 	}
 	
 	@Override

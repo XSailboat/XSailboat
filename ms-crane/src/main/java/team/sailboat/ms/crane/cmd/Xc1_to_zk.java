@@ -18,7 +18,7 @@ import team.sailboat.commons.ms.jackson.JacksonUtils;
 /**
  * 将数据导入到Zookeeper中		<br />
  * 
- * 命令格式：	xc_to_zk -s zk-quorum conf-file
+ * 命令格式：	xc1_to_zk -s zk-quorum conf-file
  * 
  * 了解更多，阅读<a href = "https://www.yuque.com/okgogogooo/dh03hh/kzerf381o7s33lrg#eKt2H">《工具定义的命令清单》</a>
  *

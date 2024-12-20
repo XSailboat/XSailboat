@@ -1,6 +1,7 @@
 package team.sailboat.commons.fan.excep;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 
 import team.sailboat.commons.fan.http.HttpStatus;
@@ -75,6 +76,20 @@ public class HttpException extends IOException
 	{
 		throw new HttpException(aStatus , aHttpMethod 
 				, aUrl.getHost()+(aUrl.getPort()==-1?"":(":"+aUrl.getPort())) , aUrl.getPath() 
+				, aMsg) ;
+	}
+	
+	public static HttpException create(String aHttpMethod , URI aUri , int aStatus , String aMsg) throws HttpException
+	{
+		return new HttpException(aStatus , aHttpMethod 
+				, aUri.getHost()+(aUri.getPort()==-1?"":(":"+aUri.getPort())) , aUri.getPath() 
+				, aMsg) ;
+	}
+	
+	public static void createAndThrow(String aHttpMethod , URI aUri , int aStatus , String aMsg) throws HttpException
+	{
+		throw new HttpException(aStatus , aHttpMethod 
+				, aUri.getHost()+(aUri.getPort()==-1?"":(":"+aUri.getPort())) , aUri.getPath() 
 				, aMsg) ;
 	}
 }

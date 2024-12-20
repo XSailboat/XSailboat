@@ -1,0 +1,170 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  
+xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:xweb="http://www.thymeleaf.org/extras/xweb"
+th:replace="~{decorators/main::layout(~{::head},~{::.content},~{::components},~{::.script})}">
+<head>
+<meta charset="UTF-8">
+<title>认证中心 | [[${banner}]]</title>
+<style>
+.el-form-item .el-input__validateIcon {
+    color: var(--el-color-success);
+}
+</style>
+</head>
+<body>
+	<div class="content bg-pane">
+	    <el-card style="width: 360px; padding: 20px 30px;transform: translateX(-50%); position: absolute; top: 20%; left: 50%;">
+	        <div class="login-title">
+	            <i class="icon icon-oauth-center"></i>
+	            <span>[[${banner}]]</span>
+	        </div>
+	
+	        <el-form ref="pwdForm" status-icon th:action="@{/user/password/admin}" @submit.native="submitForm" method="post" :model="pwdForm" :rules="rules" size="large" label-width="85px">
+	            <el-form-item label="用户名" prop="name">
+	                <el-input prefix-icon="user" v-model="pwdForm.name" disabled></el-input>
+	            </el-form-item>
+	            <el-tooltip :visible="capsTooltip1" effect="light" content="大写键已锁定" placement="right" manual>
+	                <el-form-item label="密码" prop="password">
+	                    <el-input prefix-icon="lock" tabindex="pwd" type="password" name="password" v-model="pwdForm.password" autocomplete="off" show-password @keyup="checkCapslock1" @focus="{capsTooltip1 = capsTooltip2;capsTooltip2 = false}"></el-input>
+	                </el-form-item>
+	            </el-tooltip>
+	            <el-tooltip :visible="capsTooltip2" effect="light" content="大写键已锁定" placement="right" manual>
+	                <el-form-item label="确认密码" prop="checkPass">
+	                    <el-input prefix-icon="lock" tabindex="ckd" type="password" v-model="pwdForm.checkPass" autocomplete="off" show-password @keyup="checkCapslock2" @focus="{capsTooltip2=capsTooltip1;capsTooltip1 = false}"></el-input>
+	                </el-form-item>
+	            </el-tooltip>
+	            <div style="display:none;">
+	                <el-input v-model="pwdForm.codeId" name="codeId"></el-input>
+	                <input th:if="${_csrf}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+	            </div>
+	            <el-form-item>
+	            		<div style="text-align: right;width: 100%;">
+		                <button ref="submit_btn" id="submit_btn" type="submit" style="visibility: hidden;"></button>
+		                <el-button @click="resetForm()" icon="refresh">重 置</el-button>
+		                <el-button type="primary" @click="validForm" icon="finished">提 交</el-button>
+	                </div>
+	            </el-form-item>
+	        </el-form>
+	    </el-card>
+	</div>
+<components>
+</components>
+<script class="script" th:inline="javascript">
+	RSAUtils.setMaxDigits(200); 
+	var exVueOpts = {
+	    data() {
+	        var validatePass = (rule, value, callback) => {
+	        		if (value === '') {
+					callback(new Error('请输入密码'));
+				} else if (value.length < 8) {
+					callback(new Error('密码长度不能小于8位'));
+				} else {
+					var regex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[~!@#$%^&*_+\-\=,./?<>|]).+$/;
+					if(!regex.test(value)){
+						callback(new Error('密码必须包含字母、数字、特殊字符的组合'));
+					}else if (this.pwdForm.checkPass !== '') {
+		   				this.$refs.pwdForm.validateField('checkPass');
+		            }
+					callback();
+		        } 
+	        };
+	        var validatePass2 = (rule, value, callback) => {
+	        		if (!value || value === '') {
+		      		callback(new Error('请再次输入密码'));
+			    } else if(value !== this.pwdForm.password){
+			    		callback(new Error('两次密码不一致'));
+			    } else {
+			      	callback();
+			    }
+	        };
+	        return {
+	            pwdForm: {
+	                codeId: '',
+	                name: /*[[${user_admin}]]*/ 'admin',
+	                password: '',
+	                checkPass: '',
+	            },
+	            capsTooltip1: false,
+	            capsTooltip2: false,
+	            rules: {
+	                password: [{
+	                    required: true,
+	                    validator: validatePass,
+	                    trigger: 'change'
+	                }],
+	                checkPass: [{
+	                    required: true,
+	                    validator: validatePass2,
+	                    trigger: 'change'
+	                }],
+	            },
+	            valided: false,
+	        }
+	    },
+	    components: {},
+	    mounted() {},
+	    methods: {
+	        checkCapslock1(e) {
+	            this.checkCapslock(e, 'pwd');
+	        },
+	        checkCapslock2(e) {
+	            this.checkCapslock(e, 'ckd');
+	        },
+	        checkCapslock(e, type) {
+	            const { key } = e;
+	            let flg = e.getModifierState('CapsLock');
+	            if (type == 'pwd')
+	                this.capsTooltip1 = flg;
+	            else
+	                this.capsTooltip2 = flg;
+	        },
+	        validForm() {
+	            this.$refs.pwdForm.validate((valid) => {
+	                if (valid) {
+	                    this.$confirm('<p style="padding: 8px 0;">超级管理员的<b>用户名</b>和<b>密码</b>是否已<b>牢记</b>？</p>', '确认信息', {
+	                        type: 'info',
+	                        closeOnClickModal: false,
+	                        closeOnPressEscape: false,
+	                        closeOnHashChange: false,
+	                        draggable: true,
+	                        dangerouslyUseHTMLString: true,
+	                        confirmButtonText: '已记住',
+	                        cancelButtonText: '再看看',
+	                        cancelButtonClass: 'concel-right is-plain',
+	                    }).then(() => {
+	                        this.encrypPwd((codeId, encrypedPwd) => {
+	                            this.pwdForm.codeId = codeId;
+	                            this.pwdForm.password = encrypedPwd;
+	                            this.pwdForm.checkPass = encrypedPwd;
+	                            this.$nextTick(() => {
+	                                this.$refs.submit_btn.click();
+	                            })
+	                        })
+	                    }).catch(action => {});
+	                } else {
+	                    return false;
+	                }
+	            });
+	        },
+	        submitForm() {
+	        		console.log('===')
+	            return true;
+	        },
+	        encrypPwd(callback) {
+	            axios.get('public/security/rsa-publickey').then(res => {
+	                var key = new RSAUtils.getKeyPair(res.data.publicKeyExponent, '', res.data.publicKeyModulus);
+	                let pwd = this.pwdForm.password.split("").reverse().join("");
+	                var encrypedPwd = RSAUtils.encryptedString(key, pwd);
+	                callback(res.data.codeId, encrypedPwd);
+	            }).catch(error => {
+	                this.message('error', error);
+	            })
+	        },
+	        resetForm() {
+	            this.$refs.pwdForm.resetFields();
+	        }
+	    }
+	};
+ </script>
+</body>
+</html>

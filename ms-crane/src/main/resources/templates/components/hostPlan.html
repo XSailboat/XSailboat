@@ -25,11 +25,23 @@
                                 <span class="dev-module-label">部署的模块</span>
                                 <div style="display: flex; flex-wrap: wrap; height: 100%;"
                                      class="dev-application">
-                                    <el-tag v-for="(name,index) of host.deployModuleNames" closable :key="index"
-                                            @close="delDelDeployModules(host, name)">
-                                        <img style="width: 20px; height: 20px;" :src="getSvgPathBys(name)"/><span
-                                            style="vertical-align: super;">&nbsp;{{ name }}</span>
-                                    </el-tag>
+                                    <span  v-for="(name,index) of host.deployModuleNames">
+                                        <el-tooltip
+                                                v-if="deployModuleNamesMap[name] && deployModuleNamesMap[name].description"
+                                                effect="light"
+                                                :content="deployModuleNamesMap[name].description"
+                                                placement="top">
+                                            <el-tag closable :key="index"
+                                                    @close="delDelDeployModules(host, name)">
+                                                <img style="width: 20px; height: 20px;" :src="getSvgPathBys(name)"/><span
+                                                    style="vertical-align: super;">&nbsp;{{ name }}</span>
+                                            </el-tag>
+                                        </el-tooltip>
+                                        <el-tag v-else closable :key="index" @close="delDelDeployModules(host, name)">
+                                           <img style="width: 20px; height: 20px;" :src="getSvgPathBys(name)"/>
+                                           <span style="vertical-align: super;">&nbsp;{{ name }}</span>
+                                        </el-tag>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -38,13 +50,18 @@
 							<span class="dropdown-btn" @click.stop="">
 								<i class="iconfont icon-more"></i>
 							</span>
-                            <el-dropdown-menu slot="dropdown">
-                            	<el-dropdown-item command="testConn"><i class="el-icon-connection"></i>测试连接</el-dropdown-item>
-                            	<div style="height: 1px; width: 90%; background: #E4E7ED; margin-left: 5%;"></div>
-                                <el-dropdown-item command="edit"><i class="el-icon-edit"></i>编辑</el-dropdown-item>
-                                <el-dropdown-item command="delete" style="color: red;"><i class="el-icon-delete"></i>删除
-                                </el-dropdown-item>
-                            </el-dropdown-menu>
+
+							<template #dropdown>
+								<el-dropdown-menu>
+	                                <el-dropdown-item command="edit">
+	                                	<el-icon><Edit /></el-icon>编辑
+	                                </el-dropdown-item>
+	                                <el-dropdown-item command="delete" style="color: red;">
+	                                	<el-icon><Delete /></el-icon>删除
+	                                </el-dropdown-item>
+	                            </el-dropdown-menu>
+							</template>
+
                         </el-dropdown>
                     </div>
 
@@ -63,55 +80,70 @@
             </el-scrollbar>
 
 
-            <el-dialog :visible.sync="dialogVisible" width="600px" custom-class="add-host-dialog" destroy-on-close :close-on-click-modal="false"
+            <el-dialog v-model="dialogVisible" width="600px" class="add-host-dialog" destroy-on-close :close-on-click-modal="false"
                        :close-on-press-escape="false">
-                <div slot="title" class="dialog-title">
-                    <span>{{ form.oldHostName ? '编辑' : '添加' }}主机节点</span>
+                <template #title>
+	                <div class="dialog-title">
+	                    <span>{{ form.oldHostName ? '编辑' : '添加' }}主机节点</span>
+	                </div>
+                </template>
 
-                </div>
-                <el-form ref="form" :model="form" :rules="rules" size="small" label-width="100px"
+                <el-form ref="refForm" :model="form" :rules="rules" label-width="100px"
                          style="margin: 20px 20px 20px 0;">
 
                     <el-row :gutter="22" style="display: flex; flex-wrap: wrap;">
-                        <el-col :span="12">
+                        <el-col :span="12" style="padding-right: 0px;">
                             <el-form-item label="主机IP" prop="ip">
                                 <el-input v-model="form.ip" clearable style="width: 100%"></el-input>
                             </el-form-item>
                         </el-col>
-                        <el-col :span="12">
-                            <el-form-item label="主机名" prop="name">
-                                <el-input v-model="form.name" clearable style="width: 100%"></el-input>
+
+                        <el-col :span="12" style="padding-left: 0px;">
+                            <el-form-item label="端口" prop="sailPyInstallerPort" label-width="80px">
+                                <el-input v-model="form.sailPyInstallerPort" clearable v-limit-input-int style="width: 170px;"></el-input>
                             </el-form-item>
                         </el-col>
-                        <el-col :span="12">
+
+                        <el-col :span="12" style="padding-right: 0px;">
+                            <el-form-item label="主机名" prop="name">
+                                <el-input v-model="form.name" clearable style="width: 100%;"></el-input>
+                            </el-form-item>
+                        </el-col>
+
+                        <el-col :span="12" style="padding-left: 0px;">
+                            <el-form-item label="序号" prop="seq" label-width="80px">
+                                <el-input @input="handleInputSeq" v-model="form.seq" style="width: 170px;" v-limit-input-int clearable></el-input>
+                            </el-form-item>
+                        </el-col>
+
+                        <el-col :span="12" style="padding-right: 0px;">
                             <el-form-item label="管理员用户" prop="adminUser">
                                 <el-input v-model="form.adminUser" clearable style="width: 100%"></el-input>
                             </el-form-item>
                         </el-col>
-                        <el-col :span="12">
-                            <el-form-item label="密码" prop="adminPswd">
-                                <el-input v-model="form.adminPswd" show-password style="width: 100%"></el-input>
+
+                        <el-col :span="12" style="padding-left: 0px; position: relative;">
+                            <el-form-item label="密码" prop="adminPswd" label-width="80px">
+                                <el-input v-model="form.adminPswd" show-password style="width: 170px;"></el-input>
                             </el-form-item>
+                            <el-link @click="checkAdminUserAndPwd" style="font-size: 13px; color: #409EFF; position: absolute; right: -5px; top: 7px;">验证</el-link>
                         </el-col>
-                        <el-col :span="12">
+
+                        <el-col :span="12" style="padding-right: 0px;">
                             <el-form-item label="平台用户" prop="sysUser">
                                 <el-input v-model="form.sysUser" clearable style="width: 100%"></el-input>
                             </el-form-item>
                         </el-col>
-                        <el-col :span="12">
-                            <el-form-item label="密码" prop="sysPswd">
-                                <el-input v-model="form.sysPswd" show-password style="width: 100%"></el-input>
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="12">
-                            <el-form-item label="序号" prop="seq">
-                                <el-input @input="handleInputSeq" v-model="form.seq" v-limit-input-int clearable style="width: 100%"></el-input>
+
+                        <el-col :span="12" style="padding-left: 0px;">
+                            <el-form-item label="密码" prop="sysPswd" label-width="80px">
+                                <el-input v-model="form.sysPswd" show-password style="width: 170px;"></el-input>
                             </el-form-item>
                         </el-col>
                         <el-col :span="24" style="margin-bottom: -16px;">
                             <el-form-item label="部署应用">
                                 <el-select v-model="form.deployModuleNames" multiple placeholder="请选择"
-                                           style="width: 100%;" @change="handleChangeDepModuleNames">
+                                           style="width: 420px;" @change="handleChangeDepModuleNames">
                                     <el-option v-for="(item, index) of deployModuleNames" :key="index" :value="item.name">
                                     	<img style="width: 20px; height: 20px;" :src="getSvgPathBys(item.name)"/>
                             			<span style="vertical-align: super;">&nbsp;{{ item.name }}</span>
@@ -121,45 +153,45 @@
                         </el-col>
                     </el-row>
                 </el-form>
-                <div slot="footer">
-                	<!-- 用户只有将主机的基本信息保存起来，才可以进行连通性测试 -->
-                	<span v-if="form.oldHostName">
-                		<el-button icon="el-icon-connection" type="success" @click="testConnection(form.oldHostName)">测试连接</el-button>
-                		<el-divider direction="vertical"></el-divider>
-                	</span>
 
+                <template #footer>
                     <el-button @click="dialogVisible=false">取 消</el-button>
                     <el-button type="primary" @click="submit" :loading="opering">{{opering ? '提交中...' : '确 定'}}
                     </el-button>
-                </div>
+                </template>
+
             </el-dialog>
 
         </div>
     </template>
     <script>
-        var HostPlan = {
+        const HostPlan = {
             template: "#hostPlan",
-            data() {
+
+            setup() {
+
+            	const { proxy } = getCurrentInstance();
+
             	// 自定义校验规则
             	const validateIp = (rule, value, callback) => {
 			        if (!value) {
 			          callback(new Error('请输入主机IP'));
 			        } else {
 			        	const ipv4Pattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-			        	
+
 			        	if (!ipv4Pattern.test(value)) {
 			        		callback(new Error('请输入正确的IP'));
 			        	} else {
-			        		if (!this.form.seq || !this.useEditSeq) {
-			        			this.form.seq = value.split('.')[3];
+			        		if (!proxy.form.seq || !proxy.useEditSeq) {
+			        			proxy.form.seq = value.split('.')[3];
 			        			// 清除seq的校验提示
-								this.$refs.form.validateField('seq', () => {});
+								proxy.refForm.validateField('seq');
 			        		}
 			        		callback();
 			        	}
 			        }
             	};
-            	
+
             	const validateSeq = (rule, value, callback) => {
             		if (!value) {
             			callback(new Error('请输入序号'));
@@ -172,8 +204,7 @@
             		}
             	};
 
-            	
-                return {
+            	const data = reactive({
                     hosts: [],
 
                     dialogVisible: false,
@@ -182,65 +213,91 @@
                     form: {},
 
                     rules: {
-                    	ip: [{ required: true, validator: validateIp, trigger: 'blur'}],
+                    	ip: [{ required: true, validator: validateIp, trigger: ['blur', 'change']}],
                     	name: [{ required: true, message: '请输入主机名', trigger: 'blur' }],
                     	adminUser: [{ required: true, message: '请输入管理员用户', trigger: 'blur' }],
                     	adminPswd: [{ required: true, message: '请输入管理员密码', trigger: 'blur'}],
                     	sysUser: [{ required: true, message: '请输入平台用户', trigger: 'blur'}],
                     	sysPswd: [{ required: true, message: '请输入平台用户密码', trigger: 'blur'}],
-                    	seq: [{ required: true, validator: validateSeq, trigger: 'blur'}]
+                    	seq: [{ required: true, validator: validateSeq, trigger: 'blur'}],
+                    	sailPyInstallerPort: [{ required: true, message: '请输入服务端口', trigger: 'blur'}]
                     },
-                    
-                    deployModuleNames: []
 
-                }
-            },
-            props: {},
-            computed: {},
-            methods: {
-            	
+                    deployModuleNames: [],
+
+                    // 模块名称与其详细信息映射关系
+                    deployModuleNamesMap: {},
+
+                    refForm: null,
+
+                    useEditSeq: false
+            	});
+
+            	// 获取公钥并且将密码进行加密
+            	const encrypPwd = (password, callback) => {
+		     		axios.get('common/security/rsa-publickey').then(res=>{
+		     			const key = new RSAUtils.getKeyPair(res.data.publicKeyExponent, '', res.data.publicKeyModulus);
+		     			let pwd = password.split("").reverse().join("");
+					 	const encrypedPwd = RSAUtils.encryptedString(key, pwd);
+					 	callback(res.data.codeId, encrypedPwd);
+					}).catch(error=>{
+						console.error(error);
+						proxy.error('获取公钥发生了错误');
+					});
+            	}
+
+            	// 验证管理员用户名和密码
+            	const checkAdminUserAndPwd = () => {
+                    const validateFields = ['adminUser', 'adminPswd', 'ip', 'sailPyInstallerPort'];
+
+                    const promises = validateFields.map(field => data.refForm.validateField(field));
+
+                   	Promise.all(promises).then(() => {
+                        encrypPwd(data.form.adminPswd, (codeId, encrypedPwd) => {
+                        	const formData = new FormData();
+                        	formData.append('ip', data.form.ip);
+                        	formData.append('port', data.form.sailPyInstallerPort);
+                        	formData.append('username', data.form.adminUser);
+                        	formData.append('codeId', codeId);
+                        	formData.append('password', encrypedPwd);
+
+                        	axios.post('sysPlan/host/user_pswd/_validate', formData).then(res => {
+                        		if (res.data.ok) {
+                        			proxy.success(res.data.msg);
+                        		} else {
+                        			proxy.error(res.data.msg);
+                        		}
+                        	}).catch(error => {
+                        		console.error(error);
+                        		proxy.error('验证用户名和密码过程中发生了错误');
+                        	});
+                    	});
+                    }).catch(()=>{});
+            	}
+
             	// 当用户自己编辑序号的时候，标识采用用户自己编辑的
-            	handleInputSeq() {
-            		this.useEditSeq = true;
-            	},
-            	
-            	// 当用户点击测试连接按钮时触发
-            	testConnection(hostName) {
-            		axios.get('sysPlan/host/_validate', {
-            			params: {
-            				hostName
-            			}
-            		}).then(res => {
-            			const { ok, msg } = res.data;
-            			if (ok) {
-            				this.$message.success(msg);
-            			} else {
-            				this.$message.error(msg);
-            			}
-            		}).catch(error => {
-            			this.$message.error('测试连接过程服务器发生了异常，请联系管理员');
-            		});
-            	},
-            	
+            	const handleInputSeq = () => {
+            		data.useEditSeq = true;
+            	}
+
             	// 当用户选择的部署模块发生变化时触发
-            	handleChangeDepModuleNames() {
-            		this.$nextTick(() => {
-            			let vue = this;
+            	const handleChangeDepModuleNames = () => {
+            		nextTick(() => {
             			$('.add-host-dialog .el-select__tags-text').each(function(index, element) {
-            				
+
             				const name = $(element).text();
-            				
-            			    const src = vue.getSvgPathBys(name);
-            			    
+
+            			    const src = proxy.getSvgPathBys(name);
+
             			    $(element).html(`<img style="width: 20px; height: 20px;" src="${src}"/> <span style="vertical-align: super;"> ${name} </span>`)
             			});
-            			
+
             		});
-            	},
+            	}
 
                 // 删除指定的主机指定部署模块
-                delDelDeployModules(host, moduleName) {
-                    this.$confirm(`确定要删除主机${host.name}部署模块【${moduleName}】？`, '确认删除', {
+                const delDelDeployModules = (host, moduleName) => {
+                	ElementPlus.ElMessageBox.confirm(`确定要删除主机${host.name}部署模块【${moduleName}】？`, '确认删除', {
                         dangerouslyUseHTMLString: true,
                         showClose: false,
                         type: 'error',
@@ -256,32 +313,31 @@
                         		module: moduleName
                         	}
                         }).then(_ => {
-                        	this.$message.success('删除成功');
-                        	this.loadHostProfileAll();
+                        	proxy.success('删除成功');
+                        	loadHostProfileAll();
                         }).catch(error => {
-                        	this.$message.error(`从${host.name}主机删除部署模块【${moduleName}】发生了异常！请联系管理员`);
-                        	console.log(error);
+                        	proxy.error(`从${host.name}主机删除部署模块【${moduleName}】发生了异常！请联系管理员`)
+                        	console.error(error);
                         });
-                        
+
                     }).catch(_ => {
                     });
-                },
+                }
 
-                // 测试连接 | 编辑｜删除操作
-                hostOper(val, host) {
-                	if (val == 'testConn') {
-                		this.testConnection(host.name);
-                	} else if (val == 'edit') {
-                        this.editHost(host);
+
+                // 编辑｜删除操作
+                const hostOper = (val, host) => {
+                	if (val == 'edit') {
+                        editHost(host);
                     } else if(val == 'delete') {
-                        this.delHost(host);
+                        delHost(host);
                     }
-                },
+                }
 
                 // 添加主机节点
-                addHostNode() {
-                    this.dialogVisible = true;
-                    this.form = {
+                const addHostNode = () => {
+                    data.dialogVisible = true;
+                    data.form = {
                         deployModuleNames: [],
                         ip: undefined,
                         adminUser: undefined,
@@ -289,22 +345,22 @@
                         sysUser: undefined,
                         sysPswd: undefined,
                         seq: undefined,
-                        sailPyInstallerPort: undefined
+                        sailPyInstallerPort: 12205
                     }
-                },
+                }
 
                 // 编辑主机节点
-                editHost(host) {
-                    this.form = this.clone(host);
-                    this.dialogVisible = true;
-                    this.useEditSeq = false;
-                    this.form.oldHostName = this.form.name;
-                    this.handleChangeDepModuleNames();
-                },
+                const editHost = host => {
+                    data.form = proxy.clone(host);
+                    data.dialogVisible = true;
+                    data.useEditSeq = false;
+                    data.form.oldHostName = data.form.name;
+                    handleChangeDepModuleNames();
+                }
 
                 // 删除主机节点
-                delHost({name}) {
-                    this.$confirm("确定要删除主机【" + name + "】？", '确认删除', {
+                const delHost = ({name}) => {
+                	ElementPlus.ElMessageBox.confirm("确定要删除主机【" + name + "】？", '确认删除', {
                         dangerouslyUseHTMLString: true,
                         showClose: false,
                         type: 'error',
@@ -317,107 +373,116 @@
                                 hostName: name
                             }
                         }).then(res => {
-                        	this.$message.success('删除成功');
-                            this.loadHostProfileAll();
+                        	proxy.success('删除成功');
+                            loadHostProfileAll();
                         }).catch(error => {
-                            console.log(error);
-                            this.$message.error(`删除主机【${name}】发生了异常！请联系管理员`);
+                            console.error(error);
+                            proxy.error(`删除主机【${name}】发生了异常！请联系管理员`);
                         });
                     }).catch(error => {
-                    	console.log(error);
+                    	console.error(error);
                     });
-                },
-                
-                addHostProfileOne() {
-                	
-                    axios.post('sysPlan/host/profile/one', this.form).then(res => {
-                        this.opering = false;
-                        this.dialogVisible = false;
-                        this.loadHostProfileAll();
-                        this.$message.success('成功添加主机节点【' + this.form.name + '】')
+                }
+
+                const addHostProfileOne = () => {
+
+                    axios.post('sysPlan/host/profile/one', data.form).then(res => {
+                        data.opering = false;
+                        data.dialogVisible = false;
+                        loadHostProfileAll();
+                        proxy.success('成功添加主机节点【' + data.form.name + '】');
                     }).catch(error => {
-                        this.opering = false;
-                        console.log(error);
-                        this.$message.error(`添加主机节点【${this.form.name}】发生了异常！请联系管理员`);
+                        data.opering = false;
+                        console.error(error);
+                        proxy.error(`添加主机节点【${data.form.name}】发生了异常！请联系管理员`);
                     });
-                },
-                
+                }
+
                 // 更新指定主机名的一个主机信息。前端需要注意，如果用户修改了主机名，需要先调用删除操作，再调用创建操作
-                updateHostProfileOne() {
+                const updateHostProfileOne = () => {
                 	axios({
                 		url: 'sysPlan/host/profile/one/_update',
                 		method: 'put',
-                		data: this.form,
+                		data: data.form,
                 		params: {
-                			oldHostName: this.form.oldHostName
+                			oldHostName: data.form.oldHostName
                 		}
                 	}).then(res => {
-                		this.dialogVisible = false;
-                		this.opering = false;
-                        this.loadHostProfileAll();
-                        this.$message.success('修改成功');
+                		data.dialogVisible = false;
+                		data.opering = false;
+                        loadHostProfileAll();
+                        proxy.success('修改成功');
                 	}).catch(error => {
-                		this.opering = false;
-                        console.log(error);
-                        this.$message.error(`修改主机信息发生了异常！请联系管理员`);
+                		data.opering = false;
+                        console.error(error);
+                        proxy.error(`修改主机信息发生了异常！请联系管理员`);
                 	});
-                },
+                }
 
                 // 确认新增主机节点
-                submit() {
-                	 this.$refs.form.validate((valid) => {
+                const submit = () => {
+                	 data.refForm.validate((valid) => {
                 		if (valid) {
-                			if (this.form.oldHostName) {
+                			if (data.form.oldHostName) {
                 				// 更新操作
-                				this.updateHostProfileOne();
+                				updateHostProfileOne();
                 			} else {
                 				// 添加操作
-                				this.addHostProfileOne();
+                				addHostProfileOne();
                 			}
-                            this.opering = true;
+                            data.opering = true;
 
                 		} else {
                 			return false;
                 		}
-                	}); 
-                },
+                	});
+                }
 
                 // 加载所有主机信息
-                loadHostProfileAll() {
-                    this.loading = true;
+                const loadHostProfileAll = () => {
+                    data.loading = true;
                     axios.get('/sysPlan/host/profile/all').then(res => {
-                        this.loading = false;
-                        this.hosts = res.data;
+                        data.loading = false;
+                        data.hosts = res.data;
                     }).catch(error => {
-                        this.loading = false;
-                        console.log(error);
-                        this.$message.error('加载所有主机信息发生了异常！请联系管理员');
+                        data.loading = false;
+                        console.error(error);
+                        proxy.error('加载所有主机信息发生了异常！请联系管理员');
                     })
-                },
-                
+                }
+
                 // 加载取得所有模块
-                loadModuleAll() {
+                const loadModuleAll = () => {
                 	axios.get('sysPlan/module/all').then(res => {
-                		this.deployModuleNames = res.data;
+                		data.deployModuleNames = res.data;
+
+                        data.deployModuleNamesMap = {};
+
+                        data.deployModuleNames.forEach(item => {
+                            data.deployModuleNamesMap[item.name] = item;
+                        });
+                        loadHostProfileAll();
                 	}).catch(error => {
-                		console.log(error);
-                		this.$message.error('加载所有的部署模块发生了异常！请联系管理员');
+                        loadHostProfileAll();
+                		console.error(error);
+                		proxy.error('加载所有的部署模块发生了异常！请联系管理员');
                 	})
                 }
 
+                loadModuleAll();
 
-            },
-            watch: {},
-            mounted() {
-                
-                
-            },
-            created() {
-            	this.loadHostProfileAll();
-            	this.loadModuleAll();
+            	return {
+            		...toRefs(data),
+            		checkAdminUserAndPwd,
+            		handleChangeDepModuleNames,
+            		submit,
+            		handleInputSeq,
+            		delDelDeployModules,
+            		hostOper,
+            		addHostNode
+            	}
             }
         }
     </script>
 </th:block>
 </html>
-

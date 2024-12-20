@@ -1,6 +1,7 @@
 package team.sailboat.ms.crane.cmd;
 
 import team.sailboat.commons.fan.infc.EConsumer;
+import team.sailboat.ms.crane.bench.ICmdExecLogger;
 
 /**
  * 命令
@@ -14,4 +15,6 @@ public interface ICmd extends EConsumer<String[] , Exception>
 	{
 		return LocalCmds.sEnv ;
 	}
+	
+	void setCmdExecLogger(ICmdExecLogger aLogger) ;
 }

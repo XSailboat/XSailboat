@@ -18,6 +18,13 @@ import team.sailboat.commons.fan.http.Request;
 import team.sailboat.commons.fan.lang.JCommon;
 import team.sailboat.commons.fan.text.XString;
 
+/**
+ * 
+ * XApp签名方法
+ *
+ * @author yyl
+ * @since 2024年11月19日
+ */
 public class XAppSigner implements ISigner
 {
 	public static final String sDefaultSignAlg = sSignAlg_HmacSHA256 ;
@@ -93,7 +100,7 @@ public class XAppSigner implements ISigner
 	
 	static void spliceParams(Request aReq , StringBuilder aStrBld)
 	{
-		String[] keys = aReq.getUrlParamKeys().toArray(JCommon.sEmptyStringArray) ;
+		String[] keys = aReq.getParameterKeys().toArray(JCommon.sEmptyStringArray) ;
 		Arrays.sort(keys) ;
 		boolean first = true ;
 		for(String key : keys)
@@ -105,7 +112,7 @@ public class XAppSigner implements ISigner
 			else
 				first = false ;
 			aStrBld.append(key) ;
-			String[] vs = aReq.getUrlParamValues(key).toArray(JCommon.sEmptyStringArray) ;
+			String[] vs = aReq.getParameterValues(key).toArray(JCommon.sEmptyStringArray) ;
 			if(XC.isNotEmpty(vs))
 			{
 				if(vs.length == 1)

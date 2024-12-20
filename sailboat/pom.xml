@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>team.sailboat</groupId>
 	<artifactId>sailboat</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2-beta</version>
 	<packaging>pom</packaging>
 	<name>sailboat</name>
 	<description>Sailboat产品依赖版本管理</description>
@@ -34,16 +34,21 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>21</java.version>
-		<sailboat.version>0.0.1</sailboat.version>
+		<sailboat.version>0.0.2-beta</sailboat.version>
 		<hbase.version>2.4.8</hbase.version>
 		<spring.boot.version>3.3.3</spring.boot.version>
+		<spring.doc.version>2.6.0</spring.doc.version>
 		<spring.framework.version>6.1.12</spring.framework.version>
 		<hadoop.version>3.3.1</hadoop.version>
 		<hibernate.version>6.5.2.Final</hibernate.version>
+		<swagger.version>2.2.22</swagger.version>
+		<jackson.version>2.17.2</jackson.version>
 		<!-- maven-compiler-plugin -->
 		<maven.plugin.compiler.version>3.13.0</maven.plugin.compiler.version>
 		<!-- maven-source-plugin -->
 		<maven.plugin.source.version>3.3.1</maven.plugin.source.version>
+		<!-- maven-jar-plugin -->
+		<maven.plugin.jar.version>3.4.2</maven.plugin.jar.version>
 		<maven.plugin.gpg.version>3.2.7</maven.plugin.gpg.version>
 		<maven.plugin.javadoc.version>3.10.1</maven.plugin.javadoc.version>
 		<maven.plugin.sonatype.version>0.6.0</maven.plugin.sonatype.version>
@@ -129,14 +134,24 @@
 				<version>${spring.boot.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-starter-gateway</artifactId>
+				<version>4.1.5</version>
+			</dependency>
+			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-databind</artifactId>
-				<version>2.17.2</version>
+				<version>${jackson.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-annotations</artifactId>
-				<version>2.17.2</version>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-yaml</artifactId>
+				<version>${jackson.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework</groupId>
@@ -179,6 +194,16 @@
 				<version>${spring.boot.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-oauth2-client</artifactId>
+				<version>${spring.boot.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-webflux</artifactId>
+				<version>${spring.boot.version}</version>
+			</dependency>
+			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-test</artifactId>
 				<version>${spring.framework.version}</version>
@@ -194,6 +219,11 @@
 				<version>6.3.3</version>
 			</dependency>
 			<dependency>
+				<groupId>org.thymeleaf.extras</groupId>
+				<artifactId>thymeleaf-extras-springsecurity6</artifactId>
+				<version>3.1.2.RELEASE</version>
+			</dependency>
+			<dependency>
 				<groupId>org.springframework.security</groupId>
 				<artifactId>spring-security-config</artifactId>
 				<version>6.3.3</version>
@@ -205,8 +235,23 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+				<version>${spring.doc.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springdoc</groupId>
 				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-				<version>2.6.0</version>
+				<version>${spring.doc.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+				<version>${spring.doc.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webflux-api</artifactId>
+				<version>${spring.doc.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.hbase</groupId>
@@ -254,11 +299,6 @@
 				<version>${spring.boot.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-ui</artifactId>
-				<version>1.8.0</version>
-			</dependency>
-			<dependency>
 				<groupId>com.nimbusds</groupId>
 				<artifactId>nimbus-jose-jwt</artifactId>
 				<version>9.41</version>
@@ -279,6 +319,11 @@
 				<version>3.5.7</version>
 			</dependency>
 			<dependency>
+				<groupId>org.apache.curator</groupId>
+				<artifactId>curator-recipes</artifactId>
+				<version>5.7.1</version>
+			</dependency>
+			<dependency>
 				<groupId>com.googlecode.aviator</groupId>
 				<artifactId>aviator</artifactId>
 				<version>5.3.3</version>
@@ -291,7 +336,17 @@
 			<dependency>
 				<groupId>io.swagger.core.v3</groupId>
 				<artifactId>swagger-annotations</artifactId>
-				<version>2.2.20</version>
+				<version>${swagger.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.swagger.core.v3</groupId>
+				<artifactId>swagger-annotations-jakarta</artifactId>
+				<version>${swagger.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.swagger.core.v3</groupId>
+				<artifactId>swagger-models-jakarta</artifactId>
+				<version>${swagger.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.github.danielwegener</groupId>
@@ -311,7 +366,7 @@
 			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-core</artifactId>
-				<version>2.17.2</version>
+				<version>${jackson.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.google.protobuf</groupId>
@@ -342,6 +397,11 @@
 				<groupId>org.jsoup</groupId>
 				<artifactId>jsoup</artifactId>
 				<version>1.17.2</version>
+			</dependency>
+			<dependency>
+				<groupId>it.sauronsoftware.cron4j</groupId>
+				<artifactId>cron4j</artifactId>
+				<version>2.2.5</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -404,5 +464,4 @@
 			</distributionManagement>
 		</profile>
 	</profiles>
-
 </project>

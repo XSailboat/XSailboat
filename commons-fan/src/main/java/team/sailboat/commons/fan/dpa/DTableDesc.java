@@ -202,7 +202,8 @@ public class DTableDesc
 			do
 			{
 				tblClass = tblClass.getSuperclass() ;
-				btable = tblClass.getAnnotation(BTable.class) ;
+				if(!Object.class.equals(tblClass) && tblClass != null)
+					btable = tblClass.getAnnotation(BTable.class) ;
 			}
 			while(btable == null && tblClass != null  && !tblClass.equals(DBean.class)) ;
 		}

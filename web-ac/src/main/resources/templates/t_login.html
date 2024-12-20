@@ -1,0 +1,275 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:xweb="http://www.thymeleaf.org/extras/xweb"
+	th:replace="~{decorators/main::layout(~{::head},~{::.content},~{::components},~{::.script})}">
+<head>
+<meta charset="UTF-8">
+<script type="text/javascript" th:src="@{/assets/js/ddLogin.js}"></script>
+<script type="text/javascript" th:src="@{/assets/js/tac.min.js}"></script>
+<link th:href="@{/assets/style/tac.css}" rel="stylesheet" type="text/css">
+<title>认证中心 | [[${banner}]]</title>
+<style type="text/css">
+	.login-pane {
+		width: 330px;
+		height: 440px;
+	}
+
+	.el-input-group__append {
+		padding: 0px !important;
+		border: none !important;
+		width: 83px !important;
+	}
+
+	.third-login {
+		font-size: 2.2em !important;
+		margin-right: 12px;
+		cursor: pointer;
+	}
+
+	.forget-pwd {
+		font-size: 12px;
+		color: #409EFF;
+		cursor: pointer;
+	}
+
+	.forget-pwd:hover {
+		text-decoration: underline;
+	}
+
+	.el-checkbox .el-checkbox__label {
+		font-size: 12px;
+		padding-left: 3px;
+	}
+
+	.line {
+		flex: 1;
+		height: 1px;
+		background: linear-gradient(90deg, #747383 1.22%, #ebe9f3 100.61%);
+		opacity: 0.25;
+		background-color: rgb(219, 224, 232);
+	}
+</style>
+</head>
+<body>
+	<div class="content bg-pane">
+	    <el-card class="login-pane" style="padding: 20px 20px 0;transform: translateX(-50%); position: absolute; top: 18%; left: 50%;text-align: center;">
+	        <div class="login-title" style="color: #ff6a00;display: flex;align-items: center;justify-content: center;z-index: 1;position: relative;">
+	            <i class="icon icon-oauth-center" style="font-size: 34px;font-weight: bold;margin-right: 4px;"></i>
+	            <img alt="认证中心" th:src="@{/assets/images/logo-title.png}" style="width: 150px;">
+	        </div>
+	        <div style="position: relative;">
+	            <template v-if="scanCode">
+	                <div id="dd_qr_code" ref="dd_qr_code" style="width: 365px;height: 400px;left: 50%;transform: translate(-50%, -55px) scale(0.92);position: absolute;"></div>
+	                <div style="width: 180px;height: 210px;margin: auto;"></div>
+	                <div style="margin-top: 45px;"></div>
+	                <el-divider></el-divider>
+	                <el-link type="primary" @click="pwdLogin">账号密码登录</el-link>
+	            </template>
+	            <template v-else>
+	                <div style="height: 16px;"></div>
+	                <el-form ref="pwd_form" th:action="@{/login}" @submit.native="submitForm" method="post" :model="pwdForm" :rules="rules" size="large" style="margin: 0 12px;">
+	                    <el-form-item prop="username">
+	                        <el-input ref="user_name" prefix-icon="User" placeholder="请输入用户名" clearable @keyup.enter.native="validForm" name="username" v-model="pwdForm.username"></el-input>
+	                    </el-form-item>
+	                    <el-tooltip :visible="capsTooltip" effect="light" content="大写键已锁定" placement="right" manual>
+	                        <el-form-item prop="password">
+	                            <el-input prefix-icon="Lock" placeholder="请输入密码" clearable @keyup.enter="validForm" type="password" show-password name="password" v-model="pwdForm.password" autocomplete="off" @keyup="checkCapslock" @blur="capsTooltip = false"></el-input>
+	                        </el-form-item>
+	                    </el-tooltip>
+	                    <div style="display:none;">
+	                        <el-input v-model="pwdForm.codeId" name="codeId"></el-input>
+	                        <input th:if="${_csrf}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+	                    </div>
+	                    <div style="margin-top: -6px;margin-bottom:6px;text-align: right;">
+	                        <el-checkbox v-model="cacheName" @change="handleCacheName" size="small">记住用户名</el-checkbox>
+	                        <!-- <span class="forget-pwd">忘记密码？</span> -->
+	                    </div>
+	                    <el-form-item>
+	                        <button ref="submit_btn" id="submit_btn" v-if="valided" type="submit" style="display: none;"></button>
+	                        <el-button type="primary" @click="validForm" style="width:100%;">登 录</el-button>
+	                    </el-form-item>
+	                    <div v-if="errMsg" style="margin-top: -12px;margin-bottom: -6px;font-size: 12px;overflow: hidden; text-overflow: ellipsis;">
+	                        <span style="color: #f00;" :title="errMsg">{{errMsg}}</span>
+	                    </div>
+	                </el-form>
+	                <el-divider><span style="font-size: 12px;color: #ccc">第三方认证登录</span></el-divider>
+	                <div style="display: flex;padding: 0 12px;">
+	                    <i class="icon-color icon-color-dingding third-login" @click="ddCode"></i>
+	                </div>
+	            </template>
+	
+	            <div v-show="captcha" id="captcha-box" style="position: absolute;top:0;left:0;background: #fff; padding: 0px 12px 42px;"></div>
+	        </div>
+	    </el-card>
+	</div>
+<components>
+</components>
+<script class="script" th:inline="javascript">
+	var exVueOpts = {
+	    data() {
+	        var validatePass = (rule, value, callback) => {
+	            if (value === '') {
+	                callback(new Error('请输入密码'));
+	            }
+	        };
+	        return {
+	            scanCode: false,
+	            appId: /*[[${appId}]]*/ "",
+	            redirectUrl: /*[[${callbackUrl}]]*/ "",
+	            pwdForm: {
+	                codeId: '',
+	                username: '',
+	                password: '',
+	                checkCode: '',
+	            },
+	            capsTooltip: false,
+	            cacheName: false,
+	            rules: {
+	                username: [{
+	                    required: true,
+	                    message: "请输入用户名!",
+	                    trigger: 'change'
+	                }],
+	                password: [{
+	                    required: true,
+	                    message: "请输入密码!",
+	                    trigger: 'change'
+	                }],
+	                checkCode: [{
+	                    required: true,
+	                    message: "请输入验证码!",
+	                    trigger: 'change'
+	                }],
+	            },
+	            valided: false,
+	            errMsg: /*[[${errMsg}]]*/ '',
+
+	            captcha: false,
+	            captchaConfig: {},
+	        }
+	    },
+	    components: {},
+	    methods: {
+	        checkCapslock(e) {
+	            const { key } = e;
+	            if (key) {
+	                let flg = e.getModifierState('CapsLock');;
+	                this.capsTooltip = flg;
+	            }
+	        },
+	        validForm() {
+	            this.$refs.pwd_form.validate((valid) => {
+	                if (valid) {
+	                    this.captcha = true;
+	                    this.valided = true;
+	                    this.errMsg = '';
+	                    Vue.nextTick(() => {
+	                        new TAC(this.captchaConfig, {
+	                            logoUrl: null
+		                    }).init();
+	                    })
+	                }
+	            });
+	        },
+	        doLogin(tac) {
+	            this.encrypPwd((codeId, encrypedPwd) => {
+		            	this.pwdForm.codeId = codeId;
+		            	this.pwdForm.password = encrypedPwd;
+	                Vue.nextTick(() => {
+	                    // 销毁验证码服务
+	                    tac.destroyWindow();
+	                    this.captcha = false;
+	                    this.$refs.submit_btn.click();
+	                })
+	            })
+	        },
+	        submitForm() {
+	            return true;
+	        },
+	        encrypPwd(callback) {
+	            axios.get('public/security/rsa-publickey').then(res => {
+	                var key = new RSAUtils.getKeyPair(res.data.publicKeyExponent, '', res.data.publicKeyModulus);
+	                let pwd = this.pwdForm.password.split("").reverse().join("");
+	                var encrypedPwd = RSAUtils.encryptedString(key, pwd);
+	                callback(res.data.codeId, encrypedPwd);
+	            }).catch(error => {
+	                this.message('error', error);
+	            })
+	        },
+	        resetForm() {
+	            this.$refs.pwdForm.resetFields();
+	        },
+	        ddCode() {
+	            this.scanCode = true;
+	            Vue.nextTick(() => {
+	                var obj = DDLogin({
+	                    id: "dd_qr_code",
+	                    goto: encodeURIComponent("https://oapi.dingtalk.com/connect/oauth2/sns_authorize?appid=" + this.appId + "&response_type=code&scope=snsapi_login&state=STATE&redirect_uri=" + this.redirectUrl), //请参考注释里的方式
+	                    style: "border:none;background-color:#FFFFFF;transform:scale(0.8);",
+	                    width: "365",
+	                    height: "400"
+	                });
+	            })
+	        },
+	        pwdLogin() {
+	            this.$refs.dd_qr_code.innerHTML = '';
+	            this.scanCode = false;
+	        },
+	        handleCacheName(val) {
+	            if (val)
+	                localStorage.setItem("authcenter_cache_username", this.pwdForm.username);
+	            else
+	                localStorage.removeItem("authcenter_cache_username")
+	        },
+	        nameChange(val) {
+	            localStorage.setItem("authcenter_cache_username", val);
+	        }
+	    },
+	    mounted(){
+	        this.$refs.user_name.focus();
+	        var handleMessage = function(event) {
+	            var origin = event.origin;
+	            if (origin == "https://login.dingtalk.com") { //判断是否来自ddLogin扫码事件。
+	                var loginTmpCode = event.data;
+	                //获取到loginTmpCode后就可以在这里构造跳转链接进行跳转了
+	                window.location.href = "https://oapi.dingtalk.com/connect/oauth2/sns_authorize?appid=" + this.appId + "&response_type=code&scope=snsapi_login&state=STATE&redirect_uri=" + this.redirectUrl + "&loginTmpCode=" + loginTmpCode;
+	            }
+	        };
+	        if (typeof window.addEventListener != 'undefined') {
+	            window.addEventListener('message', handleMessage, false);
+	        } else if (typeof window.attachEvent != 'undefined') {
+	            window.attachEvent('onmessage', handleMessage);
+	        }
+	        $('.el-form-item').removeAttr('tabindex');
+	        var name = localStorage.getItem("authcenter_cache_username");
+	        if (name) {
+	            this.cacheName = true;
+	            this.pwdForm.username = name;
+	        //    this.$set(this.pwdForm, 'username', name);
+	        }
+
+	        this.captchaConfig = {
+	            // 生成接口
+	            requestCaptchaDataUrl: "public/gen?type=SLIDER",
+	            // 验证接口
+	            validCaptchaUrl: "public/check",
+	            // 验证码绑定的div块
+	            bindEl: "#captcha-box",
+	            // 验证成功回调函数
+	            validSuccess: (res, c, tac) => {
+	                this.doLogin(tac);
+	            },
+	            btnRefreshFun: (el, tac) => {
+	                tac.reloadCaptcha();
+	            },
+	            btnCloseFun: (el, tac) => {
+	                tac.destroyWindow();
+	                this.captcha = false;
+	            }
+	        }
+	    }
+	};
+</script>
+</body>
+
+</html>

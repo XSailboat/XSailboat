@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>team.sailboat</groupId>
 		<artifactId>sailboat</artifactId>
-		<version>0.0.1</version>
+		<version>0.0.2-beta</version>
 	</parent>
 	<artifactId>XMSStarter</artifactId>
 	<description>应用启动器</description>
@@ -65,7 +65,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>${maven.plugin.jar.version}</version>
 				<configuration>
 					<archive>
 						<manifest>

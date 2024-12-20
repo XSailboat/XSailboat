@@ -414,15 +414,17 @@ class AppSysConfig:
 # 添加开机自启脚本
 def start_script():
     # 1.判断/etc/systemd/system中是否已经存在了
-    result = AppSysCmd.cmd_run_root("test -f /etc/systemd/system/SailInstaller.service && echo 'exists'")
+    result = AppSysCmd.cmd_run_root("test -f /usr/lib/systemd/system/SailInstaller.service && echo 'exists'")
     if result.stdout:
         # 存在
         logger.info("SailInstaller已在开机自启列表中")
         return
     logger.info("正在添加SailInstaller开机自启...")
-    start_path = AppPath.find_file_top_down(os.getcwd(), "start.sh")
+    working_dir = os.environ["WORKDIR"]
+    # start_path = AppPath.find_file_top_down(os.getcwd(), "p0_start_py_installer.sh")
+    start_path = os.path.join(working_dir, "p0_start_py_installer.sh")
     if start_path is None:
-        logger.info("启动脚本start.sh未找到,自启动设置失败!")
+        logger.info("p0_start_py_installer.sh未找到,自启动设置失败!")
     script = f"""
 [Unit]
 Description=SailPyInstaller的一键安装服务
@@ -437,16 +439,16 @@ RestartSec=10
 # 增加启动限制参数
 StartLimitInterval=60
 StartLimitBurst=5
+WorkingDirectory={working_dir}
 
 
 [Install]
 WantedBy=multi-user.target   
 """.strip()
-    r1 = AppSysCmd.save_file_root(script, "/etc/systemd/system/SailInstaller.service")
-    r2 = AppSysCmd.cmd_run_root("systemctl enable SailInstaller.service")
+    r1 = AppSysCmd.save_file_root(script, "/usr/lib/systemd/system/SailInstaller.service")
 
-    if r1 and r2.returncode == 0:
-        logger.info("自启动脚本已添加到/etc/systemd/system/SailInstaller.service")
+    if r1:
+        logger.info("自启动脚本已添加到/usr/lib/systemd/system/SailInstaller.service")
 
 
 def format_string_by_separator(input_str, separator, join, items_per_line):

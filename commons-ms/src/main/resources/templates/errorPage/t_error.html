@@ -1,5 +1,5 @@
 <!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org"  th:replace="decorators/main::layout(~{::head},~{::.content},~{::components},~{::script})">
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org" th:replace="~{decorators/main::layout(~{::head},~{::.content},~{::components},~{::.script})}">">
 <head>
 <title>错误</title>
 <link th:href="@{/public/error/404.css}" rel="stylesheet" type="text/css">
@@ -17,6 +17,7 @@
         <div class="bullshit__oops">请求错误！</div>
         <div class="bullshit__info">访问地址：<span style="color:#20a0ff" >[[${url}]]</span></div>
         <div class="bullshit__info" id="error-desc">[[${exception}]]</div>
+		<div class="bullshit__info"  id="error-desc">[[${msg}]]</div>
         <a th:href="@{/}" class="bullshit__return-home">回到首页</a>
       </div>
     </div>

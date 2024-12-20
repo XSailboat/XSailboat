@@ -7,7 +7,7 @@ package team.sailboat.ms.crane.cmd;
  * @author yyl
  * @since 2024年10月19日
  */
-public abstract class LocalEnvCmd implements ICmd
+public abstract class LocalEnvCmd extends Cmd
 {
 	
 }

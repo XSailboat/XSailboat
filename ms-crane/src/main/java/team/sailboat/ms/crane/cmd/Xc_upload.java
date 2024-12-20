@@ -9,12 +9,12 @@ import team.sailboat.commons.fan.file.FileUtils;
 import team.sailboat.commons.fan.http.EntityPart;
 import team.sailboat.commons.fan.http.MediaType;
 import team.sailboat.commons.fan.http.Request;
-import team.sailboat.ms.crane.AppConsts;
+import team.sailboat.ms.crane.IApis_PyInstaller;
 
 /**
  * 程序包上传		<br />
  * 
- * 命令格式：	upload -d path 程序包
+ * 命令格式：	xc_upload -d path 程序包
  *
  * 了解更多，阅读<a href = "https://www.yuque.com/okgogogooo/dh03hh/kzerf381o7s33lrg#ntTZs">《工具定义的命令清单》</a>
  * 
@@ -37,7 +37,7 @@ public class Xc_upload extends RestCmd
 		CommandLine cmdLine = new DefaultParser().parse(sOpts, aArgs) ;
 		String appPkgName = cmdLine.getArgList().get(0) ;
 		File appPkgFile = getEnv().getAppPkgFileGetter().apply(appPkgName) ;
-		mClient.ask(Request.POST().path(AppConsts.sApi_UploadFile_POST)
+		mClient.ask(Request.POST().path(IApis_PyInstaller.sPOST_UploadFile)
 				.queryParam("path" , cmdLine.getOptionValue('d'))
 				.setMultiPartEntity(EntityPart.build(appPkgFile.getName() , FileUtils.openBufferedInStream(appPkgFile)
 						, MediaType.APPLICATION_OCTET_STREAM_VALUE))) ;

@@ -96,7 +96,7 @@ public class AliyunAcsSigner implements ISigner
 	static String spliceCanonicalizedResource(Request aRequest)
 	{
 		StringBuilder strBld = new StringBuilder(aRequest.getPath()) ;
-		String[] paramKeys = aRequest.getUrlParamKeys().toArray(JCommon.sEmptyStringArray) ;
+		String[] paramKeys = aRequest.getQueryParamKeys().toArray(JCommon.sEmptyStringArray) ;
 		if(XC.isEmpty(paramKeys))
 			return strBld.toString() ;
 		strBld.append("?") ;
@@ -104,7 +104,7 @@ public class AliyunAcsSigner implements ISigner
 		boolean first = true ;
 		for(String paramKey : paramKeys)
 		{
-			for(String val : aRequest.getUrlParamValues(paramKey))
+			for(String val : aRequest.getQueryParamValues(paramKey))
 			{
 				if(first)
 					first = false ;
